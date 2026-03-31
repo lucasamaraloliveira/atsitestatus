@@ -76,13 +76,16 @@ const Sidebar: React.FC<SidebarProps> = ({
 
             {/* Navigation */}
             <nav className="flex-grow px-3 mt-4 space-y-2 overflow-y-auto no-scrollbar">
-                <button 
-                    onClick={onAddSite}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl bg-[var(--apple-accent)] text-white font-bold shadow-lg shadow-[var(--apple-accent)]/20 hover:scale-[1.02] active:scale-[0.98] transition-all mb-6 ${isCollapsed ? 'flex-col gap-1 py-4' : ''}`}
-                >
-                    <PlusCircle size={isCollapsed ? 24 : 20} />
-                    <span className={isCollapsed ? 'text-[8px] uppercase tracking-[0.05em] font-black' : ''}>Novo Site</span>
-                </button>
+                <div className="mb-4 px-2">
+                    <button 
+                        onClick={onAddSite}
+                        className={`w-full flex items-center justify-center gap-3 p-3 rounded-2xl bg-gradient-to-r from-[#0071E3] to-[#00A2FF] text-white font-bold shadow-lg shadow-[#0071E3]/20 hover:scale-[1.03] active:scale-[0.97] transition-all group ${isCollapsed ? 'p-3' : 'px-4'}`}
+                        title="Adicionar Novo Site"
+                    >
+                        <PlusCircle size={22} className="shrink-0 transition-transform group-hover:rotate-90" />
+                        {!isCollapsed && <span className="text-sm tracking-tight">Novo Site</span>}
+                    </button>
+                </div>
 
                 {menuItems.map((item) => (
                     <button

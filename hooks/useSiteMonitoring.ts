@@ -41,6 +41,13 @@ export const useSiteMonitoring = (username: string | null) => {
     const [isClearHistoryModalOpen, setIsClearHistoryModalOpen] = useState(false);
     const [siteToClearHistory, setSiteToClearHistory] = useState<StatusResult | null>(null);
 
+    const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
+    const [isAddSiteModalOpen, setIsAddSiteModalOpen] = useState(false);
+    
+    // Configurações de E-mail
+    const [notificationEmail, setNotificationEmail] = useState('');
+    const [emailNotifyType, setEmailNotifyType] = useState<'success' | 'error' | 'all'>('error');
+
     const [childUsers, setChildUsers] = useState<any[]>([]);
     const [effectiveOwnerId, setEffectiveOwnerId] = useState<string | null>(null);
     const [userRole, setUserRole] = useState<'admin' | 'child'>('admin');
@@ -50,8 +57,15 @@ export const useSiteMonitoring = (username: string | null) => {
     const undoTimeoutRef = useRef<number | null>(null);
     const unsubRef = useRef<(() => void) | null>(null);
 
-    // Bloqueio para evitar que o onSnapshot sobrescreva o estado logo após uma ação manual
+    // Refs para garantir que as funções assíncronas sempre usem o dado mais recente
+    const sitesRef = useRef<StatusResult[]>([]);
+    const isMonitoringRef = useRef<boolean>(false);
+    const intervalRefValue = useRef<number>(60);
     const lockRef = useRef<boolean>(false);
+
+    useEffect(() => { sitesRef.current = sites; }, [sites]);
+    useEffect(() => { isMonitoringRef.current = isMonitoring; }, [isMonitoring]);
+    useEffect(() => { intervalRefValue.current = monitoringInterval; }, [monitoringInterval]);
 
     // Sincronização em tempo real com Firestore para Lista de Sites e Configurações
     useEffect(() => {
@@ -87,6 +101,11 @@ export const useSiteMonitoring = (username: string | null) => {
                     setMonitoringInterval(data.monitoringInterval || 60);
                     setChildUsers(data.childUsers || []);
                     setEffectiveOwnerId(targetUser);
+                    
+                    // Novas preferências
+                    if (data.notificationEmail) setNotificationEmail(data.notificationEmail);
+                    if (data.emailNotifyType) setEmailNotifyType(data.emailNotifyType);
+                    if (data.viewMode) setViewMode(data.viewMode);
                 } else if (!snapshot.exists() && !isParentFetch) {
                     setDoc(userRef, { sites: [], isMonitoring: false, monitoringInterval: 60, childUsers: [] }, { merge: true });
                     setEffectiveOwnerId(targetUser);
@@ -123,40 +142,56 @@ export const useSiteMonitoring = (username: string | null) => {
         return () => unsubscribes.forEach(unsub => unsub());
     }, [effectiveOwnerId, sites.length]); 
 
-    const saveToFirestore = useCallback(async (updatedSites: StatusResult[], updatedInterval?: number, updatedMonitoring?: boolean, updatedChildUsers?: any[]) => {
+    const saveToFirestore = useCallback(async (updatedSites?: StatusResult[], updatedInterval?: number, updatedMonitoring?: boolean, updatedChildUsers?: any[]) => {
         if (!effectiveOwnerId) return;
         try {
             const userRef = doc(db, 'users', effectiveOwnerId);
             await setDoc(userRef, { 
-                sites: updatedSites, 
-                monitoringInterval: updatedInterval ?? monitoringInterval, 
-                isMonitoring: updatedMonitoring ?? isMonitoring,
-                childUsers: updatedChildUsers ?? childUsers
+                sites: updatedSites ?? sitesRef.current, 
+                monitoringInterval: updatedInterval ?? intervalRefValue.current, 
+                isMonitoring: updatedMonitoring ?? isMonitoringRef.current,
+                childUsers: updatedChildUsers ?? childUsers,
+                notificationEmail,
+                emailNotifyType,
+                viewMode
             }, { merge: true });
         } catch (error) {
             console.error("Erro ao salvar no Firestore:", error);
         }
-    }, [effectiveOwnerId, monitoringInterval, isMonitoring, childUsers]);
+    }, [effectiveOwnerId, childUsers, notificationEmail, emailNotifyType, viewMode]);
 
     const handleSetIsMonitoring = async (val: boolean) => {
         lockRef.current = true;
         setIsMonitoring(val);
+        isMonitoringRef.current = val; // Atualiza ref imediatamente
         try {
-            await saveToFirestore(sites, monitoringInterval, val);
+            await saveToFirestore(undefined, undefined, val);
         } finally {
-            // Pequeno delay para garantir que o onSnapshot pegue a mudança
-            setTimeout(() => { lockRef.current = false; }, 2000);
+            setTimeout(() => { lockRef.current = false; }, 1500);
         }
     };
 
     const handleSetMonitoringInterval = async (val: number) => {
         lockRef.current = true;
         setMonitoringInterval(val);
+        intervalRefValue.current = val;
         try {
-            await saveToFirestore(sites, val, isMonitoring);
+            await saveToFirestore(undefined, val, undefined);
         } finally {
-            setTimeout(() => { lockRef.current = false; }, 2000);
+            setTimeout(() => { lockRef.current = false; }, 1500);
         }
+    };
+
+    const handleSetViewMode = (mode: 'card' | 'list') => {
+        setViewMode(mode);
+        saveToFirestore();
+    };
+
+    const handleSetEmailSettings = (email: string, type: 'success' | 'error' | 'all') => {
+        setNotificationEmail(email);
+        setEmailNotifyType(type);
+        // Salvamento automático
+        setTimeout(() => saveToFirestore(), 100);
     };
 
     const addChildUser = async (user: any) => {
@@ -204,6 +239,23 @@ export const useSiteMonitoring = (username: string | null) => {
             console.error("Erro ao adicionar log:", error);
         }
     }, [effectiveOwnerId]);
+
+    const handleClearAllLogs = async () => {
+        if (!effectiveOwnerId || !sites.length) return;
+        try {
+            for (const site of sites) {
+                const logsRef = collection(db, 'users', effectiveOwnerId, 'sites', site.id, 'logs');
+                const snapshot = await getDocs(logsRef);
+                const batch = writeBatch(db);
+                snapshot.docs.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
+            }
+            addToastNotification("Todo o histórico foi limpo com sucesso.", "warning");
+        } catch (error) {
+            console.error("Erro ao limpar todos os logs:", error);
+            addToastNotification("Falha ao limpar histórico.", "alert");
+        }
+    };
 
     const addToastNotification = useCallback((message: string, type: 'alert' | 'warning' = 'alert') => {
         const newNotification: NotificationType = { id: Date.now(), message, type };
@@ -288,6 +340,7 @@ export const useSiteMonitoring = (username: string | null) => {
         
         setNewSiteUrl('');
         setNewSiteName('');
+        setIsAddSiteModalOpen(false); // Fecha o modal se estiver aberto
         
         // Iniciar verificação após um pequeno delay para garantir que o Firestore processou o novo site
         setTimeout(() => handleCheckStatus(newSite.id, newSite.url), 500);
@@ -380,15 +433,32 @@ export const useSiteMonitoring = (username: string | null) => {
         handleCloseClearHistoryModal();
     };
 
+    // Ref para manter a versão mais recente da função de atualização sem reiniciar o intervalo
+    const refreshAllRef = useRef(handleRefreshAll);
     useEffect(() => {
-        if (isMonitoring && monitoringInterval > 0) {
-            intervalRef.current = window.setInterval(handleRefreshAll, monitoringInterval * 1000);
-        } else if (intervalRef.current) {
-            clearInterval(intervalRef.current);
+        refreshAllRef.current = handleRefreshAll;
+    }, [handleRefreshAll]);
+
+    // Loop de Monitoramento Robusto
+    useEffect(() => {
+        if (!isMonitoring || monitoringInterval <= 0) {
+            if (intervalRef.current) clearInterval(intervalRef.current);
             intervalRef.current = null;
+            return;
         }
+
+        // Limpa intervalo existente antes de criar um novo (caso o tempo mude)
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        
+        // Executa uma vez imediatamente ao ligar
+        refreshAllRef.current();
+
+        intervalRef.current = window.setInterval(() => {
+            refreshAllRef.current();
+        }, monitoringInterval * 1000);
+
         return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-    }, [isMonitoring, monitoringInterval, handleRefreshAll]);
+    }, [isMonitoring, monitoringInterval]); // Só reinicia se ligar/desligar ou mudar o tempo
 
     return {
         sites, logs, newSiteUrl, setNewSiteUrl, newSiteName, setNewSiteName, filter, setFilter, sortOrder, setSortOrder,
@@ -399,6 +469,9 @@ export const useSiteMonitoring = (username: string | null) => {
         childUsers, addChildUser, removeChildUser, userRole, userProfile,
         handleAddSite, handleRequestDelete, handleConfirmDelete,
         handleCloseDeleteModal, handleUndoDelete, handleEditSite, handleUpdateSite, handleRefreshSite, handleRefreshAll,
-        requestClearHistory: handleRequestClearHistory, confirmClearHistory: handleConfirmClearHistory, closeClearHistoryModal: handleCloseClearHistoryModal
+        requestClearHistory: handleRequestClearHistory, confirmClearHistory: handleConfirmClearHistory, closeClearHistoryModal: handleCloseClearHistoryModal,
+        viewMode, setViewMode: handleSetViewMode, isAddSiteModalOpen, setIsAddSiteModalOpen,
+        notificationEmail, emailNotifyType, setNotificationEmail, setEmailNotifyType, saveEmailSettings: handleSetEmailSettings,
+        clearAllLogs: handleClearAllLogs
     };
 };

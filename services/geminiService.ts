@@ -16,64 +16,73 @@ const ERROR_KEYWORDS = ["404 Not Found", "503 Service Unavailable", "Database Er
 export const checkWebsiteStatus = async (url: string): Promise<CheckResult> => {
   const startTime = performance.now();
   
-  const performFetch = async (useProxy = false) => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-    
-    try {
-      const response = await fetch(url, { 
-        method: 'GET', 
-        mode: 'no-cors', // Mantido para evitar bloqueios de CORS no cliente
-        cache: 'no-cache',
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'ATSiteStatus/2.0 (Monitoramento de Disponibilidade)'
-        }
-      });
-      clearTimeout(timeoutId);
-      return response;
-    } catch (e) {
-      clearTimeout(timeoutId);
-      throw e;
-    }
-  };
-
+  const cleanUrl = url.trim();
+  
   try {
-    // Primeira tentativa
-    await performFetch();
+    // TENTATIVA 1: Fetch direto (Rápido, mas cego para status codes devido ao no-cors)
+    const directResponse = await fetch(cleanUrl, { 
+      method: 'GET', 
+      mode: 'no-cors',
+      cache: 'no-cache',
+      headers: { 'User-Agent': 'ATSiteStatus/2.0' }
+    });
+    
+    // Se chegou aqui sem erro, o site existe e serviu algo. 
+    // Porém, para ser ROBUSTO, vamos confirmar se não é um erro 404/500 mascarado.
+    
+    // TENTATIVA 2: Verificação profunda via Proxy (Permite ver o STATUS REAL)
+    try {
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(cleanUrl)}`;
+      const proxyResponse = await fetch(proxyUrl);
+      const data = await proxyResponse.json();
+      
+      const endTime = performance.now();
+      const latency = Math.round(endTime - startTime);
+
+      if (data.status && data.status.http_code) {
+        const code = data.status.http_code;
+        
+        if (code >= 200 && code < 400) {
+          return { status: CheckStatus.ONLINE, message: "Site estável e respondendo normalmente.", latency };
+        } else {
+          return { 
+            status: CheckStatus.OFFLINE, 
+            message: `Erro detectado: Servidor respondeu com Status ${code}.`, 
+            latency 
+          };
+        }
+      }
+    } catch (proxyError) {
+      // Se o proxy falhar (ex: bloqueio de IP ou timeout), confiamos na resposta direta do passo 1
+      const endTime = performance.now();
+      return { status: CheckStatus.ONLINE, message: "Site acessível (Verificado via conexão direta).", latency: Math.round(endTime - startTime) };
+    }
+
+    return { status: CheckStatus.ONLINE, message: "Online", latency: 0 }; // Fallback
+
+  } catch (error: any) {
     const endTime = performance.now();
     const latency = Math.round(endTime - startTime);
-
-    // Como estamos em 'no-cors', não conseguimos ler o body diretamente.
-    // Para uma verificação "Ampla", tentamos detectar se a resposta é opaca (site vivo)
-    return {
-      status: CheckStatus.ONLINE,
-      message: "Site acessível e respondendo (CORS Opaque).",
-      latency
-    };
-  } catch (error: any) {
-    // Segunda tentativa em caso de falha (evita falso-positivo)
+    
+    // TENTATIVA FINAL: Se o fetch direto falhou (CORS ou DNS), o Proxy pode confirmar se está de fato offline
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      await performFetch();
-      const endTime = performance.now();
-      return {
-        status: CheckStatus.ONLINE,
-        message: "Estabilizado após segunda tentativa.",
-        latency: Math.round(endTime - startTime)
-      };
-    } catch (secondError: any) {
-      const endTime = performance.now();
-      let message = "O site não respondeu após múltiplas tentativas.";
+      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(cleanUrl)}`;
+      const proxyResponse = await fetch(proxyUrl);
+      const data = await proxyResponse.json();
       
-      if (error.name === 'AbortError') message = "O site demorou demais para responder (Timeout).";
-      
-      return {
-        status: CheckStatus.OFFLINE,
-        message,
-        latency: Math.round(endTime - startTime)
-      };
-    }
+      if (data.status && data.status.http_code) {
+         const code = data.status.http_code;
+         if (code >= 200 && code < 400) {
+            return { status: CheckStatus.ONLINE, message: "Online via Relay (Recuperado de falha local).", latency };
+         }
+      }
+    } catch (e) {}
+
+    return { 
+      status: CheckStatus.OFFLINE, 
+      message: "Falha crítica de conexão. O site parece estar fora do ar ou o domínio é inexistente.", 
+      latency 
+    };
   }
 };
 

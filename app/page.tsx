@@ -11,8 +11,9 @@ import LoginPage from '@/views/LoginPage';
 import SharedReportPage from '@/views/SharedReportPage';
 import SettingsView from '@/views/SettingsView';
 import Sidebar from '@/components/Sidebar';
-import { FileText, Activity } from 'lucide-react';
-import { StatusResult, LogEntry } from '@/types';
+import { FileText, Activity, BarChart3, Trash2 } from 'lucide-react';
+import { StatusResult, LogEntry, CheckStatus } from '@/types';
+import AddSiteModal from '@/components/AddSiteModal';
 
 interface SharedReportData {
     sites: StatusResult[];
@@ -139,7 +140,15 @@ const App: React.FC = () => {
         handleRefreshAll,
         requestClearHistory,
         confirmClearHistory,
-        closeClearHistoryModal
+        closeClearHistoryModal,
+        viewMode,
+        setViewMode,
+        isAddSiteModalOpen,
+        setIsAddSiteModalOpen,
+        notificationEmail,
+        emailNotifyType,
+        saveEmailSettings,
+        clearAllLogs
     } = useSiteMonitoring(currentUser);
 
     const handleLogin = async (username: string, password?: string): Promise<boolean> => {
@@ -269,14 +278,12 @@ const App: React.FC = () => {
                     <DashboardPage
                         sites={sites}
                         logs={logs}
-                        newSiteUrl={newSiteUrl}
-                        setNewSiteUrl={setNewSiteUrl}
-                        newSiteName={newSiteName}
-                        setNewSiteName={setNewSiteName}
                         filter={filter}
                         setFilter={setFilter}
                         sortOrder={sortOrder}
                         setSortOrder={setSortOrder}
+                        viewMode={viewMode}
+                        setViewMode={setViewMode}
                         editingSiteId={editingSiteId}
                         isMonitoring={isMonitoring}
                         setIsMonitoring={setIsMonitoring}
@@ -284,7 +291,7 @@ const App: React.FC = () => {
                         setMonitoringInterval={setMonitoringInterval}
                         setSelectedSiteId={setSelectedSiteId}
                         onOpenGlobalReportModal={() => setIsGlobalReportModalOpen(true)}
-                        handleAddSite={handleAddSite}
+                        onOpenAddSiteModal={() => setIsAddSiteModalOpen(true)}
                         handleEditSite={handleEditSite}
                         handleUpdateSiteUrl={handleUpdateSite}
                         handleRefreshSite={handleRefreshSite}
@@ -297,50 +304,138 @@ const App: React.FC = () => {
                     />
                 );
             case 'reports':
+                const siteStats = sites.map(site => {
+                    const siteLogs = logs[site.id] || [];
+                    const onlineCount = siteLogs.filter(l => l.status === CheckStatus.ONLINE).length;
+                    const uptime = siteLogs.length > 0 ? (onlineCount / siteLogs.length) * 100 : 100;
+                    const avgLatency = siteLogs.length > 0 ? siteLogs.reduce((acc, curr) => acc + (curr.latency || 0), 0) / siteLogs.length : 0;
+                    return { ...site, uptime, avgLatency, failureCount: siteLogs.length - onlineCount };
+                });
+
                 return (
-                    <div className="animate-fade-in">
-                        <h2 className="text-4xl font-extrabold text-[var(--apple-text)] tracking-tight mb-8">Relatórios</h2>
-                        <div className="glass apple-card p-12 text-center border-none">
-                            <FileText size={64} className="mx-auto mb-6 text-[var(--apple-accent)]/80" />
-                            <h3 className="text-xl font-bold mb-3">Histórico de Performance</h3>
-                            <p className="text-[var(--apple-text-secondary)] text-sm max-w-sm mx-auto">Visualize o desempenho detalhado de sua infraestrutura digital e identifique gargalos em tempo real.</p>
+                    <div className="animate-fade-in space-y-8 pb-10">
+                        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                                <h2 className="text-4xl font-extrabold text-[var(--apple-text)] tracking-tight">Relatórios Analíticos</h2>
+                                <p className="text-[var(--apple-text-secondary)] font-medium mt-1">Extração de dados e métricas de disponibilidade.</p>
+                            </div>
                             <button 
                                 onClick={() => setIsGlobalReportModalOpen(true)}
-                                className="apple-button mt-8 h-12 px-8 shadow-xl shadow-[var(--apple-accent)]/20"
+                                className="apple-button h-12 px-8 shadow-xl shadow-[var(--apple-accent)]/20"
                             >
-                                Gerar Relatório PDF
+                                Exportar PDF Completo
                             </button>
+                        </header>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="glass apple-card p-6 border-none">
+                                <p className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest mb-2">Uptime Médio Global</p>
+                                <div className="flex items-end gap-2">
+                                    <span className="text-4xl font-black text-[#34C759]">
+                                        {(siteStats.reduce((acc, curr) => acc + curr.uptime, 0) / (siteStats.length || 1)).toFixed(1)}%
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="glass apple-card p-6 border-none">
+                                <p className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest mb-2">Latência Média</p>
+                                <div className="flex items-end gap-2 text-2xl font-black text-[var(--apple-accent)]">
+                                    <span>{(siteStats.reduce((acc, curr) => acc + curr.avgLatency, 0) / (siteStats.length || 1)).toFixed(0)} ms</span>
+                                </div>
+                            </div>
+                            <div className="glass apple-card p-6 border-none text-[#FF3B30]">
+                                <p className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest mb-2">Falhas no Período</p>
+                                <div className="flex items-end gap-2 text-3xl font-black">
+                                    <span>{siteStats.reduce((acc, curr) => acc + curr.failureCount, 0)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="glass apple-card overflow-hidden border-none">
+                            <div className="px-8 py-6 border-b border-[var(--apple-border)] flex items-center justify-between bg-white/5">
+                                <h3 className="font-bold flex items-center gap-2"><BarChart3 size={18} className="text-[var(--apple-accent)]" /> Desempenho por Domínio</h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left">
+                                    <thead>
+                                        <tr className="bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)] text-[10px] font-black uppercase tracking-widest">
+                                            <th className="px-8 py-4">Site</th>
+                                            <th className="px-8 py-4">Uptime (%)</th>
+                                            <th className="px-8 py-4">Latência (Média)</th>
+                                            <th className="px-8 py-4">Status Atual</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[var(--apple-border)]">
+                                        {siteStats.map(stat => (
+                                            <tr key={stat.id} className="hover:bg-[var(--apple-input-bg)] transition-colors">
+                                                <td className="px-8 py-4 font-bold text-sm">{stat.name || stat.url}</td>
+                                                <td className="px-8 py-4">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-24 h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                                                            <div className={`h-full ${stat.uptime > 99 ? 'bg-[#34C759]' : stat.uptime > 95 ? 'bg-yellow-500' : 'bg-[#FF3B30]'}`} style={{ width: `${stat.uptime}%` }}></div>
+                                                        </div>
+                                                        <span className="text-xs font-bold">{stat.uptime.toFixed(1)}%</span>
+                                                    </div>
+                                                </td>
+                                                <td className="px-8 py-4 text-xs font-medium">{stat.avgLatency.toFixed(0)} ms</td>
+                                                <td className="px-8 py-4">
+                                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${stat.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'}`}>
+                                                        {stat.status}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 );
             case 'activity':
                 const allLogs = Object.values(logs).flat() as LogEntry[];
                 return (
-                    <div className="animate-fade-in">
-                        <h2 className="text-4xl font-extrabold text-[var(--apple-text)] tracking-tight mb-8">Atividade Recente</h2>
-                        <div className="glass apple-card p-8 border-none">
-                            <p className="text-sm font-medium text-[var(--apple-text-secondary)] mb-8">Monitoramento em tempo real de alertas e eventos.</p>
+                    <div className="animate-fade-in pb-10">
+                        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                            <div>
+                                <h2 className="text-4xl font-extrabold text-[var(--apple-text)] tracking-tight">Atividade Recente</h2>
+                                <p className="text-[var(--apple-text-secondary)] font-medium mt-1">Histórico completo de logs e alertas.</p>
+                            </div>
+                            {allLogs.length > 0 && (
+                                <button 
+                                    onClick={clearAllLogs}
+                                    className="px-4 py-2 bg-[#FF3B30]/10 text-[#FF3B30] text-xs font-bold rounded-xl hover:bg-[#FF3B30] hover:text-white transition-all flex items-center gap-2 border border-[#FF3B30]/20 active:scale-95"
+                                >
+                                    <Trash2 size={14} />
+                                    Limpar Todo Histórico
+                                </button>
+                            )}
+                        </header>
+                        
+                        <div className="glass apple-card p-8 border-none shadow-xl">
                             <div className="space-y-3">
-                                {allLogs.sort((a, b) => b.timestamp - a.timestamp).slice(0, 15).map((log, idx) => (
-                                    <div key={idx} className="flex items-center justify-between p-4 bg-[var(--apple-input-bg)] rounded-2xl hover:bg-[var(--apple-border)]/5 transition-all">
+                                {allLogs.sort((a, b) => b.timestamp - a.timestamp).slice(0, 50).map((log, idx) => (
+                                    <div key={idx} className="flex items-center justify-between p-4 bg-[var(--apple-input-bg)] rounded-2xl hover:bg-[var(--apple-border)]/5 transition-all group">
                                         <div className="flex items-center gap-4">
-                                            <div className={`w-3 h-3 rounded-full ${log.status === 'Online' ? 'bg-[#34C759] shadow-lg shadow-[#34C759]/40' : 'bg-[#FF3B30] shadow-lg shadow-[#FF3B30]/40'}`}></div>
+                                            <div className={`w-3 h-3 rounded-full ${log.status === CheckStatus.ONLINE ? 'bg-[#34C759] shadow-lg shadow-[#34C759]/40' : 'bg-[#FF3B30] shadow-lg shadow-[#FF3B30]/40'} group-hover:scale-125 transition-transform`}></div>
                                             <div>
                                                 <span className="font-bold text-sm block">{log.status}</span>
                                                 <p className="text-[11px] text-[var(--apple-text-secondary)]">{log.message}</p>
                                             </div>
                                         </div>
-                                        <span className="text-[10px] font-bold text-[var(--apple-text-secondary)] tracking-widest bg-[var(--apple-border)]/20 px-3 py-1 rounded-full uppercase">
-                                            {new Date(log.timestamp).toLocaleTimeString()}
-                                        </span>
+                                        <div className="text-right">
+                                            <span className="text-[10px] font-bold text-[var(--apple-text-secondary)] tracking-widest bg-[var(--apple-border)]/20 px-3 py-1 rounded-full uppercase">
+                                                {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                            </span>
+                                            <p className="text-[9px] text-[var(--apple-text-secondary)] mt-1 font-bold">{new Date(log.timestamp).toLocaleDateString()}</p>
+                                        </div>
                                     </div>
                                 ))}
                                 {allLogs.length === 0 && (
-                                    <div className="text-center py-12">
-                                        <div className="w-16 h-16 bg-[var(--apple-input-bg)] rounded-full flex items-center justify-center mx-auto mb-4">
-                                            <Activity size={24} className="text-[var(--apple-text-secondary)]" />
+                                    <div className="text-center py-20">
+                                        <div className="w-20 h-20 bg-[var(--apple-input-bg)] rounded-full flex items-center justify-center mx-auto mb-6">
+                                            <Activity size={32} className="text-[var(--apple-text-secondary)] opacity-30" />
                                         </div>
-                                        <p className="text-sm font-medium text-[var(--apple-text-secondary)]">Nenhuma atividade registrada.</p>
+                                        <h3 className="font-bold text-[var(--apple-text)]">Nada por aqui ainda</h3>
+                                        <p className="text-sm font-medium text-[var(--apple-text-secondary)] mt-1">Os eventos aparecerão assim que o monitoramento começar.</p>
                                     </div>
                                 )}
                             </div>
@@ -354,6 +449,9 @@ const App: React.FC = () => {
                         setIsMonitoring={setIsMonitoring}
                         monitoringInterval={monitoringInterval}
                         setMonitoringInterval={setMonitoringInterval}
+                        notificationEmail={notificationEmail}
+                        emailNotifyType={emailNotifyType}
+                        saveEmailSettings={saveEmailSettings}
                         childUsers={childUsers}
                         addChildUser={addChildUser}
                         removeChildUser={removeChildUser}
@@ -379,11 +477,7 @@ const App: React.FC = () => {
                     setSelectedSiteId(null);
                 }}
                 onAddSite={() => {
-                    setActiveView('dashboard');
-                    setSelectedSiteId(null);
-                    setTimeout(() => {
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }, 100);
+                    setIsAddSiteModalOpen(true);
                 }}
             />
 
@@ -451,6 +545,12 @@ const App: React.FC = () => {
                 onClose={() => setIsGlobalReportModalOpen(false)}
                 sites={sites}
                 logs={logs}
+            />
+
+            <AddSiteModal
+                isOpen={isAddSiteModalOpen}
+                onClose={() => setIsAddSiteModalOpen(false)}
+                onAdd={handleAddSite}
             />
         </div>
     );

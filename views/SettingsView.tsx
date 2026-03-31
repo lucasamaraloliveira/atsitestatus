@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
+    Activity, 
+    Mail, 
     Users, 
-    Settings as SettingsIcon, 
-    Shield, 
-    Key, 
     UserPlus, 
-    Trash2, 
-    CheckCircle2, 
-    XCircle 
+    UserMinus, 
+    Settings as SettingsIcon,
+    Shield,
+    Bell,
+    CheckCircle2,
+    AlertTriangle
 } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -15,9 +17,12 @@ interface SettingsViewProps {
     setIsMonitoring: (val: boolean) => void;
     monitoringInterval: number;
     setMonitoringInterval: (val: number) => void;
+    notificationEmail: string;
+    emailNotifyType: 'success' | 'error' | 'all';
+    saveEmailSettings: (email: string, type: 'success' | 'error' | 'all') => void;
     childUsers: any[];
-    addChildUser: (user: any) => Promise<void>;
-    removeChildUser: (id: string) => Promise<void>;
+    addChildUser: (user: any) => void;
+    removeChildUser: (id: string) => void;
     userRole: 'admin' | 'child';
 }
 
@@ -26,253 +31,212 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     setIsMonitoring,
     monitoringInterval,
     setMonitoringInterval,
+    notificationEmail,
+    emailNotifyType,
+    saveEmailSettings,
     childUsers,
     addChildUser,
     removeChildUser,
     userRole
 }) => {
-    const [activeTab, setActiveTab] = useState<'preferences' | 'users' | 'security'>(userRole === 'admin' ? 'preferences' : 'security');
-    
-    // Form state for child user
-    const [newChildName, setNewChildName] = useState('');
-    const [newChildUsername, setNewChildUsername] = useState('');
-    const [newChildPassword, setNewChildPassword] = useState('');
-    const [isAddingUser, setIsAddingUser] = useState(false);
+    const [localEmail, setLocalEmail] = useState(notificationEmail);
+    const [localType, setLocalType] = useState(emailNotifyType);
+    const [activeTab, setActiveTab] = useState<'preferences' | 'notifications' | 'team'>('preferences');
 
-    const handleCreateChild = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!newChildUsername || !newChildPassword) return;
-        
-        await addChildUser({
-            name: newChildName,
-            username: newChildUsername,
-            password: newChildPassword,
-            permissions: ['view'], // Default
-            canEdit: false,
-            canDelete: false
-        });
-        
-        setNewChildName('');
-        setNewChildUsername('');
-        setNewChildPassword('');
-        setIsAddingUser(false);
+    useEffect(() => {
+        setLocalEmail(notificationEmail);
+        setLocalType(emailNotifyType);
+    }, [notificationEmail, emailNotifyType]);
+
+    const handleSaveEmail = () => {
+        saveEmailSettings(localEmail, localType);
     };
 
     return (
-        <div className="max-w-4xl mx-auto animate-fade-in">
-            <header className="mb-10">
+        <div className="animate-fade-in space-y-10 pb-20">
+            <header>
                 <h2 className="text-4xl font-extrabold text-[var(--apple-text)] tracking-tight">Configurações</h2>
-                <p className="text-[var(--apple-text-secondary)] mt-2 font-medium">Gerencie sua conta, usuários e preferências de monitoramento.</p>
+                <p className="text-[var(--apple-text-secondary)] font-medium mt-1">Gerencie seu ecossistema de monitoramento.</p>
             </header>
 
-            <div className="flex gap-2 mb-8 bg-[var(--apple-input-bg)] p-1.5 rounded-2xl w-fit">
-                {userRole === 'admin' && (
-                    <button 
-                        onClick={() => setActiveTab('preferences')}
-                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'preferences' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
-                    >
-                        <SettingsIcon size={16} />
-                        Preferências
-                    </button>
-                )}
-                {userRole === 'admin' && (
-                    <button 
-                        onClick={() => setActiveTab('users')}
-                        className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'users' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
-                    >
-                        <Users size={16} />
-                        Usuários Filhos
-                    </button>
-                )}
+            <div className="flex bg-[var(--apple-input-bg)] p-1.5 rounded-2xl border border-[var(--apple-border)] w-fit mb-4">
                 <button 
-                    onClick={() => setActiveTab('security')}
-                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'security' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
+                    onClick={() => setActiveTab('preferences')}
+                    className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'preferences' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
                 >
-                    <Shield size={16} />
-                    Segurança
+                    Preferências
                 </button>
+                <button 
+                    onClick={() => setActiveTab('notifications')}
+                    className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'notifications' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
+                >
+                    Notificações
+                </button>
+                {userRole === 'admin' && (
+                    <button 
+                        onClick={() => setActiveTab('team')}
+                        className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'team' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
+                    >
+                        Equipe
+                    </button>
+                )}
             </div>
 
-            <div className="space-y-6">
-                {activeTab === 'preferences' && userRole === 'admin' && (
-                    <div className="glass apple-card p-8 animate-fade-in">
-                        <h3 className="text-xl font-bold mb-8 flex items-center gap-2">
-                            <SettingsIcon className="text-[var(--apple-accent)]" /> 
-                            Preferências do Sistema
-                        </h3>
-                        
-                        <div className="space-y-6">
-                            <div className="flex items-center justify-between p-6 bg-[var(--apple-input-bg)] rounded-2xl">
-                                <div>
-                                    <h4 className="font-bold text-[var(--apple-text)]">Monitoramento Automático</h4>
-                                    <p className="text-xs text-[var(--apple-text-secondary)]">Verifica sites periodicamente em segundo plano.</p>
-                                </div>
-                                <div className="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" checked={isMonitoring} onChange={(e) => setIsMonitoring(e.target.checked)} className="sr-only peer"/>
-                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#34C759]"></div>
-                                </div>
+            <div className="grid grid-cols-1 gap-8">
+                {activeTab === 'preferences' && (
+                    <section className="glass apple-card p-10 border-none space-y-10 animate-fade-in">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 rounded-2xl bg-[var(--apple-accent)]/10 text-[var(--apple-accent)]">
+                                <Activity size={24} />
                             </div>
-
-                            <div className="flex items-center justify-between p-6 bg-[var(--apple-input-bg)] rounded-2xl">
-                                <div>
-                                    <h4 className="font-bold text-[var(--apple-text)]">Intervalo de Verificação</h4>
-                                    <p className="text-xs text-[var(--apple-text-secondary)]">Tempo de espera entre cada análise (mín. 5s).</p>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <input 
-                                        type="number" 
-                                        value={monitoringInterval} 
-                                        onChange={(e) => setMonitoringInterval(parseInt(e.target.value) || 5)}
-                                        className="bg-[var(--apple-card-bg)] border border-[var(--apple-border)] rounded-xl px-4 py-2 w-20 text-center font-bold text-[var(--apple-accent)] focus:outline-none focus:ring-2 focus:ring-[var(--apple-accent)]/20"
-                                        min="5"
-                                    />
-                                    <span className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest">seg</span>
-                                </div>
+                            <div>
+                                <h3 className="text-xl font-bold">Motor de Monitoramento</h3>
+                                <p className="text-sm text-[var(--apple-text-secondary)]">Ajuste como o sistema analisa seus alvos.</p>
                             </div>
                         </div>
-                    </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="flex items-center justify-between p-6 bg-[var(--apple-input-bg)] rounded-3xl group transition-all hover:bg-white/5">
+                                <div>
+                                    <p className="font-bold">Status do Monitoramento</p>
+                                    <p className="text-[10px] text-[var(--apple-text-secondary)] uppercase font-black tracking-widest mt-1">{isMonitoring ? 'Ativo e processando' : 'Globalmente pausado'}</p>
+                                </div>
+                                <button 
+                                    onClick={() => setIsMonitoring(!isMonitoring)}
+                                    className={`w-14 h-7 rounded-full flex items-center transition-all px-1 ${isMonitoring ? 'bg-[#34C759]' : 'bg-gray-300 dark:bg-gray-700'}`}
+                                >
+                                    <div className={`w-5 h-5 bg-white rounded-full shadow-lg transition-all ${isMonitoring ? 'translate-x-[26px]' : 'translate-x-0'}`} />
+                                </button>
+                            </div>
+
+                            <div className="p-6 bg-[var(--apple-input-bg)] rounded-3xl space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <p className="font-bold">Intervalo de Verificação</p>
+                                    <span className="text-xs font-black text-[var(--apple-accent)] bg-[var(--apple-accent)]/10 px-3 py-1 rounded-full">{monitoringInterval}s</span>
+                                </div>
+                                <input 
+                                    type="range"
+                                    min="10"
+                                    max="1800"
+                                    step="10"
+                                    value={monitoringInterval}
+                                    onChange={(e) => setMonitoringInterval(parseInt(e.target.value))}
+                                    className="w-full h-1.5 bg-[var(--apple-border)] rounded-full appearance-none cursor-pointer accent-[var(--apple-accent)]"
+                                />
+                                <p className="text-[9px] text-[var(--apple-text-secondary)] font-bold uppercase tracking-widest text-center">Recomendado: 60s para estabilidade</p>
+                            </div>
+                        </div>
+                    </section>
                 )}
 
-                {activeTab === 'users' && userRole === 'admin' && (
-                    <div className="glass apple-card p-8 animate-fade-in">
-                        <div className="flex items-center justify-between mb-8">
-                            <h3 className="text-xl font-bold flex items-center gap-2">
-                                <Users className="text-[var(--apple-accent)]" /> 
-                                Gerenciar Usuários
-                            </h3>
+                {activeTab === 'notifications' && (
+                    <section className="glass apple-card p-10 border-none space-y-10 animate-fade-in">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 rounded-2xl bg-[#FF9500]/10 text-[#FF9500]">
+                                <Mail size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold">Alertas e Notificações</h3>
+                                <p className="text-sm text-[var(--apple-text-secondary)]">Configurações para recebimento de logs via e-mail.</p>
+                            </div>
+                        </div>
+
+                        <div className="max-w-2xl space-y-8">
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">E-mail para Alertas</label>
+                                <div className="relative group">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] group-focus-within:text-[var(--apple-accent)] transition-colors">
+                                        <Bell size={18} />
+                                    </div>
+                                    <input 
+                                        type="email"
+                                        value={localEmail}
+                                        onChange={(e) => setLocalEmail(e.target.value)}
+                                        placeholder="ex: suporte@suaempresa.com"
+                                        className="apple-input w-full pl-12 py-4 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">Severidade dos Alertas</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    {[
+                                        { id: 'error', label: 'Só Erros', color: '#FF3B30', desc: 'Alertas críticos' },
+                                        { id: 'success', label: 'Sucessos', color: '#34C759', desc: 'Confirm. de Uptime' },
+                                        { id: 'all', label: 'Todos', color: '#007AFF', desc: 'Log completo' }
+                                    ].map(type => (
+                                        <button
+                                            key={type.id}
+                                            onClick={() => setLocalType(type.id as any)}
+                                            className={`p-5 rounded-2xl text-left transition-all border-2 flex flex-col gap-1 ${localType === type.id ? 'bg-white/10 border-[var(--apple-accent)] shadow-xl' : 'border-transparent bg-[var(--apple-input-bg)] opacity-60 hover:opacity-100'}`}
+                                        >
+                                            <span className="text-xs font-black uppercase tracking-wider" style={{ color: localType === type.id ? type.color : 'inherit' }}>{type.label}</span>
+                                            <span className="text-[9px] font-bold opacity-60">{type.desc}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             <button 
-                                onClick={() => setIsAddingUser(!isAddingUser)}
-                                className="apple-button h-10 px-4 text-xs flex items-center gap-2"
+                                onClick={handleSaveEmail}
+                                className="w-full sm:w-fit px-12 bg-[var(--apple-text)] text-[var(--apple-bg)] py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-black/10"
                             >
-                                <UserPlus size={14} />
-                                Novo Usuário
+                                Salvar Configurações de Alerta
+                            </button>
+                        </div>
+                    </section>
+                )}
+
+                {activeTab === 'team' && userRole === 'admin' && (
+                    <section className="glass apple-card p-10 border-none space-y-10 animate-fade-in">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 rounded-2xl bg-[#5856D6]/10 text-[#5856D6]">
+                                    <Users size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold">Gestão de Equipe</h3>
+                                    <p className="text-sm text-[var(--apple-text-secondary)]">Gerencie acessos e permissões de monitoramento.</p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    const user = prompt("Username do novo membro:");
+                                    if(user) addChildUser({ username: user, name: user, password: '123' });
+                                }}
+                                className="bg-[var(--apple-accent)] text-white px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 hover:opacity-90 transition-all active:scale-95"
+                            >
+                                <UserPlus size={16} />
+                                Novo Membro
                             </button>
                         </div>
 
-                        {isAddingUser && (
-                            <form onSubmit={handleCreateChild} className="mb-8 p-6 bg-[var(--apple-input-bg)] rounded-2xl border border-[var(--apple-accent)]/20 animate-fade-in-slide-up">
-                                <h4 className="font-bold mb-4 text-sm">Cadastrar Novo Acesso</h4>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    <input 
-                                        type="text" 
-                                        placeholder="Nome Completo" 
-                                        value={newChildName}
-                                        onChange={(e) => setNewChildName(e.target.value)}
-                                        className="apple-input bg-[var(--apple-card-bg)]"
-                                        required
-                                    />
-                                    <input 
-                                        type="text" 
-                                        placeholder="Username / E-mail" 
-                                        value={newChildUsername}
-                                        onChange={(e) => setNewChildUsername(e.target.value)}
-                                        className="apple-input bg-[var(--apple-card-bg)]"
-                                        required
-                                    />
-                                    <input 
-                                        type="password" 
-                                        placeholder="Senha de Acesso" 
-                                        value={newChildPassword}
-                                        onChange={(e) => setNewChildPassword(e.target.value)}
-                                        className="apple-input bg-[var(--apple-card-bg)]"
-                                        required
-                                    />
-                                    <div className="flex items-center gap-3 px-4 py-2 border border-[var(--apple-border)] rounded-xl bg-[var(--apple-card-bg)]">
-                                        <Shield size={16} className="text-[var(--apple-text-secondary)]" />
-                                        <span className="text-xs font-medium text-[var(--apple-text-secondary)]">Acesso: Apenas Visualização</span>
-                                    </div>
-                                </div>
-                                <div className="flex justify-end gap-3">
-                                    <button 
-                                        type="button" 
-                                        onClick={() => setIsAddingUser(false)}
-                                        className="px-4 py-2 text-xs font-bold text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button 
-                                        type="submit" 
-                                        className="apple-button h-9 px-6 text-xs"
-                                    >
-                                        Criar Usuário
-                                    </button>
-                                </div>
-                            </form>
-                        )}
-
-                        <div className="space-y-3">
-                            {childUsers.map((user) => (
-                                <div key={user.id} className="flex items-center justify-between p-4 bg-[var(--apple-input-bg)] rounded-2xl hover:bg-[var(--apple-border)]/10 transition-colors">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {childUsers.map(user => (
+                                <div key={user.id} className="p-6 bg-[var(--apple-input-bg)] rounded-3xl border border-[var(--apple-border)] flex items-center justify-between group hover:shadow-lg transition-all">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-[var(--apple-accent)]/10 flex items-center justify-center text-[var(--apple-accent)] font-bold">
-                                            {user.name?.charAt(0) || user.username?.charAt(0)}
+                                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#5856D6] to-[#AF52DE] flex items-center justify-center text-white font-black text-sm shadow-lg shadow-[#5856D6]/20">
+                                            {user.name?.charAt(0) || user.username.charAt(0)}
                                         </div>
                                         <div>
                                             <p className="font-bold text-sm">{user.name || user.username}</p>
-                                            <p className="text-[10px] text-[var(--apple-text-secondary)] font-medium uppercase tracking-widest">{user.username}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-6">
-                                        <div className="text-right hidden sm:block">
-                                            <div className="flex items-center gap-1.5 justify-end">
-                                               <CheckCircle2 size={12} className="text-[#34C759]" />
-                                               <span className="text-[10px] font-bold text-[var(--apple-text)]">Permissão de Visualização</span>
+                                            <div className="flex items-center gap-1.5">
+                                                <Shield size={10} className="text-[#34C759]" />
+                                                <span className="text-[9px] font-black uppercase text-[var(--apple-text-secondary)] opacity-60">Acesso Operador</span>
                                             </div>
-                                            <p className="text-[9px] text-[var(--apple-text-secondary)]">Sincronizado via Parent Account</p>
                                         </div>
-                                        <button 
-                                            onClick={() => removeChildUser(user.id)}
-                                            className="p-2 text-[var(--apple-text-secondary)] hover:text-[#FF3B30] hover:bg-[#FF3B30]/10 rounded-lg transition-all"
-                                            title="Remover acesso"
-                                        >
-                                            <Trash2 size={18} />
-                                        </button>
                                     </div>
+                                    <button 
+                                        onClick={() => removeChildUser(user.id)}
+                                        className="p-2.5 rounded-xl hover:bg-[#FF3B30]/10 text-[#FF3B30] opacity-0 group-hover:opacity-100 transition-all shadow-sm"
+                                    >
+                                        <UserMinus size={18} />
+                                    </button>
                                 </div>
                             ))}
-
-                            {childUsers.length === 0 && !isAddingUser && (
-                                <div className="text-center py-12 border-2 border-dashed border-[var(--apple-border)] rounded-3xl">
-                                    <Users size={40} className="mx-auto mb-4 text-[var(--apple-text-secondary)]/30" />
-                                    <p className="text-sm font-medium text-[var(--apple-text-secondary)]">Nenhum usuário filho cadastrado.</p>
-                                    <p className="text-xs text-[var(--apple-text-secondary)]">Crie acessos adicionais para que outros possam ver seus sites.</p>
-                                </div>
-                            )}
                         </div>
-                    </div>
-                )}
-
-                {activeTab === 'security' && (
-                    <div className="glass apple-card p-8 animate-fade-in">
-                        <h3 className="text-xl font-bold mb-8 flex items-center gap-2">
-                            <Key className="text-[var(--apple-accent)]" /> 
-                            Segurança da Conta
-                        </h3>
-
-                        <div className="space-y-4">
-                            <div className="p-6 bg-[var(--apple-input-bg)] rounded-2xl space-y-4">
-                                <h4 className="font-bold text-sm">Trocar Senha</h4>
-                                <p className="text-xs text-[var(--apple-text-secondary)]">Mantenha sua conta protegida alterando sua senha regularmente.</p>
-                                
-                                {userRole === 'admin' ? (
-                                    <div className="p-4 bg-[var(--apple-card-bg)] rounded-xl border border-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-xs font-medium flex items-center gap-3">
-                                        <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
-                                        Logado via Google. A senha deve ser alterada nas configurações da sua Conta Google.
-                                    </div>
-                                ) : (
-                                    <div className="space-y-3 pt-2">
-                                        <input type="password" placeholder="Nova Senha" className="apple-input w-full bg-[var(--apple-card-bg)]" />
-                                        <button className="apple-button w-full h-11 text-xs">Atualizar Senha</button>
-                                    </div>
-                                )}
-                            </div>
-                            
-                            <div className="p-6 bg-[var(--apple-input-bg)] rounded-2xl">
-                                <h4 className="font-bold text-sm mb-2 text-[#FF3B30]">Zona de Perigo</h4>
-                                <button className="text-xs font-bold text-[#FF3B30] hover:underline">Sair de todos os dispositivos</button>
-                            </div>
-                        </div>
-                    </div>
+                    </section>
                 )}
             </div>
         </div>
