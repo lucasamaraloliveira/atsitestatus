@@ -110,18 +110,46 @@ const DashboardPage: React.FC<DashboardPageProps> = (props) => {
                     </button>
                 </div>
 
-                <div className="flex items-center gap-6 flex-wrap bg-[var(--apple-input-bg)] px-6 py-3 rounded-full border border-[var(--apple-border)]">
-                    <div className="flex items-center gap-3">
-                        <div className="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="monitoring-toggle" checked={isMonitoring} onChange={() => setIsMonitoring(!isMonitoring)} className="sr-only peer"/>
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-[#34C759]"></div>
-                            <label htmlFor="monitoring-toggle" className="ml-3 text-sm font-semibold text-[var(--apple-text)]">Monitoramento</label>
+                <div className="flex items-center gap-6 flex-wrap bg-[var(--apple-input-bg)] px-6 py-4 rounded-3xl border border-[var(--apple-border)]">
+                    <div className="flex items-center gap-4">
+                        <div className="flex flex-col">
+                           <span className="text-[10px] font-bold text-[var(--apple-text-secondary)] uppercase tracking-widest mb-1">Status Global</span>
+                           <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${isMonitoring ? 'bg-[#34C759] animate-pulse' : 'bg-gray-400'}`}></div>
+                                <span className={`text-xs font-bold ${isMonitoring ? 'text-[#34C759]' : 'text-[var(--apple-text-secondary)]'}`}>
+                                    {isMonitoring ? 'MONITORANDO' : 'PAUSADO'}
+                                </span>
+                           </div>
+                        </div>
+                        <div className="w-px h-8 bg-[var(--apple-border)] mx-1"></div>
+                        <div className="relative inline-flex items-center cursor-pointer group">
+                            <input 
+                                type="checkbox" 
+                                id="monitoring-toggle" 
+                                checked={isMonitoring} 
+                                onChange={(e) => setIsMonitoring(e.target.checked)} 
+                                className="sr-only"
+                            />
+                            <div className={`w-12 h-6 rounded-full transition-all duration-300 ${isMonitoring ? 'bg-[#34C759] shadow-inner' : 'bg-gray-300 dark:bg-gray-700'}`}>
+                                <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-all duration-300 shadow-md ${isMonitoring ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                            </div>
                         </div>
                     </div>
                     {isMonitoring && (
-                        <div className="flex items-center gap-2">
-                            <input type="number" value={monitoringInterval} onChange={(e) => setMonitoringInterval(parseInt(e.target.value, 10))} className="bg-transparent w-12 text-center font-bold text-[var(--apple-accent)]" min="5" />
-                            <span className="text-xs font-bold text-[var(--apple-text-secondary)] uppercase tracking-widest">seg</span>
+                        <div className="flex items-center gap-3 pl-4 border-l border-[var(--apple-border)]">
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-bold text-[var(--apple-text-secondary)] uppercase tracking-widest mb-1">Intervalo</span>
+                                <div className="flex items-center gap-2">
+                                    <input 
+                                        type="number" 
+                                        value={monitoringInterval} 
+                                        onChange={(e) => setMonitoringInterval(parseInt(e.target.value, 10))} 
+                                        className="bg-transparent w-10 text-sm font-black text-[var(--apple-accent)] focus:outline-none" 
+                                        min="5" 
+                                    />
+                                    <span className="text-[10px] font-bold text-[var(--apple-text-secondary)] uppercase tracking-widest">seg</span>
+                                </div>
+                            </div>
                         </div>
                     )}
                 </div>
