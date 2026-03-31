@@ -14,6 +14,7 @@ import {
 
 interface SidebarProps {
     currentUser: string;
+    userProfile: any;
     onLogout: () => void;
     theme: 'light' | 'dark';
     toggleTheme: () => void;
@@ -24,6 +25,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ 
     currentUser, 
+    userProfile,
     onLogout, 
     theme, 
     toggleTheme, 
@@ -35,6 +37,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         const saved = localStorage.getItem('sidebar-collapsed');
         return saved === 'true';
     });
+    const [isUserTrayOpen, setIsUserTrayOpen] = useState(false);
 
     useEffect(() => {
         localStorage.setItem('sidebar-collapsed', String(isCollapsed));
@@ -44,7 +47,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         { id: 'dashboard', label: 'Painel', icon: LayoutDashboard },
         { id: 'reports', label: 'Relatórios', icon: FileText },
         { id: 'activity', label: 'Atividade', icon: Activity },
-        { id: 'settings', label: 'Configurações', icon: Settings },
     ];
 
     return (
@@ -54,7 +56,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             {/* Header */}
             <div className={`p-6 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
                 {!isCollapsed && (
-                    <div className="flex items-center gap-3 animate-fade-in">
+                    <div className="flex items-center gap-3 animate-fade-in text-nowrap">
                         <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0071E3] to-[#5AC8FA] flex items-center justify-center text-white font-black text-sm shadow-lg shadow-[#0071E3]/20">AT</div>
                         <span className="font-bold text-[var(--apple-text)] tracking-tight">ATSiteStatus</span>
                     </div>
@@ -94,54 +96,67 @@ const Sidebar: React.FC<SidebarProps> = ({
                     >
                         <item.icon size={isCollapsed ? 24 : 20} />
                         <span className={`font-semibold ${isCollapsed ? 'text-[8px] uppercase tracking-[0.05em] font-black' : ''}`}>
-                            {isCollapsed && item.id === 'settings' ? 'Configs...' : item.label}
+                            {item.label}
                         </span>
                     </button>
                 ))}
             </nav>
 
             {/* Footer */}
-            <div className="p-4 border-t border-[var(--apple-border)] space-y-2">
-                <button 
-                    onClick={toggleTheme}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl text-[var(--apple-text-secondary)] hover:bg-[var(--apple-input-bg)] hover:text-[var(--apple-text)] transition-all ${isCollapsed ? 'flex-col gap-1' : ''}`}
-                >
-                    {theme === 'light' ? <Moon size={isCollapsed ? 24 : 20} /> : <Sun size={isCollapsed ? 24 : 20} />}
-                    <span className={`font-semibold ${isCollapsed ? 'text-[7px] uppercase tracking-tighter font-black' : ''}`}>{isCollapsed ? (theme === 'light' ? 'Escuro' : 'Claro') : `Tema ${theme === 'light' ? 'Escuro' : 'Claro'}`}</span>
-                </button>
+            <div className="p-4 border-t border-[var(--apple-border)] relative">
+                {/* User Tray Popover */}
+                {isUserTrayOpen && (
+                    <div className={`absolute bottom-full mb-2 glass border border-[var(--apple-border)] rounded-2xl shadow-2xl p-2 animate-fade-in-slide-up z-50 overflow-hidden ${isCollapsed ? 'w-56 left-0' : 'left-4 right-4'}`}>
+                        <button 
+                            onClick={toggleTheme}
+                            className="w-full flex items-center gap-3 p-3 rounded-xl text-[var(--apple-text-secondary)] hover:bg-[var(--apple-input-bg)] hover:text-[var(--apple-text)] transition-all"
+                        >
+                            {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                            <span className="text-sm font-semibold">Tema {theme === 'light' ? 'Escuro' : 'Claro'}</span>
+                        </button>
+                        
+                        <button 
+                            onClick={() => {
+                                setActiveView('settings');
+                                setIsUserTrayOpen(false);
+                            }}
+                            className="w-full flex items-center gap-3 p-3 rounded-xl text-[var(--apple-text-secondary)] hover:bg-[var(--apple-input-bg)] hover:text-[var(--apple-text)] transition-all"
+                        >
+                            <Settings size={18} />
+                            <span className="text-sm font-semibold">Configurações</span>
+                        </button>
 
-                <div className={`flex items-center gap-3 p-3 rounded-xl bg-[var(--apple-input-bg)] ${isCollapsed ? 'flex-col' : ''}`}>
-                    <div className="w-8 h-8 rounded-full bg-[var(--apple-accent)] flex items-center justify-center text-white font-bold text-xs shrink-0">
-                        {currentUser.charAt(0).toUpperCase()}
-                    </div>
-                    {!isCollapsed && (
-                        <div className="min-w-0 flex-grow">
-                            <p className="text-xs font-bold text-[var(--apple-text)] truncate">{currentUser}</p>
-                            <p className="text-[10px] text-[var(--apple-text-secondary)]">Usuário</p>
-                        </div>
-                    )}
-                    {!isCollapsed && (
+                        <div className="my-1 border-t border-[var(--apple-border)]"></div>
+
                         <button 
                             onClick={onLogout}
-                            className="text-[var(--apple-text-secondary)] hover:text-[#FF3B30] transition-colors"
+                            className="w-full flex items-center gap-3 p-3 rounded-xl text-[#FF3B30] hover:bg-[#FF3B30]/10 transition-all font-bold"
                         >
                             <LogOut size={18} />
+                            <span className="text-sm">Sair</span>
                         </button>
-                    )}
-                </div>
-                {isCollapsed && (
-                    <button 
-                        onClick={onLogout}
-                        className="w-full flex flex-col items-center gap-1 p-3 text-[var(--apple-text-secondary)] hover:text-[#FF3B30] transition-colors"
-                    >
-                        <LogOut size={20} />
-                        <span className="text-[7px] uppercase tracking-tighter font-black">Sair</span>
-                    </button>
+                    </div>
                 )}
+
+                <button 
+                    onClick={() => setIsUserTrayOpen(!isUserTrayOpen)}
+                    className={`w-full flex items-center gap-3 p-2 rounded-2xl transition-all ${isUserTrayOpen ? 'bg-[var(--apple-input-bg)]' : 'hover:bg-[var(--apple-input-bg)]'} ${isCollapsed ? 'flex-col' : ''}`}
+                >
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#0071E3] to-[#5AC8FA] flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-lg shadow-[#0071E3]/20">
+                        {(userProfile?.name || currentUser).charAt(0).toUpperCase()}
+                    </div>
+                    {!isCollapsed && (
+                        <div className="min-w-0 flex-grow text-left">
+                            <p className="text-xs font-bold text-[var(--apple-text)] truncate">{userProfile?.name || currentUser}</p>
+                            <p className="text-[10px] text-[var(--apple-text-secondary)] font-medium">
+                                {userProfile?.role === 'admin' ? 'Conta Administrativa' : 'Acesso Restrito'}
+                            </p>
+                        </div>
+                    )}
+                </button>
             </div>
         </aside>
     );
 };
 
 export default Sidebar;
-

@@ -1,4 +1,9 @@
 import { CheckStatus } from "@/types";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+// Inicializa o Gemini com a API Key do Google AI Studio
+const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY || "");
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 interface CheckResult {
   status: CheckStatus;
@@ -6,6 +11,10 @@ interface CheckResult {
   latency: number;
 }
 
+/**
+ * Realiza uma verificação de status via Ping (CORS-friendly)
+ * Futuramente pode-se usar o Gemini para analisar o resultado técnica ou logs.
+ */
 export const checkWebsiteStatus = async (url: string): Promise<CheckResult> => {
   const startTime = performance.now();
   try {

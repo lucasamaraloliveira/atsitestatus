@@ -9,8 +9,9 @@ import ConfirmationModal from '@/components/ConfirmationModal';
 import GlobalReportModal from '@/components/GlobalReportModal';
 import LoginPage from '@/views/LoginPage';
 import SharedReportPage from '@/views/SharedReportPage';
+import SettingsView from '@/views/SettingsView';
 import Sidebar from '@/components/Sidebar';
-import { FileText } from 'lucide-react';
+import { FileText, Activity } from 'lucide-react';
 import { StatusResult, LogEntry } from '@/types';
 
 interface SharedReportData {
@@ -122,6 +123,11 @@ const App: React.FC = () => {
         setIsGlobalReportModalOpen,
         isClearHistoryModalOpen,
         siteToClearHistory,
+        childUsers,
+        addChildUser,
+        removeChildUser,
+        userRole,
+        userProfile,
         handleAddSite,
         handleRequestDelete,
         handleConfirmDelete,
@@ -131,15 +137,88 @@ const App: React.FC = () => {
         handleUpdateSite,
         handleRefreshSite,
         handleRefreshAll,
-        handleRequestClearHistory,
-        handleConfirmClearHistory,
-        handleCloseClearHistoryModal
+        requestClearHistory,
+        confirmClearHistory,
+        closeClearHistoryModal
     } = useSiteMonitoring(currentUser);
 
-    const handleLogin = (username: string) => {
-        if (username.trim()) {
-            localStorage.setItem('currentUser', username.trim());
-            setCurrentUser(username.trim());
+    const handleLogin = async (username: string, password?: string): Promise<boolean> => {
+        if (!username.trim()) return false;
+        
+        try {
+            const { doc, getDoc, setDoc } = await import('firebase/firestore');
+            const { db } = await import('@/services/firebase');
+            const userRef = doc(db, 'users', username);
+            const userSnap = await getDoc(userRef);
+
+            if (!password) {
+                // Login via Google
+                if (!userSnap.exists()) {
+                    await setDoc(userRef, { 
+                        username, 
+                        role: 'admin', 
+                        sites: [], 
+                        isMonitoring: false, 
+                        monitoringInterval: 60,
+                        childUsers: [],
+                        createdAt: Date.now()
+                    });
+                }
+                localStorage.setItem('currentUser', username);
+                setCurrentUser(username);
+                return true;
+            }
+
+            // Login manual com senha
+            if (userSnap.exists()) {
+                const userData = userSnap.data();
+                if (userData.password === password) {
+                    localStorage.setItem('currentUser', username);
+                    setCurrentUser(username);
+                    return true;
+                }
+            }
+            
+            alert("Usuário ou senha incorretos.");
+            return false;
+        } catch (error) {
+            console.error("Erro ao autenticar (Offline?):", error);
+            alert("Erro ao conectar ao banco de dados. Verifique sua conexão ou tente novamente.");
+            return false;
+        }
+    };
+
+    const handleRegister = async (username: string, password: string, name: string): Promise<boolean> => {
+        try {
+            const { doc, getDoc, setDoc } = await import('firebase/firestore');
+            const { db } = await import('@/services/firebase');
+            const userRef = doc(db, 'users', username);
+            const userSnap = await getDoc(userRef);
+            
+            if (userSnap.exists()) {
+                alert("Este usuário já existe. Escolha outro username.");
+                return false;
+            }
+            
+            await setDoc(userRef, {
+                username,
+                name,
+                password,
+                role: 'admin',
+                sites: [],
+                isMonitoring: false,
+                monitoringInterval: 60,
+                childUsers: [],
+                createdAt: Date.now()
+            });
+            
+            localStorage.setItem('currentUser', username);
+            setCurrentUser(username);
+            return true;
+        } catch (error) {
+            console.error("Erro ao registrar (Offline?):", error);
+            alert("Erro ao conectar ao banco de dados para registro.");
+            return false;
         }
     };
 
@@ -169,7 +248,7 @@ const App: React.FC = () => {
     }
 
     if (!currentUser) {
-        return <LoginPage onLogin={handleLogin} theme={theme} toggleTheme={toggleTheme} />;
+        return <LoginPage onLogin={handleLogin} onRegister={handleRegister} theme={theme} toggleTheme={toggleTheme} />;
     }
 
     const renderActiveView = () => {
@@ -179,7 +258,7 @@ const App: React.FC = () => {
                     site={selectedSite.site} 
                     logs={selectedSite.logs} 
                     onBack={() => setSelectedSiteId(null)} 
-                    onRequestClearHistory={handleRequestClearHistory}
+                    onRequestClearHistory={requestClearHistory}
                 />
             );
         }
@@ -220,15 +299,16 @@ const App: React.FC = () => {
             case 'reports':
                 return (
                     <div className="animate-fade-in">
-                        <h2 className="text-3xl font-bold mb-6">Relatórios</h2>
-                        <div className="glass apple-card p-8 text-center">
-                            <FileText size={48} className="mx-auto mb-4 text-[var(--apple-text-secondary)]" />
-                            <p className="text-[var(--apple-text-secondary)]">Seus relatórios detalhados aparecerão aqui em breve.</p>
+                        <h2 className="text-4xl font-extrabold text-[var(--apple-text)] tracking-tight mb-8">Relatórios</h2>
+                        <div className="glass apple-card p-12 text-center border-none">
+                            <FileText size={64} className="mx-auto mb-6 text-[var(--apple-accent)]/80" />
+                            <h3 className="text-xl font-bold mb-3">Histórico de Performance</h3>
+                            <p className="text-[var(--apple-text-secondary)] text-sm max-w-sm mx-auto">Visualize o desempenho detalhado de sua infraestrutura digital e identifique gargalos em tempo real.</p>
                             <button 
                                 onClick={() => setIsGlobalReportModalOpen(true)}
-                                className="apple-button mt-6"
+                                className="apple-button mt-8 h-12 px-8 shadow-xl shadow-[var(--apple-accent)]/20"
                             >
-                                Gerar Relatório Global
+                                Gerar Relatório PDF
                             </button>
                         </div>
                     </div>
@@ -237,21 +317,31 @@ const App: React.FC = () => {
                 const allLogs = Object.values(logs).flat() as LogEntry[];
                 return (
                     <div className="animate-fade-in">
-                        <h2 className="text-3xl font-bold mb-6">Atividade Recente</h2>
-                        <div className="glass apple-card p-8">
-                            <p className="text-[var(--apple-text-secondary)]">Histórico de alertas e eventos de monitoramento.</p>
-                            <div className="mt-6 space-y-4">
-                                {allLogs.sort((a, b) => b.timestamp - a.timestamp).slice(0, 10).map((log, idx) => (
-                                    <div key={idx} className="flex items-center justify-between p-4 bg-[var(--apple-input-bg)] rounded-xl">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-2 h-2 rounded-full ${log.status === 'Online' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                                            <span className="font-semibold">{log.status}</span>
+                        <h2 className="text-4xl font-extrabold text-[var(--apple-text)] tracking-tight mb-8">Atividade Recente</h2>
+                        <div className="glass apple-card p-8 border-none">
+                            <p className="text-sm font-medium text-[var(--apple-text-secondary)] mb-8">Monitoramento em tempo real de alertas e eventos.</p>
+                            <div className="space-y-3">
+                                {allLogs.sort((a, b) => b.timestamp - a.timestamp).slice(0, 15).map((log, idx) => (
+                                    <div key={idx} className="flex items-center justify-between p-4 bg-[var(--apple-input-bg)] rounded-2xl hover:bg-[var(--apple-border)]/5 transition-all">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-3 h-3 rounded-full ${log.status === 'Online' ? 'bg-[#34C759] shadow-lg shadow-[#34C759]/40' : 'bg-[#FF3B30] shadow-lg shadow-[#FF3B30]/40'}`}></div>
+                                            <div>
+                                                <span className="font-bold text-sm block">{log.status}</span>
+                                                <p className="text-[11px] text-[var(--apple-text-secondary)]">{log.message}</p>
+                                            </div>
                                         </div>
-                                        <span className="text-xs text-[var(--apple-text-secondary)]">{new Date(log.timestamp).toLocaleString()}</span>
+                                        <span className="text-[10px] font-bold text-[var(--apple-text-secondary)] tracking-widest bg-[var(--apple-border)]/20 px-3 py-1 rounded-full uppercase">
+                                            {new Date(log.timestamp).toLocaleTimeString()}
+                                        </span>
                                     </div>
                                 ))}
                                 {allLogs.length === 0 && (
-                                    <p className="text-center text-sm italic py-4">Nenhuma atividade registrada ainda.</p>
+                                    <div className="text-center py-12">
+                                        <div className="w-16 h-16 bg-[var(--apple-input-bg)] rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <Activity size={24} className="text-[var(--apple-text-secondary)]" />
+                                        </div>
+                                        <p className="text-sm font-medium text-[var(--apple-text-secondary)]">Nenhuma atividade registrada.</p>
+                                    </div>
                                 )}
                             </div>
                         </div>
@@ -259,37 +349,16 @@ const App: React.FC = () => {
                 );
             case 'settings':
                 return (
-                    <div className="animate-fade-in">
-                        <h2 className="text-3xl font-bold mb-6">Configurações</h2>
-                        <div className="glass apple-card p-8 space-y-8">
-                            <div>
-                                <h3 className="text-lg font-bold mb-4">Preferências de Monitoramento</h3>
-                                <div className="flex items-center justify-between p-4 bg-[var(--apple-input-bg)] rounded-xl">
-                                    <span>Intervalo Padrão de Monitoramento</span>
-                                    <div className="flex items-center gap-2">
-                                        <input 
-                                            type="number" 
-                                            value={monitoringInterval} 
-                                            onChange={(e) => setMonitoringInterval(parseInt(e.target.value) || 10)}
-                                            className="bg-transparent text-right font-black text-xl text-[var(--apple-accent)] w-16 focus:outline-none"
-                                            min="5"
-                                        />
-                                        <span className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest bg-[var(--apple-border)] px-2 py-1 rounded-md">seg</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div>
-                                <h3 className="text-lg font-bold mb-4">Aparência</h3>
-                                <button 
-                                    onClick={toggleTheme}
-                                    className="w-full flex items-center justify-between p-4 bg-[var(--apple-input-bg)] rounded-xl hover:bg-[var(--apple-border)] transition-colors"
-                                >
-                                    <span>Tema Atual</span>
-                                    <span className="font-bold capitalize">{theme === 'light' ? 'Claro' : 'Escuro'}</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    <SettingsView 
+                        isMonitoring={isMonitoring}
+                        setIsMonitoring={setIsMonitoring}
+                        monitoringInterval={monitoringInterval}
+                        setMonitoringInterval={setMonitoringInterval}
+                        childUsers={childUsers}
+                        addChildUser={addChildUser}
+                        removeChildUser={removeChildUser}
+                        userRole={userRole}
+                    />
                 );
             default:
                 return null;
@@ -300,6 +369,7 @@ const App: React.FC = () => {
         <div className="min-h-screen bg-[var(--apple-bg)] text-[var(--apple-text)] transition-colors duration-500">
             <Sidebar 
                 currentUser={currentUser}
+                userProfile={userProfile}
                 onLogout={handleLogout}
                 theme={theme}
                 toggleTheme={toggleTheme}
@@ -325,11 +395,16 @@ const App: React.FC = () => {
             
             <div aria-live="assertive" className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3 w-full max-w-sm">
                 {recentlyDeleted && (
-                    <div className="bg-gray-700 text-white py-3 px-5 rounded-lg shadow-xl flex items-center gap-4 animate-fade-in-slide-up">
-                        <p>Site "<span className="font-semibold max-w-[200px] inline-block truncate">{recentlyDeleted.site.name || recentlyDeleted.site.url}</span>" excluído.</p>
+                    <div className="glass apple-card py-4 px-6 shadow-2xl flex items-center justify-between gap-6 animate-fade-in-slide-up border border-[var(--apple-border)]">
+                        <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-[#FF3B30] animate-pulse"></div>
+                            <p className="text-sm font-medium text-[var(--apple-text)]">
+                                Site "<span className="font-bold truncate max-w-[150px] inline-block align-bottom">{recentlyDeleted.site.name || recentlyDeleted.site.url}</span>" removido.
+                            </p>
+                        </div>
                         <button 
                             onClick={handleUndoDelete}
-                            className="font-bold text-cyan-400 hover:text-cyan-300 underline flex-shrink-0"
+                            className="text-sm font-bold text-[var(--apple-accent)] hover:underline active:scale-95 transition-all flex-shrink-0"
                         >
                             Desfazer
                         </button>
@@ -353,22 +428,22 @@ const App: React.FC = () => {
                 confirmText="Excluir"
                 confirmVariant="danger"
             >
-                <p>Tem certeza de que deseja excluir o site:</p>
-                <p className="font-bold my-2 bg-gray-700 p-2 rounded break-all">{siteToDelete?.name || siteToDelete?.url}</p>
-                <p>Todo o histórico de monitoramento será removido, mas você poderá desfazer esta ação por alguns segundos.</p>
+                <p className="text-sm font-medium">Tem certeza de que deseja excluir o site:</p>
+                <p className="font-bold my-3 bg-[var(--apple-input-bg)] p-4 rounded-2xl break-all border border-[var(--apple-border)] text-xs text-[var(--apple-accent)]">{siteToDelete?.name || siteToDelete?.url}</p>
+                <p className="text-[11px] text-[var(--apple-text-secondary)] leading-relaxed">Todo o histórico de monitoramento será removido, mas você poderá desfazer esta ação por alguns segundos.</p>
             </ConfirmationModal>
 
             <ConfirmationModal
                 isOpen={isClearHistoryModalOpen}
-                onClose={handleCloseClearHistoryModal}
-                onConfirm={handleConfirmClearHistory}
+                onClose={closeClearHistoryModal}
+                onConfirm={confirmClearHistory}
                 title="Confirmar Limpeza de Histórico"
                 confirmText="Limpar Histórico"
                 confirmVariant="danger"
             >
-                <p>Tem certeza de que deseja limpar todo o histórico do site:</p>
-                <p className="font-bold my-2 bg-gray-700 p-2 rounded break-all">{siteToClearHistory?.name || siteToClearHistory?.url}</p>
-                <p>Esta ação não pode ser desfeita.</p>
+                <p className="text-sm font-medium">Tem certeza de que deseja limpar todo o histórico do site:</p>
+                <p className="font-bold my-3 bg-[var(--apple-input-bg)] p-4 rounded-2xl break-all border border-[var(--apple-border)] text-xs text-[var(--apple-accent)]">{siteToClearHistory?.name || siteToClearHistory?.url}</p>
+                <p className="text-[11px] text-[var(--apple-text-secondary)] leading-relaxed">Esta ação não pode ser desfeita e todos os logs antigos serão apagados permanentemente.</p>
             </ConfirmationModal>
 
             <GlobalReportModal

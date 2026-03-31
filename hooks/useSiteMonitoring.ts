@@ -41,40 +41,74 @@ export const useSiteMonitoring = (username: string | null) => {
     const [isClearHistoryModalOpen, setIsClearHistoryModalOpen] = useState(false);
     const [siteToClearHistory, setSiteToClearHistory] = useState<StatusResult | null>(null);
 
+    const [childUsers, setChildUsers] = useState<any[]>([]);
+    const [effectiveOwnerId, setEffectiveOwnerId] = useState<string | null>(null);
+    const [userRole, setUserRole] = useState<'admin' | 'child'>('admin');
+    const [userProfile, setUserProfile] = useState<any>(null);
+
     const intervalRef = useRef<number | null>(null);
     const undoTimeoutRef = useRef<number | null>(null);
+    const unsubRef = useRef<(() => void) | null>(null);
 
     // Sincronização em tempo real com Firestore para Lista de Sites e Configurações
     useEffect(() => {
         if (!username) {
             setSites([]);
             setLogs({});
+            setChildUsers([]);
+            setEffectiveOwnerId(null);
+            setUserRole('admin');
             return;
         }
 
-        const userRef = doc(db, 'users', username);
-        const unsubscribe = onSnapshot(userRef, (snapshot) => {
-            if (snapshot.exists()) {
-                const data = snapshot.data();
-                setSites(data.sites || []);
-                setIsMonitoring(!!data.isMonitoring);
-                setMonitoringInterval(data.monitoringInterval || 60);
-            } else {
-                // Criar documento inicial se não existir
-                setDoc(userRef, { sites: [], isMonitoring: false, monitoringInterval: 60 }, { merge: true });
-            }
-        });
+        const fetchUserData = (targetUser: string, isParentFetch = false): (() => void) => {
+            const userRef = doc(db, 'users', targetUser);
+            return onSnapshot(userRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    
+                    // Se o usuário atual for um "filho", buscamos as configurações do "pai"
+                    if (!isParentFetch && data.role === 'child' && data.parentId) {
+                        setUserRole('child');
+                        if (unsubRef.current) unsubRef.current(); // Cancela o listener atual
+                        unsubRef.current = fetchUserData(data.parentId, true);
+                        return;
+                    }
+
+                    if (isParentFetch) setUserRole('child');
+                    else setUserRole(data.role || 'admin');
+
+                    setUserProfile(data);
+                    setSites(data.sites || []);
+                    setIsMonitoring(!!data.isMonitoring);
+                    setMonitoringInterval(data.monitoringInterval || 60);
+                    setChildUsers(data.childUsers || []);
+                    setEffectiveOwnerId(targetUser);
+                } else if (!isParentFetch) {
+                    setDoc(userRef, { sites: [], isMonitoring: false, monitoringInterval: 60, childUsers: [] }, { merge: true });
+                    setEffectiveOwnerId(targetUser);
+                    setUserRole('admin');
+                    setUserProfile({ username: targetUser, role: 'admin' });
+                }
+            }, (error) => {
+                console.error("Erro no onSnapshot do usuário:", error);
+            });
+        };
+
+        unsubRef.current = fetchUserData(username);
 
         requestNotificationPermission();
-        return () => unsubscribe();
+        return () => {
+            if (unsubRef.current) unsubRef.current();
+        };
     }, [username]);
 
     // Carregar logs separadamente para cada site selecionado ou quando necessário
     useEffect(() => {
-        if (!username || !sites.length) return;
+        if (!effectiveOwnerId || !sites.length) return;
 
         const unsubscribes = sites.map(site => {
-            const logsRef = collection(db, 'users', username, 'sites', site.id, 'logs');
+            const logsRef = collection(db, 'users', effectiveOwnerId, 'sites', site.id, 'logs');
             const q = query(logsRef, orderBy('timestamp', 'desc'), limit(MAX_LOG_ENTRIES_PER_SITE));
             
             return onSnapshot(q, (snapshot) => {
@@ -84,23 +118,64 @@ export const useSiteMonitoring = (username: string | null) => {
         });
 
         return () => unsubscribes.forEach(unsub => unsub());
-    }, [username, sites.length]); // Apenas sites.length para evitar loop infinito se sites mudar internamente
+    }, [effectiveOwnerId, sites.length]); 
 
-    const saveToFirestore = useCallback(async (updatedSites: StatusResult[], updatedInterval?: number, updatedMonitoring?: boolean) => {
-        if (!username) return;
-        const userRef = doc(db, 'users', username);
+    const saveToFirestore = useCallback(async (updatedSites: StatusResult[], updatedInterval?: number, updatedMonitoring?: boolean, updatedChildUsers?: any[]) => {
+        if (!effectiveOwnerId) return;
+        const userRef = doc(db, 'users', effectiveOwnerId);
         await setDoc(userRef, { 
             sites: updatedSites, 
             monitoringInterval: updatedInterval ?? monitoringInterval, 
-            isMonitoring: updatedMonitoring ?? isMonitoring 
+            isMonitoring: updatedMonitoring ?? isMonitoring,
+            childUsers: updatedChildUsers ?? (updatedChildUsers === undefined ? childUsers : updatedChildUsers)
         }, { merge: true });
-    }, [username, monitoringInterval, isMonitoring]);
+    }, [effectiveOwnerId, monitoringInterval, isMonitoring, childUsers]);
+
+    const addChildUser = async (user: any) => {
+        if (!effectiveOwnerId || userRole !== 'admin') return;
+        try {
+            const updatedChildUsers = [...childUsers, { ...user, id: crypto.randomUUID(), createdAt: Date.now() }];
+            await saveToFirestore(sites, monitoringInterval, isMonitoring, updatedChildUsers);
+            
+            const childUserRef = doc(db, 'users', user.username);
+            await setDoc(childUserRef, {
+                ...user,
+                role: 'child',
+                parentId: effectiveOwnerId,
+                sites: [],
+                isMonitoring: false
+            });
+        } catch (error) {
+            console.error("Erro ao adicionar usuário filho:", error);
+            addToastNotification("Falha ao salvar usuário. Verifique sua conexão.", "alert");
+        }
+    };
+
+    const removeChildUser = async (childId: string) => {
+        if (!effectiveOwnerId || userRole !== 'admin') return;
+        try {
+            const childToRemove = childUsers.find(u => u.id === childId);
+            const updatedChildUsers = childUsers.filter(u => u.id !== childId);
+            await saveToFirestore(sites, monitoringInterval, isMonitoring, updatedChildUsers);
+            
+            if (childToRemove) {
+                await deleteDoc(doc(db, 'users', childToRemove.username));
+            }
+        } catch (error) {
+            console.error("Erro ao remover usuário filho:", error);
+            addToastNotification("Falha ao remover usuário.", "alert");
+        }
+    };
 
     const addLogEntry = useCallback(async (siteId: string, status: CheckStatus, message: string, latency?: number) => {
-        if (!username) return;
-        const logsRef = collection(db, 'users', username, 'sites', siteId, 'logs');
-        await addDoc(logsRef, { timestamp: Date.now(), status, message, latency });
-    }, [username]);
+        if (!effectiveOwnerId) return;
+        try {
+            const logsRef = collection(db, 'users', effectiveOwnerId, 'sites', siteId, 'logs');
+            await addDoc(logsRef, { timestamp: Date.now(), status, message, latency });
+        } catch (error) {
+            console.error("Erro ao adicionar log:", error);
+        }
+    }, [effectiveOwnerId]);
 
     const addToastNotification = useCallback((message: string, type: 'alert' | 'warning' = 'alert') => {
         const newNotification: NotificationType = { id: Date.now(), message, type };
@@ -288,8 +363,9 @@ export const useSiteMonitoring = (username: string | null) => {
         selectedSiteId, setSelectedSiteId, recentlyDeleted, notifications, removeNotification,
         isDeleteModalOpen, siteToDelete, isGlobalReportModalOpen, setIsGlobalReportModalOpen,
         isClearHistoryModalOpen, siteToClearHistory,
+        childUsers, addChildUser, removeChildUser, userRole, userProfile,
         handleAddSite, handleRequestDelete, handleConfirmDelete,
         handleCloseDeleteModal, handleUndoDelete, handleEditSite, handleUpdateSite, handleRefreshSite, handleRefreshAll,
-        handleRequestClearHistory, handleConfirmClearHistory, handleCloseClearHistoryModal
+        requestClearHistory: handleRequestClearHistory, confirmClearHistory: handleConfirmClearHistory, closeClearHistoryModal: handleCloseClearHistoryModal
     };
 };
