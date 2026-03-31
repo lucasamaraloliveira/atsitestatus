@@ -17,7 +17,8 @@ import {
     Image as ImageIcon,
     Eye,
     Zap,
-    Map
+    Map,
+    Clock
 } from 'lucide-react';
 import AddUserModal from '../components/AddUserModal';
 
