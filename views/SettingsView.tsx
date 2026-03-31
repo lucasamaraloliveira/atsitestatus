@@ -141,11 +141,11 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                             </div>
                         </div>
 
-                        <div className="max-w-2xl space-y-8">
+            <div className="max-w-2xl space-y-8">
                             <div className="space-y-3">
                                 <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">E-mail para Alertas</label>
                                 <div className="relative group">
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] group-focus-within:text-[var(--apple-accent)] transition-colors">
+                                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] group-focus-within:text-[var(--apple-accent)] transition-colors">
                                         <Bell size={18} />
                                     </div>
                                     <input 
@@ -153,7 +153,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                                         value={localEmail}
                                         onChange={(e) => setLocalEmail(e.target.value)}
                                         placeholder="ex: suporte@suaempresa.com"
-                                        className="apple-input w-full pl-12 py-4 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20"
+                                        className="apple-input w-full pl-14 py-4 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20"
                                     />
                                 </div>
                             </div>
@@ -178,12 +178,30 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                                 </div>
                             </div>
 
-                            <button 
-                                onClick={handleSaveEmail}
-                                className="w-full sm:w-fit px-12 bg-[var(--apple-text)] text-[var(--apple-bg)] py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-black/10"
-                            >
-                                Salvar Configurações de Alerta
-                            </button>
+                            <div className="flex flex-col gap-4">
+                                <button 
+                                    onClick={() => {
+                                        handleSaveEmail();
+                                        const btn = document.getElementById('save-email-btn');
+                                        if(btn) {
+                                            const originalText = btn.innerHTML;
+                                            btn.innerHTML = '✅ Configurações Salvas!';
+                                            btn.style.backgroundColor = '#34C759';
+                                            btn.style.color = 'white';
+                                            setTimeout(() => {
+                                                btn.innerHTML = originalText;
+                                                btn.style.backgroundColor = '';
+                                                btn.style.color = '';
+                                            }, 2000);
+                                        }
+                                    }}
+                                    id="save-email-btn"
+                                    className="w-full sm:w-fit px-12 bg-[var(--apple-text)] text-[var(--apple-bg)] py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-black/10 flex items-center justify-center gap-2"
+                                >
+                                    Salvar Preferências de Alerta
+                                </button>
+                                <p className="text-[9px] text-[var(--apple-text-secondary)] font-bold italic ml-2">As notificações serão enviadas conforme a severidade escolhida.</p>
+                            </div>
                         </div>
                     </section>
                 )}
