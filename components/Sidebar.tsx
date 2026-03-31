@@ -21,6 +21,8 @@ interface SidebarProps {
     activeView: string;
     setActiveView: (view: string) => void;
     onAddSite: () => void;
+    isCollapsed: boolean;
+    setIsCollapsed: (val: boolean) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
@@ -31,12 +33,10 @@ const Sidebar: React.FC<SidebarProps> = ({
     toggleTheme, 
     activeView, 
     setActiveView,
-    onAddSite
+    onAddSite,
+    isCollapsed,
+    setIsCollapsed
 }) => {
-    const [isCollapsed, setIsCollapsed] = useState(() => {
-        const saved = localStorage.getItem('sidebar-collapsed');
-        return saved === 'true';
-    });
     const [isUserTrayOpen, setIsUserTrayOpen] = useState(false);
 
     useEffect(() => {

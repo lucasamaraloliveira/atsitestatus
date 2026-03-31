@@ -225,9 +225,29 @@ const App: React.FC = () => {
                 const allLogs = Object.values(logs).flat() as LogEntry[];
                 return (
                     <div className="animate-fade-in pb-24">
-                        <header className="flex justify-between items-center mb-10">
-                            <h2 className="text-4xl font-extrabold tracking-tight">Atividade</h2>
-                            {allLogs.length > 0 && <button onClick={clearAllLogs} className="px-4 py-2 bg-[#FF3B30]/10 text-[#FF3B30] text-[10px] font-black uppercase tracking-widest rounded-xl">Limpar Tudo</button>}
+                        <header className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
+                            <div>
+                                <h2 className="text-4xl font-extrabold tracking-tight">Atividade</h2>
+                                <p className="text-[var(--apple-text-secondary)] font-medium">Histórico de eventos em tempo real.</p>
+                            </div>
+                            
+                            <div className="flex items-center gap-4 bg-[var(--apple-input-bg)] p-1.5 pl-5 rounded-3xl border border-[var(--apple-border)]">
+                                <div className="flex flex-col">
+                                    <span className="text-[9px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)]">Tempo Real</span>
+                                    <span className="text-xs font-bold">{isMonitoring ? 'Ativo' : 'Pausado'}</span>
+                                </div>
+                                <button 
+                                    onClick={() => setIsMonitoring(!isMonitoring)}
+                                    className={`w-12 h-7 rounded-full transition-all relative ${isMonitoring ? 'bg-[#34C759]' : 'bg-gray-200 dark:bg-white/10'}`}
+                                >
+                                    <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-all shadow-sm ${isMonitoring ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                </button>
+                                {allLogs.length > 0 && (
+                                    <button onClick={clearAllLogs} className="ml-4 p-2.5 bg-[#FF3B30]/10 text-[#FF3B30] rounded-2xl hover:bg-[#FF3B30]/20 transition-all">
+                                        <Trash2 size={16} />
+                                    </button>
+                                )}
+                            </div>
                         </header>
                         <div className="glass apple-card p-0 overflow-hidden border-none shadow-2xl">
                             <div className="divide-y divide-[var(--apple-border)]">
@@ -277,6 +297,7 @@ const App: React.FC = () => {
                     activeView={activeView} setActiveView={(v) => { setActiveView(v); setSelectedSiteId(null); }}
                     onLogout={handleLogout} currentUser={currentUser!} userProfile={userProfile}
                     theme={theme} toggleTheme={toggleTheme} onAddSite={() => setIsAddSiteModalOpen(true)}
+                    isCollapsed={sidebarCollapsed} setIsCollapsed={setSidebarCollapsed}
                 />
             </div>
 

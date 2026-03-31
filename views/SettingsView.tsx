@@ -148,18 +148,19 @@ const SettingsView: React.FC<SettingsViewProps> = ({
             <div className="max-w-2xl space-y-8">
                             <div className="space-y-3">
                                 <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">E-mail para Alertas</label>
-                                <div className="relative group">
-                                    <div className="absolute left-5 inset-y-0 flex items-center text-[var(--apple-text-secondary)] group-focus-within:opacity-0 transition-opacity duration-300 pointer-events-none">
-                                        <Bell size={18} />
+                                    <div className="relative group">
+                                        <Bell 
+                                            size={20} 
+                                            className="absolute right-6 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] transition-all duration-300 group-focus-within:opacity-0 group-focus-within:translate-x-4" 
+                                        />
+                                        <input 
+                                            type="email" 
+                                            value={localEmail}
+                                            onChange={(e) => setLocalEmail(e.target.value)}
+                                            placeholder="seu-email@dominio.com"
+                                            className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 pl-6 pr-14 text-sm font-medium focus:ring-4 focus:ring-[var(--apple-accent)]/10 focus:border-[var(--apple-accent)] transition-all outline-none"
+                                        />
                                     </div>
-                                    <input 
-                                        type="email"
-                                        value={localEmail}
-                                        onChange={(e) => setLocalEmail(e.target.value)}
-                                        placeholder="ex: suporte@suaempresa.com"
-                                        className="apple-input w-full pl-16 focus:pl-6 py-4 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20 transition-all font-bold"
-                                    />
-                                </div>
                             </div>
 
                             <div className="space-y-3">

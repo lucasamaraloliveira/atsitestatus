@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Globe, Type, Plus } from 'lucide-react';
+import { X, Globe, Edit2, Plus } from 'lucide-react';
 
 interface AddSiteModalProps {
     isOpen: boolean;
@@ -40,15 +40,13 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onAdd }) =
                     <div className="space-y-3">
                         <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--apple-text-secondary)] ml-1">URL do Site</label>
                         <div className="relative group">
-                            <div className="absolute left-5 inset-y-0 flex items-center text-[var(--apple-text-secondary)] pointer-events-none group-focus-within:opacity-0 transition-opacity duration-300">
-                                <Globe size={18} />
-                            </div>
+                            <Globe className="absolute right-6 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] transition-all duration-300 group-focus-within:opacity-0 group-focus-within:translate-x-4" size={20} />
                             <input 
-                                type="text" 
-                                placeholder="ex: google.com.br"
+                                type="url" 
+                                placeholder="https://exemplo.com.br"
                                 value={url}
                                 onChange={(e) => setUrl(e.target.value)}
-                                className="apple-input w-full pl-16 focus:pl-5 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20 transition-all font-bold py-4 text-sm"
+                                className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 pl-6 pr-14 text-sm font-medium focus:ring-4 focus:ring-[var(--apple-accent)]/10 focus:border-[var(--apple-accent)] transition-all outline-none"
                                 required
                                 autoFocus
                             />
@@ -58,15 +56,13 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onAdd }) =
                     <div className="space-y-3">
                         <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--apple-text-secondary)] ml-1">Nome amigável (Opcional)</label>
                         <div className="relative group">
-                            <div className="absolute left-5 inset-y-0 flex items-center text-[var(--apple-text-secondary)] pointer-events-none group-focus-within:opacity-0 transition-opacity duration-300">
-                                <Type size={18} />
-                            </div>
+                            <Edit2 className="absolute right-6 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] transition-all duration-300 group-focus-within:opacity-0 group-focus-within:translate-x-4" size={20} />
                             <input 
                                 type="text" 
-                                placeholder="ex: Site do Cliente A"
+                                placeholder="Minha Loja Virtual"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="apple-input w-full pl-16 focus:pl-5 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20 transition-all font-bold py-4 text-sm"
+                                className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 pl-6 pr-14 text-sm font-medium focus:ring-4 focus:ring-[var(--apple-accent)]/10 focus:border-[var(--apple-accent)] transition-all outline-none"
                             />
                         </div>
                     </div>
