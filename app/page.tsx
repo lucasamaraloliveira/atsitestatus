@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useSiteMonitoring } from '@/hooks/useSiteMonitoring';
 import DashboardPage from '@/views/DashboardPage';
 import SiteDetailsPage from '@/views/SiteDetailsPage';
@@ -11,7 +11,7 @@ import LoginPage from '@/views/LoginPage';
 import SharedReportPage from '@/views/SharedReportPage';
 import SettingsView from '@/views/SettingsView';
 import Sidebar from '@/components/Sidebar';
-import { FileText, Activity, BarChart3, Trash2 } from 'lucide-react';
+import { FileText, Activity, BarChart3, Trash2, Menu, X, LayoutDashboard, PlusCircle, Settings, LogOut } from 'lucide-react';
 import { StatusResult, LogEntry, CheckStatus } from '@/types';
 import AddSiteModal from '@/components/AddSiteModal';
 
@@ -43,82 +43,28 @@ const App: React.FC = () => {
         
         setSidebarCollapsed(savedCollapsed);
 
-        // Oculta splash após 3 segundos (tempo para o boot visual)
         const timer = setTimeout(() => setShowSplash(false), 3000);
         return () => clearTimeout(timer);
     }, []);
 
     useEffect(() => {
-        const checkSidebar = () => {
-            setSidebarCollapsed(localStorage.getItem('sidebar-collapsed') === 'true');
-        };
-        window.addEventListener('storage', checkSidebar);
-        const interval = setInterval(checkSidebar, 500); // Polling as fallback for same-window changes
-        return () => {
-            window.removeEventListener('storage', checkSidebar);
-            clearInterval(interval);
-        };
-    }, []);
-
-    useEffect(() => {
         const root = window.document.documentElement;
-        if (theme === 'dark') {
-            root.classList.add('dark');
-        } else {
-            root.classList.remove('dark');
-        }
+        if (theme === 'dark') root.classList.add('dark');
+        else root.classList.remove('dark');
         localStorage.setItem('theme', theme);
     }, [theme]);
 
-    const toggleTheme = () => {
-        setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
+
+    const handleLogout = () => {
+        localStorage.removeItem('currentUser');
+        setCurrentUser(null);
     };
 
-    useEffect(() => {
-        const handleHashChange = () => {
-            const hash = window.location.hash;
-            if (hash.startsWith('#report=')) {
-                try {
-                    const encodedData = hash.substring(8);
-                    const decodedJson = atob(encodedData);
-                    const data = JSON.parse(decodedJson);
-                    if (data && data.sites && data.logs) {
-                        setSharedReportData(data);
-                    }
-                } catch (error) {
-                    console.error("Falha ao analisar dados do relatório compartilhado:", error);
-                    window.location.hash = ''; 
-                }
-            } else {
-                setSharedReportData(null);
-            }
-        };
-
-        window.addEventListener('hashchange', handleHashChange);
-        handleHashChange(); // Executar na carga inicial
-
-        return () => {
-            window.removeEventListener('hashchange', handleHashChange);
-        };
-    }, []);
-
     const {
-        sites,
-        logs,
-        newSiteUrl,
-        setNewSiteUrl,
-        newSiteName,
-        setNewSiteName,
-        filter,
-        setFilter,
-        sortOrder,
-        setSortOrder,
-        editingSiteId,
-        isMonitoring,
-        setIsMonitoring,
-        monitoringInterval,
-        setMonitoringInterval,
-        selectedSiteId, setSelectedSiteId, recentlyDeleted, notifications, removeNotification,
+        sites, logs, filter, setFilter, sortOrder, setSortOrder,
+        editingSiteId, isMonitoring, setIsMonitoring, monitoringInterval, setMonitoringInterval,
+        selectedSiteId, setSelectedSiteId, recentlyDeleted, notifications, removeNotification, addToastNotification,
         isDeleteModalOpen, siteToDelete, isGlobalReportModalOpen, setIsGlobalReportModalOpen,
         isClearHistoryModalOpen, siteToClearHistory,
         childUsers, addChildUser, removeChildUser, userRole, userProfile,
@@ -127,14 +73,13 @@ const App: React.FC = () => {
         requestClearHistory, confirmClearHistory, closeClearHistoryModal,
         viewMode, setViewMode, isAddSiteModalOpen, setIsAddSiteModalOpen,
         notificationEmail, emailNotifyType, setNotificationEmail, setEmailNotifyType, saveEmailSettings,
-        inactivityTimeout, setInactivityTimeout, addToastNotification,
+        inactivityTimeout, setInactivityTimeout,
         clearAllLogs
     } = useSiteMonitoring(currentUser);
 
-    // Watchdog de Inatividade (Auto-Logout)
+    // Watchdog de Inatividade
     useEffect(() => {
         if (!currentUser || inactivityTimeout === -1) return;
-
         let timeoutId: number;
         const resetTimer = () => {
             if (timeoutId) clearTimeout(timeoutId);
@@ -143,46 +88,45 @@ const App: React.FC = () => {
                 addToastNotification("Sessão encerrada por inatividade.", "alert");
             }, inactivityTimeout * 1000);
         };
-
         const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
         events.forEach(event => window.addEventListener(event, resetTimer));
-        
-        resetTimer(); // Inicia o timer na montagem
-
+        resetTimer();
         return () => {
             if (timeoutId) clearTimeout(timeoutId);
             events.forEach(event => window.removeEventListener(event, resetTimer));
         };
     }, [currentUser, inactivityTimeout]);
 
+    const handleRegister = async (username: string, password: string, name: string): Promise<boolean> => {
+        if (!username.trim() || !password.trim()) return false;
+        try {
+            const { doc, setDoc } = await import('firebase/firestore');
+            const { db } = await import('@/services/firebase');
+            await setDoc(doc(db, 'users', username), { username, password, name, role: 'admin', sites: [], isMonitoring: false, monitoringInterval: 60, childUsers: [], createdAt: Date.now() });
+            localStorage.setItem('currentUser', username);
+            setCurrentUser(username);
+            return true;
+        } catch (error) {
+            console.error("Erro no registro:", error);
+            return false;
+        }
+    };
+
     const handleLogin = async (username: string, password?: string): Promise<boolean> => {
         if (!username.trim()) return false;
-        
         try {
             const { doc, getDoc, setDoc } = await import('firebase/firestore');
             const { db } = await import('@/services/firebase');
             const userRef = doc(db, 'users', username);
             const userSnap = await getDoc(userRef);
-
             if (!password) {
-                // Login via Google
                 if (!userSnap.exists()) {
-                    await setDoc(userRef, { 
-                        username, 
-                        role: 'admin', 
-                        sites: [], 
-                        isMonitoring: false, 
-                        monitoringInterval: 60,
-                        childUsers: [],
-                        createdAt: Date.now()
-                    });
+                    await setDoc(userRef, { username, role: 'admin', sites: [], isMonitoring: false, monitoringInterval: 60, childUsers: [], createdAt: Date.now() });
                 }
                 localStorage.setItem('currentUser', username);
                 setCurrentUser(username);
                 return true;
             }
-
-            // Login manual com senha
             if (userSnap.exists()) {
                 const userData = userSnap.data();
                 if (userData.password === password) {
@@ -191,110 +135,29 @@ const App: React.FC = () => {
                     return true;
                 }
             }
-            
             alert("Usuário ou senha incorretos.");
             return false;
         } catch (error) {
-            console.error("Erro ao autenticar (Offline?):", error);
-            alert("Erro ao conectar ao banco de dados. Verifique sua conexão ou tente novamente.");
+            console.error("Erro ao autenticar:", error);
             return false;
         }
     };
 
-    const handleRegister = async (username: string, password: string, name: string): Promise<boolean> => {
-        try {
-            const { doc, getDoc, setDoc } = await import('firebase/firestore');
-            const { db } = await import('@/services/firebase');
-            const userRef = doc(db, 'users', username);
-            const userSnap = await getDoc(userRef);
-            
-            if (userSnap.exists()) {
-                alert("Este usuário já existe. Escolha outro username.");
-                return false;
-            }
-            
-            await setDoc(userRef, {
-                username,
-                name,
-                password,
-                role: 'admin',
-                sites: [],
-                isMonitoring: false,
-                monitoringInterval: 60,
-                childUsers: [],
-                createdAt: Date.now()
-            });
-            
-            localStorage.setItem('currentUser', username);
-            setCurrentUser(username);
-            return true;
-        } catch (error) {
-            console.error("Erro ao registrar (Offline?):", error);
-            alert("Erro ao conectar ao banco de dados para registro.");
-            return false;
-        }
-    };
-
-    const handleLogout = () => {
-        localStorage.removeItem('currentUser');
-        setCurrentUser(null);
-    };
-
-    const selectedSite = React.useMemo(() => {
+    const selectedSite = useMemo(() => {
         if (selectedSiteId) {
             const siteData = sites.find(s => s.id === selectedSiteId);
-            if (siteData) {
-                const siteLogs = (logs[selectedSiteId] || []).sort((a, b) => b.timestamp - a.timestamp);
-                return { site: siteData, logs: siteLogs };
-            }
+            if (siteData) return { site: siteData, logs: (logs[selectedSiteId] || []) };
         }
         return null;
-    }, [sites, logs, selectedSiteId]);
-
-    // Evitar renderização até que o componente esteja montado no cliente para prevenir erros de hidratação
-    if (!isMounted) {
-        return <div className="min-h-screen bg-[var(--apple-bg)]"></div>;
-    }
-
-    if (showSplash) {
-        return (
-            <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center splash-screen animate-fade-in overflow-hidden">
-                <div className="relative">
-                    <div className="p-8 rounded-[2.5rem] glass shadow-2xl relative z-10 animate-pulse-logo">
-                        <Activity size={80} className="text-[var(--apple-accent)]" strokeWidth={2.5} />
-                    </div>
-                    <div className="absolute -inset-4 bg-[var(--apple-accent)]/20 blur-3xl rounded-full opacity-50 z-0 animate-pulse"></div>
-                </div>
-
-                <div className="mt-12 flex flex-col items-center gap-6">
-                    <div className="w-48 h-1 bg-[var(--apple-input-bg)] rounded-full overflow-hidden border border-[var(--apple-border)]">
-                        <div className="h-full bg-gradient-to-r from-[var(--apple-accent)] to-[#AF52DE] animate-loading-bar"></div>
-                    </div>
-                    <div className="flex flex-col items-center gap-1">
-                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[var(--apple-text)] opacity-40">ATSiteStatus</p>
-                        <p className="text-[9px] font-bold text-[var(--apple-text-secondary)]">Sincronizando infraestrutura...</p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    if (sharedReportData) {
-        return <SharedReportPage data={sharedReportData} />;
-    }
-
-    if (!currentUser) {
-        return <LoginPage onLogin={handleLogin} onRegister={handleRegister} theme={theme} toggleTheme={toggleTheme} />;
-    }
+    }, [selectedSiteId, sites, logs]);
 
     const renderActiveView = () => {
-        if (selectedSiteId && selectedSite) {
+        if (selectedSite) {
             return (
                 <SiteDetailsPage 
-                    site={selectedSite.site} 
-                    logs={selectedSite.logs} 
-                    onBack={() => setSelectedSiteId(null)} 
-                    onRequestClearHistory={requestClearHistory}
+                    site={selectedSite.site} logs={selectedSite.logs} 
+                    onBack={() => setSelectedSiteId(null)}
+                    onRequestClearHistory={(id) => requestClearHistory(id)}
                 />
             );
         }
@@ -302,117 +165,49 @@ const App: React.FC = () => {
         switch (activeView) {
             case 'dashboard':
                 return (
-                    <DashboardPage
-                        sites={sites}
-                        logs={logs}
-                        filter={filter}
-                        setFilter={setFilter}
-                        sortOrder={sortOrder}
-                        setSortOrder={setSortOrder}
-                        viewMode={viewMode}
-                        setViewMode={setViewMode}
+                    <DashboardPage 
+                        sites={sites} logs={logs} filter={filter} setFilter={setFilter} 
+                        sortOrder={sortOrder} setSortOrder={setSortOrder} 
+                        viewMode={viewMode} setViewMode={setViewMode}
                         editingSiteId={editingSiteId}
-                        isMonitoring={isMonitoring}
-                        setIsMonitoring={setIsMonitoring}
-                        monitoringInterval={monitoringInterval}
-                        setMonitoringInterval={setMonitoringInterval}
+                        isMonitoring={isMonitoring} setIsMonitoring={(v) => setIsMonitoring(v)}
+                        monitoringInterval={monitoringInterval} setMonitoringInterval={(v) => setMonitoringInterval(v)}
                         setSelectedSiteId={setSelectedSiteId}
                         onOpenGlobalReportModal={() => setIsGlobalReportModalOpen(true)}
                         onOpenAddSiteModal={() => setIsAddSiteModalOpen(true)}
-                        handleEditSite={handleEditSite}
-                        handleUpdateSiteUrl={handleUpdateSite}
-                        handleRefreshSite={handleRefreshSite}
-                        handleRequestDelete={handleRequestDelete}
+                        handleEditSite={handleEditSite} handleUpdateSiteUrl={(id, u, n) => handleUpdateSite(id, u, n)}
+                        handleRefreshSite={handleRefreshSite} handleRequestDelete={handleRequestDelete}
                         handleRefreshAll={handleRefreshAll}
-                        currentUser={currentUser}
-                        onLogout={handleLogout}
-                        theme={theme}
-                        toggleTheme={toggleTheme}
+                        currentUser={currentUser!} onLogout={handleLogout}
+                        theme={theme} toggleTheme={toggleTheme}
+                    />
+                );
+            case 'settings':
+                return (
+                    <SettingsView 
+                        isMonitoring={isMonitoring} setIsMonitoring={setIsMonitoring}
+                        monitoringInterval={monitoringInterval} setMonitoringInterval={setMonitoringInterval}
+                        notificationEmail={notificationEmail} emailNotifyType={emailNotifyType}
+                        saveEmailSettings={saveEmailSettings} inactivityTimeout={inactivityTimeout}
+                        setInactivityTimeout={setInactivityTimeout} childUsers={childUsers}
+                        addChildUser={addChildUser} removeChildUser={removeChildUser} userRole={userRole}
                     />
                 );
             case 'reports':
-                const siteStats = sites.map(site => {
-                    const siteLogs = logs[site.id] || [];
-                    const onlineCount = siteLogs.filter(l => l.status === CheckStatus.ONLINE).length;
-                    const uptime = siteLogs.length > 0 ? (onlineCount / siteLogs.length) * 100 : 100;
-                    const avgLatency = siteLogs.length > 0 ? siteLogs.reduce((acc, curr) => acc + (curr.latency || 0), 0) / siteLogs.length : 0;
-                    return { ...site, uptime, avgLatency, failureCount: siteLogs.length - onlineCount };
-                });
-
                 return (
-                    <div className="animate-fade-in space-y-8 pb-10">
-                        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div className="animate-fade-in pb-20">
+                        <header className="flex justify-between items-end mb-10">
                             <div>
-                                <h2 className="text-4xl font-extrabold text-[var(--apple-text)] tracking-tight">Relatórios Analíticos</h2>
-                                <p className="text-[var(--apple-text-secondary)] font-medium mt-1">Extração de dados e métricas de disponibilidade.</p>
+                                <h2 className="text-4xl font-extrabold tracking-tight">Relatórios</h2>
+                                <p className="text-[var(--apple-text-secondary)] font-medium">Análise de dados da infraestrutura.</p>
                             </div>
-                            <button 
-                                onClick={() => setIsGlobalReportModalOpen(true)}
-                                className="apple-button h-12 px-8 shadow-xl shadow-[var(--apple-accent)]/20"
-                            >
-                                Exportar PDF Completo
-                            </button>
+                            <button onClick={() => setIsGlobalReportModalOpen(true)} className="apple-button h-11 px-6 shadow-lg">Exportar PDF</button>
                         </header>
-
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div className="glass apple-card p-6 border-none">
-                                <p className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest mb-2">Uptime Médio Global</p>
-                                <div className="flex items-end gap-2">
-                                    <span className="text-4xl font-black text-[#34C759]">
-                                        {(siteStats.reduce((acc, curr) => acc + curr.uptime, 0) / (siteStats.length || 1)).toFixed(1)}%
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="glass apple-card p-6 border-none">
-                                <p className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest mb-2">Latência Média</p>
-                                <div className="flex items-end gap-2 text-2xl font-black text-[var(--apple-accent)]">
-                                    <span>{(siteStats.reduce((acc, curr) => acc + curr.avgLatency, 0) / (siteStats.length || 1)).toFixed(0)} ms</span>
-                                </div>
-                            </div>
-                            <div className="glass apple-card p-6 border-none text-[#FF3B30]">
-                                <p className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest mb-2">Falhas no Período</p>
-                                <div className="flex items-end gap-2 text-3xl font-black">
-                                    <span>{siteStats.reduce((acc, curr) => acc + curr.failureCount, 0)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="glass apple-card overflow-hidden border-none">
-                            <div className="px-8 py-6 border-b border-[var(--apple-border)] flex items-center justify-between bg-white/5">
-                                <h3 className="font-bold flex items-center gap-2"><BarChart3 size={18} className="text-[var(--apple-accent)]" /> Desempenho por Domínio</h3>
-                            </div>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left">
-                                    <thead>
-                                        <tr className="bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)] text-[10px] font-black uppercase tracking-widest">
-                                            <th className="px-8 py-4">Site</th>
-                                            <th className="px-8 py-4">Uptime (%)</th>
-                                            <th className="px-8 py-4">Latência (Média)</th>
-                                            <th className="px-8 py-4">Status Atual</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-[var(--apple-border)]">
-                                        {siteStats.map(stat => (
-                                            <tr key={stat.id} className="hover:bg-[var(--apple-input-bg)] transition-colors">
-                                                <td className="px-8 py-4 font-bold text-sm">{stat.name || stat.url}</td>
-                                                <td className="px-8 py-4">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-24 h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
-                                                            <div className={`h-full ${stat.uptime > 99 ? 'bg-[#34C759]' : stat.uptime > 95 ? 'bg-yellow-500' : 'bg-[#FF3B30]'}`} style={{ width: `${stat.uptime}%` }}></div>
-                                                        </div>
-                                                        <span className="text-xs font-bold">{stat.uptime.toFixed(1)}%</span>
-                                                    </div>
-                                                </td>
-                                                <td className="px-8 py-4 text-xs font-medium">{stat.avgLatency.toFixed(0)} ms</td>
-                                                <td className="px-8 py-4">
-                                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${stat.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'}`}>
-                                                        {stat.status}
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="glass apple-card p-8 text-center">
+                                <BarChart3 size={40} className="mx-auto mb-4 text-[var(--apple-accent)]" />
+                                <h3 className="font-bold text-lg">Performance Local</h3>
+                                <p className="text-sm text-[var(--apple-text-secondary)] mt-2">Dados processados em tempo real na sua região.</p>
                             </div>
                         </div>
                     </div>
@@ -420,167 +215,128 @@ const App: React.FC = () => {
             case 'activity':
                 const allLogs = Object.values(logs).flat() as LogEntry[];
                 return (
-                    <div className="animate-fade-in pb-10">
-                        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                            <div>
-                                <h2 className="text-4xl font-extrabold text-[var(--apple-text)] tracking-tight">Atividade Recente</h2>
-                                <p className="text-[var(--apple-text-secondary)] font-medium mt-1">Histórico completo de logs e alertas.</p>
-                            </div>
-                            {allLogs.length > 0 && (
-                                <button 
-                                    onClick={clearAllLogs}
-                                    className="px-4 py-2 bg-[#FF3B30]/10 text-[#FF3B30] text-xs font-bold rounded-xl hover:bg-[#FF3B30] hover:text-white transition-all flex items-center gap-2 border border-[#FF3B30]/20 active:scale-95"
-                                >
-                                    <Trash2 size={14} />
-                                    Limpar Todo Histórico
-                                </button>
-                            )}
+                    <div className="animate-fade-in pb-24">
+                        <header className="flex justify-between items-center mb-10">
+                            <h2 className="text-4xl font-extrabold tracking-tight">Atividade</h2>
+                            {allLogs.length > 0 && <button onClick={clearAllLogs} className="px-4 py-2 bg-[#FF3B30]/10 text-[#FF3B30] text-[10px] font-black uppercase tracking-widest rounded-xl">Limpar Tudo</button>}
                         </header>
-                        
-                        <div className="glass apple-card p-8 border-none shadow-xl">
-                            <div className="space-y-3">
+                        <div className="glass apple-card p-0 overflow-hidden">
+                            <div className="divide-y divide-[var(--apple-border)]">
                                 {allLogs.sort((a, b) => b.timestamp - a.timestamp).slice(0, 50).map((log, idx) => (
-                                    <div key={idx} className="flex items-center justify-between p-4 bg-[var(--apple-input-bg)] rounded-2xl hover:bg-[var(--apple-border)]/5 transition-all group">
+                                    <div key={idx} className="p-5 flex items-center justify-between hover:bg-white/5 transition-colors">
                                         <div className="flex items-center gap-4">
-                                            <div className={`w-3 h-3 rounded-full ${log.status === CheckStatus.ONLINE ? 'bg-[#34C759] shadow-lg shadow-[#34C759]/40' : 'bg-[#FF3B30] shadow-lg shadow-[#FF3B30]/40'} group-hover:scale-125 transition-transform`}></div>
+                                            <div className={`w-2.5 h-2.5 rounded-full ${log.status === CheckStatus.ONLINE ? 'bg-[#34C759]' : 'bg-[#FF3B30]'}`}></div>
                                             <div>
-                                                <span className="font-bold text-sm block">{log.status}</span>
-                                                <p className="text-[11px] text-[var(--apple-text-secondary)]">{log.message}</p>
+                                                <span className="font-bold text-sm block tracking-tight">{log.status}</span>
+                                                <p className="text-[11px] text-[var(--apple-text-secondary)] font-medium">{log.message}</p>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <span className="text-[10px] font-bold text-[var(--apple-text-secondary)] tracking-widest bg-[var(--apple-border)]/20 px-3 py-1 rounded-full uppercase">
-                                                {new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                                            </span>
-                                            <p className="text-[9px] text-[var(--apple-text-secondary)] mt-1 font-bold">{new Date(log.timestamp).toLocaleDateString()}</p>
-                                        </div>
+                                        <span className="text-[10px] font-bold opacity-30">{new Date(log.timestamp).toLocaleTimeString()}</span>
                                     </div>
                                 ))}
-                                {allLogs.length === 0 && (
-                                    <div className="text-center py-20">
-                                        <div className="w-20 h-20 bg-[var(--apple-input-bg)] rounded-full flex items-center justify-center mx-auto mb-6">
-                                            <Activity size={32} className="text-[var(--apple-text-secondary)] opacity-30" />
-                                        </div>
-                                        <h3 className="font-bold text-[var(--apple-text)]">Nada por aqui ainda</h3>
-                                        <p className="text-sm font-medium text-[var(--apple-text-secondary)] mt-1">Os eventos aparecerão assim que o monitoramento começar.</p>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     </div>
                 );
-            case 'settings':
-                return (
-                    <SettingsView 
-                        isMonitoring={isMonitoring}
-                        setIsMonitoring={setIsMonitoring}
-                        monitoringInterval={monitoringInterval}
-                        setMonitoringInterval={setMonitoringInterval}
-                        notificationEmail={notificationEmail}
-                        emailNotifyType={emailNotifyType}
-                        saveEmailSettings={saveEmailSettings}
-                        inactivityTimeout={inactivityTimeout}
-                        setInactivityTimeout={setInactivityTimeout}
-                        childUsers={childUsers}
-                        addChildUser={addChildUser}
-                        removeChildUser={removeChildUser}
-                        userRole={userRole}
-                    />
-                );
-            default:
-                return null;
+            default: return null;
         }
     };
 
-    return (
-        <div className="min-h-screen bg-[var(--apple-bg)] text-[var(--apple-text)] transition-colors duration-500">
-            <Sidebar 
-                currentUser={currentUser}
-                userProfile={userProfile}
-                onLogout={handleLogout}
-                theme={theme}
-                toggleTheme={toggleTheme}
-                activeView={activeView}
-                setActiveView={(view) => {
-                    setActiveView(view);
-                    setSelectedSiteId(null);
-                }}
-                onAddSite={() => {
-                    setIsAddSiteModalOpen(true);
-                }}
-            />
-
-            <main className={`transition-all duration-300 p-4 md:p-8 ${sidebarCollapsed ? 'ml-24 md:ml-28' : 'ml-64 md:ml-72'}`}>
-                <div className="max-w-7xl mx-auto">
-                    {renderActiveView()}
+    if (!isMounted) return null;
+    if (showSplash) {
+        return (
+            <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[var(--apple-bg)] animate-fade-in">
+                <div className="p-8 rounded-[2.5rem] glass shadow-2xl animate-pulse-logo">
+                    <Activity size={80} className="text-[var(--apple-accent)]" />
                 </div>
-            </main>
-            
-            <div aria-live="assertive" className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3 w-full max-w-sm">
-                {recentlyDeleted && (
-                    <div className="glass apple-card py-4 px-6 shadow-2xl flex items-center justify-between gap-6 animate-fade-in-slide-up border border-[var(--apple-border)]">
-                        <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 rounded-full bg-[#FF3B30] animate-pulse"></div>
-                            <p className="text-sm font-medium text-[var(--apple-text)]">
-                                Site "<span className="font-bold truncate max-w-[150px] inline-block align-bottom">{recentlyDeleted.site.name || recentlyDeleted.site.url}</span>" removido.
-                            </p>
-                        </div>
-                        <button 
-                            onClick={handleUndoDelete}
-                            className="text-sm font-bold text-[var(--apple-accent)] hover:underline active:scale-95 transition-all flex-shrink-0"
-                        >
-                            Desfazer
-                        </button>
-                    </div>
-                )}
-                {notifications.map(notification => (
-                    <NotificationToast
-                        key={notification.id}
-                        message={notification.message}
-                        type={notification.type}
-                        onDismiss={() => removeNotification(notification.id)}
-                    />
-                ))}
+                <div className="mt-12 w-48 h-1 bg-[var(--apple-input-bg)] rounded-full overflow-hidden border border-[var(--apple-border)]">
+                    <div className="h-full bg-gradient-to-r from-[var(--apple-accent)] to-[#AF52DE] animate-loading-bar"></div>
+                </div>
+            </div>
+        );
+    }
+
+    if (sharedReportData) return <SharedReportPage data={sharedReportData} />;
+    if (!currentUser) return <LoginPage onLogin={handleLogin} onRegister={handleRegister} theme={theme} toggleTheme={toggleTheme} />;
+
+    return (
+        <div className="min-h-screen bg-[var(--apple-bg)] flex flex-col md:flex-row transition-all duration-500 overflow-hidden">
+            {/* Sidebar Desktop */}
+            <div className="hidden md:block">
+                <Sidebar 
+                    activeView={activeView} setActiveView={(v) => { setActiveView(v); setSelectedSiteId(null); }}
+                    onLogout={handleLogout} currentUser={currentUser!} userProfile={userProfile}
+                    theme={theme} toggleTheme={toggleTheme} onAddSite={() => setIsAddSiteModalOpen(true)}
+                />
             </div>
 
-            <ConfirmationModal
-                isOpen={isDeleteModalOpen}
-                onClose={handleCloseDeleteModal}
-                onConfirm={handleConfirmDelete}
-                title="Confirmar Exclusão"
-                confirmText="Excluir"
-                confirmVariant="danger"
+            <main className="flex-1 md:ml-0 overflow-y-auto w-full p-6 md:p-12 pb-32 md:pb-12">
+                {/* Header Mobile Minimalista */}
+                <header className="flex md:hidden items-center justify-between mb-8">
+                    <div className="flex items-center gap-2">
+                        <Activity className="text-[var(--apple-accent)]" size={24} />
+                        <h1 className="text-2xl font-black tracking-tighter text-[var(--apple-text)]">Status</h1>
+                    </div>
+                    <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${isMonitoring ? 'bg-[#34C759]/10 text-[#34C759]' : 'bg-gray-400/10 text-gray-500'}`}>
+                        <div className={`w-1.5 h-1.5 rounded-full ${isMonitoring ? 'bg-[#34C759] animate-pulse' : 'bg-gray-400'}`}></div>
+                        {isMonitoring ? 'Ativo' : 'Offline'}
+                    </div>
+                </header>
+
+                {renderActiveView()}
+            </main>
+
+            {/* Bottom Navigation Mobile - Premium iOS Style */}
+            <nav className="fixed bottom-0 left-0 right-0 h-20 md:hidden z-[90] flex items-center justify-around px-2 glass-dark border-t border-white/5 pb-5">
+                {[
+                    { id: 'dashboard', icon: LayoutDashboard, label: 'Painel' },
+                    { id: 'reports', icon: BarChart3, label: 'Relatórios' },
+                    { id: 'add', icon: PlusCircle, label: 'Novo', action: () => setIsAddSiteModalOpen(true) },
+                    { id: 'activity', icon: Activity, label: 'Atividade' },
+                    { id: 'settings', icon: Settings, label: 'Ajustes' }
+                ].map((item) => (
+                    <button 
+                        key={item.id}
+                        onClick={() => {
+                            if(item.action) item.action();
+                            else { setActiveView(item.id); setSelectedSiteId(null); }
+                        }}
+                        className={`flex flex-col items-center justify-center transition-all ${activeView === item.id && !item.action ? 'text-[var(--apple-accent)] scale-110' : 'text-white/40'}`}
+                    >
+                        <item.icon size={item.id === 'add' ? 32 : 24} strokeWidth={activeView === item.id ? 2.5 : 2} className={item.id === 'add' ? 'text-[var(--apple-accent)]' : ''} />
+                        <span className="text-[9px] font-black uppercase tracking-tighter mt-1">{item.label}</span>
+                    </button>
+                ))}
+            </nav>
+
+            {/* Toast e Modais - Sincronizados com Interfaces Reais */}
+            {notifications.map(n => <NotificationToast key={n.id} message={n.message} type={n.type} onDismiss={() => removeNotification(n.id)} />)}
+            
+            <ConfirmationModal 
+                isOpen={isDeleteModalOpen} onClose={handleCloseDeleteModal} onConfirm={handleConfirmDelete}
+                title="Excluir Site" confirmText="Excluir" confirmVariant="danger"
             >
-                <p className="text-sm font-medium">Tem certeza de que deseja excluir o site:</p>
-                <p className="font-bold my-3 bg-[var(--apple-input-bg)] p-4 rounded-2xl break-all border border-[var(--apple-border)] text-xs text-[var(--apple-accent)]">{siteToDelete?.name || siteToDelete?.url}</p>
-                <p className="text-[11px] text-[var(--apple-text-secondary)] leading-relaxed">Todo o histórico de monitoramento será removido, mas você poderá desfazer esta ação por alguns segundos.</p>
+                Tem certeza que deseja remover {siteToDelete?.name || siteToDelete?.url}? Todos os dados serão perdidos.
             </ConfirmationModal>
 
-            <ConfirmationModal
-                isOpen={isClearHistoryModalOpen}
-                onClose={closeClearHistoryModal}
-                onConfirm={confirmClearHistory}
-                title="Confirmar Limpeza de Histórico"
-                confirmText="Limpar Histórico"
-                confirmVariant="danger"
+            <ConfirmationModal 
+                isOpen={isClearHistoryModalOpen} onClose={closeClearHistoryModal} onConfirm={confirmClearHistory}
+                title="Limpar Logs" confirmText="Limpar" confirmVariant="danger"
             >
-                <p className="text-sm font-medium">Tem certeza de que deseja limpar todo o histórico do site:</p>
-                <p className="font-bold my-3 bg-[var(--apple-input-bg)] p-4 rounded-2xl break-all border border-[var(--apple-border)] text-xs text-[var(--apple-accent)]">{siteToClearHistory?.name || siteToClearHistory?.url}</p>
-                <p className="text-[11px] text-[var(--apple-text-secondary)] leading-relaxed">Esta ação não pode ser desfeita e todos os logs antigos serão apagados permanentemente.</p>
+                Deseja apagar os registros de {siteToClearHistory?.name || siteToClearHistory?.url}?
             </ConfirmationModal>
 
-            <GlobalReportModal
-                isOpen={isGlobalReportModalOpen}
-                onClose={() => setIsGlobalReportModalOpen(false)}
-                sites={sites}
-                logs={logs}
-            />
-
-            <AddSiteModal
-                isOpen={isAddSiteModalOpen}
-                onClose={() => setIsAddSiteModalOpen(false)}
-                onAdd={handleAddSite}
-            />
+            <GlobalReportModal isOpen={isGlobalReportModalOpen} onClose={() => setIsGlobalReportModalOpen(false)} sites={sites} logs={logs} />
+            <AddSiteModal isOpen={isAddSiteModalOpen} onClose={() => setIsAddSiteModalOpen(false)} onAdd={handleAddSite} />
+            
+            {recentlyDeleted && (
+                <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[100] animate-fade-in-slide-up">
+                    <div className="bg-[#1C1C1E] text-white px-6 py-4 rounded-3xl flex items-center gap-6 shadow-2xl border border-white/10">
+                        <span className="text-sm font-bold">Site removido.</span>
+                        <button onClick={handleUndoDelete} className="text-[var(--apple-accent)] font-black uppercase text-[10px] tracking-widest">Desfazer</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -48,7 +48,7 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onAdd }) =
                                 placeholder="ex: google.com.br"
                                 value={url}
                                 onChange={(e) => setUrl(e.target.value)}
-                                className="apple-input w-full pl-14 focus:pl-5 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20 transition-all font-bold py-4 text-sm"
+                                className="apple-input w-full pl-16 focus:pl-5 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20 transition-all font-bold py-4 text-sm"
                                 required
                                 autoFocus
                             />
@@ -66,7 +66,7 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onAdd }) =
                                 placeholder="ex: Site do Cliente A"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="apple-input w-full pl-14 focus:pl-5 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20 transition-all font-bold py-4 text-sm"
+                                className="apple-input w-full pl-16 focus:pl-5 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20 transition-all font-bold py-4 text-sm"
                             />
                         </div>
                     </div>

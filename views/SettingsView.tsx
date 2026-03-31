@@ -157,7 +157,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                                         value={localEmail}
                                         onChange={(e) => setLocalEmail(e.target.value)}
                                         placeholder="ex: suporte@suaempresa.com"
-                                        className="apple-input w-full pl-14 focus:pl-6 py-4 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20 transition-all font-bold"
+                                        className="apple-input w-full pl-16 focus:pl-6 py-4 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20 transition-all font-bold"
                                     />
                                 </div>
                             </div>

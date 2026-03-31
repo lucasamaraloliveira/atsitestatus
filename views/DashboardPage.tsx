@@ -165,30 +165,30 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             </div>
 
             {viewMode === 'card' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                     {filteredSites.map((site) => (
                         <div key={site.id} className="glass apple-card animate-fade-in-slide-up hover:translate-y-[-4px] transition-all group">
-                            <div className="p-8">
-                                <div className="flex items-start justify-between mb-8">
+                            <div className="p-6 md:p-8">
+                                <div className="flex items-start justify-between mb-6 md:mb-8">
                                     <div className="flex items-center gap-4">
                                         <div className={`p-4 rounded-2xl ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'}`}>
                                             <Globe size={24} />
                                         </div>
                                         <div>
-                                            <h3 className="font-black text-lg text-[var(--apple-text)] truncate max-w-[140px]">{site.name || site.url}</h3>
+                                            <h3 className="font-black text-lg text-[var(--apple-text)] truncate max-w-[120px] sm:max-w-[140px]">{site.name || site.url}</h3>
                                             <div className="flex items-center gap-1.5 mt-0.5">
                                                 <div className={`w-1.5 h-1.5 rounded-full ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]' : 'bg-[#FF3B30]'}`}></div>
                                                 <span className="text-[9px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)]">{site.status}</span>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="flex gap-1 md:opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button onClick={() => handleEditSite(site.id)} className="p-2 rounded-lg hover:bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)]"><Edit2 size={14} /></button>
                                         <button onClick={() => handleRequestDelete(site.id)} className="p-2 rounded-lg hover:bg-[#FF3B30]/10 text-[#FF3B30]"><Trash2 size={14} /></button>
                                     </div>
                                 </div>
 
-                                <div className="space-y-4">
+                                <div className="space-y-3 md:space-y-4">
                                     <div className="flex items-center justify-between p-4 bg-[var(--apple-input-bg)] rounded-2xl">
                                         <div className="flex items-center gap-3"><Activity size={14} className="text-[var(--apple-text-secondary)]"/><span className="text-xs font-bold text-[var(--apple-text-secondary)]">Latência</span></div>
                                         <span className="font-black text-[var(--apple-text)] text-sm">{site.latency ? `${site.latency}ms` : '--'}</span>
@@ -199,7 +199,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                     </div>
                                 </div>
 
-                                <button onClick={() => setSelectedSiteId(site.id)} className="w-full mt-8 py-4 rounded-2xl bg-[var(--apple-input-bg)] text-[var(--apple-text)] font-semibold text-xs hover:bg-[var(--apple-accent)] hover:text-white transition-all flex items-center justify-center gap-2">
+                                <button onClick={() => setSelectedSiteId(site.id)} className="w-full mt-6 md:mt-8 py-3.5 md:py-4 rounded-2xl bg-[var(--apple-input-bg)] text-[var(--apple-text)] font-semibold text-xs hover:bg-[var(--apple-accent)] hover:text-white transition-all flex items-center justify-center gap-2">
                                     Histórico Detalhado <ArrowUpRight size={14} />
                                 </button>
                             </div>
@@ -207,8 +207,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     ))}
                 </div>
             ) : (
-                <div className="glass apple-card overflow-hidden border-none shadow-2xl">
-                    <table className="w-full text-left border-collapse">
+                <div className="glass apple-card overflow-x-auto border-none shadow-2xl no-scrollbar">
+                    <table className="w-full text-left border-collapse min-w-[700px]">
                         <thead>
                             <tr className="bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)] text-[10px] font-black uppercase tracking-[0.15em]">
                                 <th className="px-8 py-6">Website</th>
