@@ -1,64 +1,167 @@
-@import "tailwindcss";
-
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
-
-@theme {
-  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
-}
 
 :root {
   --apple-bg: #F5F5F7;
-  --apple-card-bg: rgba(255, 255, 255, 0.75);
+  --apple-card-bg: rgba(255, 255, 255, 0.8);
   --apple-text: #1D1D1F;
   --apple-text-secondary: #86868B;
-  --apple-accent: #007AFF;
+  --apple-accent: #0071E3;
   --apple-border: rgba(0, 0, 0, 0.1);
-  --apple-input-bg: rgba(0, 0, 0, 0.05);
-
-  /* Next.js defaults compatibility */
-  --background: var(--apple-bg);
-  --foreground: var(--apple-text);
+  --apple-input-bg: rgba(0, 0, 0, 0.04);
 }
 
 .dark {
   --apple-bg: #000000;
-  --apple-card-bg: rgba(28, 28, 30, 0.65);
+  --apple-card-bg: rgba(28, 28, 30, 0.8);
   --apple-text: #F5F5F7;
   --apple-text-secondary: #86868B;
   --apple-accent: #0A84FF;
   --apple-border: rgba(255, 255, 255, 0.1);
   --apple-input-bg: rgba(255, 255, 255, 0.08);
-
-  --background: var(--apple-bg);
-  --foreground: var(--apple-text);
 }
 
-/* Custom Scrollbar Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  background-color: var(--apple-bg);
+  color: var(--apple-text);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.glass {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  background-color: var(--apple-card-bg);
+}
+
 .glass-dark {
-    background: rgba(10, 10, 12, 0.7);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(25px) saturate(200%);
+  -webkit-backdrop-filter: blur(25px) saturate(200%);
+  background-color: rgba(0, 0, 0, 0.7);
 }
 
-.no-scrollbar::-webkit-scrollbar {
-    display: none;
+.apple-card {
+  border-radius: 30px;
+  border: 1px solid var(--apple-border);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.no-scrollbar {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+.apple-button {
+  background-color: var(--apple-accent);
+  color: white;
+  border-radius: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-/* Ajustes para iPhone/Safe Areas */
-@supports (padding: env(safe-area-inset-bottom)) {
-    .pb-safe {
-        padding-bottom: env(safe-area-inset-bottom);
-    }
+.apple-button:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
 }
 
+.apple-input {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background-color: var(--apple-input-bg);
+  border: 1px solid transparent;
+  color: var(--apple-text);
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.apple-input:focus {
+  outline: none;
+  background-color: transparent;
+  border-color: var(--apple-accent);
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
+}
+
+.sidebar-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  color: var(--apple-text-secondary);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.sidebar-item:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--apple-text);
+}
+
+.sidebar-item.active {
+  background-color: white;
+  color: var(--apple-accent);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.dark .sidebar-item.active {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+@keyframes pulse-logo {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-pulse-logo {
+  animation: pulse-logo 2s infinite ease-in-out;
+}
+
+@keyframes loading-bar {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+
+.animate-loading-bar {
+  animation: loading-bar 3s linear forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in-slide-up {
+  animation: fadeInSlideUp 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+@keyframes fadeInSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Scrollbar Customization */
 ::-webkit-scrollbar {
   width: 8px;
-  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -66,154 +169,19 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(134, 134, 139, 0.2);
-  border-radius: 20px;
-  border: 2px solid transparent;
-  background-clip: content-box;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(134, 134, 139, 0.4);
-  border: 2px solid transparent;
-  background-clip: content-box;
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
 }
 
-/* For Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(134, 134, 139, 0.2) transparent;
+/* Hide scrollbar for clean UI */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
-
-body {
-  background-color: var(--apple-bg);
-  color: var(--apple-text);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  margin: 0;
-  overflow-x: hidden;
-}
-
-/* Custom Animations */
-@keyframes pulse-logo {
-  0% { transform: scale(1); opacity: 0.8; filter: drop-shadow(0 0 0px var(--apple-accent)); }
-  50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 20px var(--apple-accent)); }
-  100% { transform: scale(1); opacity: 0.8; filter: drop-shadow(0 0 0px var(--apple-accent)); }
-}
-
-@keyframes loading-bar {
-  0% { width: 0%; opacity: 0.5; }
-  50% { width: 70%; opacity: 1; }
-  100% { width: 100%; opacity: 1; }
-}
-
-.animate-pulse-logo {
-  animation: pulse-logo 2.5s infinite ease-in-out;
-}
-
-.animate-loading-bar {
-  animation: loading-bar 2.8s forwards cubic-bezier(0.65, 0, 0.35, 1);
-}
-
-.splash-screen {
-  background-color: var(--apple-bg);
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(0, 122, 255, 0.05) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(88, 86, 214, 0.05) 0px, transparent 50%);
-}
-
-.glass {
-  background: var(--apple-card-bg);
-  backdrop-filter: blur(25px) saturate(180%);
-  -webkit-backdrop-filter: blur(25px) saturate(180%);
-  border: 1px solid var(--apple-border);
-}
-
-.apple-button {
-  background: var(--apple-accent);
-  color: white;
-  border-radius: 12px;
-  padding: 12px 24px;
-  font-weight: 600;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.apple-button:hover {
-  filter: brightness(1.1);
-  transform: scale(1.02);
-}
-
-.apple-button:active {
-  transform: scale(0.98);
-}
-
-.apple-card {
-  border-radius: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease;
-}
-
-.dark .apple-card {
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-}
-
-.apple-input {
-  background-color: var(--apple-input-bg);
-  border: 1px solid transparent;
-  border-radius: 12px;
-  padding: 12px 16px;
-  color: var(--apple-text);
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.apple-input:focus {
-  outline: none;
-  border-color: var(--apple-accent);
-  background-color: transparent;
-  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
-}
-
-.dark .apple-input:focus {
-  box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.2);
-}
-
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes fade-in-slide-up {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.5s ease-out forwards;
-}
-
-.animate-fade-in-slide-up {
-  animation: fade-in-slide-up 0.6s cubic-bezier(0.23, 1, 0.32, 1) forwards;
-}
-
-.glass-effect-dropdown {
-  background: var(--apple-input-bg);
-  backdrop-filter: blur(15px) saturate(160%);
-  -webkit-backdrop-filter: blur(15px) saturate(160%);
-  border: 1px solid var(--apple-border);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
-}
-
-.dark .glass-effect-dropdown {
-  background: rgba(44, 44, 46, 0.6);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-select option {
-  background-color: var(--apple-bg);
-  color: var(--apple-text);
-  padding: 12px;
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
