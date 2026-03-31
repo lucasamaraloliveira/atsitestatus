@@ -29,6 +29,7 @@ const App: React.FC = () => {
     const [activeView, setActiveView] = useState('dashboard');
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
+    const [showSplash, setShowSplash] = useState(true);
 
     useEffect(() => {
         setIsMounted(true);
@@ -41,6 +42,10 @@ const App: React.FC = () => {
         else if (window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme('dark');
         
         setSidebarCollapsed(savedCollapsed);
+
+        // Oculta splash após 3 segundos (tempo para o boot visual)
+        const timer = setTimeout(() => setShowSplash(false), 3000);
+        return () => clearTimeout(timer);
     }, []);
 
     useEffect(() => {
@@ -250,6 +255,29 @@ const App: React.FC = () => {
     // Evitar renderização até que o componente esteja montado no cliente para prevenir erros de hidratação
     if (!isMounted) {
         return <div className="min-h-screen bg-[var(--apple-bg)]"></div>;
+    }
+
+    if (showSplash) {
+        return (
+            <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center splash-screen animate-fade-in overflow-hidden">
+                <div className="relative">
+                    <div className="p-8 rounded-[2.5rem] glass shadow-2xl relative z-10 animate-pulse-logo">
+                        <Activity size={80} className="text-[var(--apple-accent)]" strokeWidth={2.5} />
+                    </div>
+                    <div className="absolute -inset-4 bg-[var(--apple-accent)]/20 blur-3xl rounded-full opacity-50 z-0 animate-pulse"></div>
+                </div>
+
+                <div className="mt-12 flex flex-col items-center gap-6">
+                    <div className="w-48 h-1 bg-[var(--apple-input-bg)] rounded-full overflow-hidden border border-[var(--apple-border)]">
+                        <div className="h-full bg-gradient-to-r from-[var(--apple-accent)] to-[#AF52DE] animate-loading-bar"></div>
+                    </div>
+                    <div className="flex flex-col items-center gap-1">
+                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[var(--apple-text)] opacity-40">ATSiteStatus</p>
+                        <p className="text-[9px] font-bold text-[var(--apple-text-secondary)]">Sincronizando infraestrutura...</p>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     if (sharedReportData) {

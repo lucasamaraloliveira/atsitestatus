@@ -145,7 +145,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                             <div className="space-y-3">
                                 <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">E-mail para Alertas</label>
                                 <div className="relative group">
-                                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] group-focus-within:text-[var(--apple-accent)] transition-colors">
+                                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] group-focus-within:opacity-0 transition-opacity duration-300 pointer-events-none">
                                         <Bell size={18} />
                                     </div>
                                     <input 
@@ -153,7 +153,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                                         value={localEmail}
                                         onChange={(e) => setLocalEmail(e.target.value)}
                                         placeholder="ex: suporte@suaempresa.com"
-                                        className="apple-input w-full pl-14 py-4 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20"
+                                        className="apple-input w-full pl-14 focus:pl-6 py-4 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20 transition-all"
                                     />
                                 </div>
                             </div>

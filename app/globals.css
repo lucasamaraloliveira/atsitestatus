@@ -72,10 +72,38 @@ body {
   overflow-x: hidden;
 }
 
+/* Custom Animations */
+@keyframes pulse-logo {
+  0% { transform: scale(1); opacity: 0.8; filter: drop-shadow(0 0 0px var(--apple-accent)); }
+  50% { transform: scale(1.1); opacity: 1; filter: drop-shadow(0 0 20px var(--apple-accent)); }
+  100% { transform: scale(1); opacity: 0.8; filter: drop-shadow(0 0 0px var(--apple-accent)); }
+}
+
+@keyframes loading-bar {
+  0% { width: 0%; opacity: 0.5; }
+  50% { width: 70%; opacity: 1; }
+  100% { width: 100%; opacity: 1; }
+}
+
+.animate-pulse-logo {
+  animation: pulse-logo 2.5s infinite ease-in-out;
+}
+
+.animate-loading-bar {
+  animation: loading-bar 2.8s forwards cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.splash-screen {
+  background-color: var(--apple-bg);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(0, 122, 255, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(88, 86, 214, 0.05) 0px, transparent 50%);
+}
+
 .glass {
   background: var(--apple-card-bg);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(25px) saturate(180%);
+  -webkit-backdrop-filter: blur(25px) saturate(180%);
   border: 1px solid var(--apple-border);
 }
 
