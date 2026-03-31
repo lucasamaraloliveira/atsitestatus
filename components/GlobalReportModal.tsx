@@ -76,97 +76,61 @@ const GlobalReportModal: React.FC<GlobalReportModalProps> = ({ isOpen, onClose, 
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-fade-in">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-xl" onClick={onClose}></div>
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose}></div>
             
-            <div className="glass apple-card w-full max-w-2xl border-none shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] relative overflow-hidden flex flex-col p-0">
-                {/* Close Button X */}
-                <button 
-                    onClick={onClose}
-                    className="absolute top-6 right-6 p-2 rounded-full hover:bg-white/10 text-[var(--apple-text-secondary)] transition-all z-50 group hover:rotate-90"
-                >
-                    <X size={20} className="group-hover:text-white" />
-                </button>
+            <div className="glass apple-card w-full max-w-xl border border-[var(--apple-border)] shadow-2xl relative flex flex-col p-8">
+                {/* Header com X discreto de fechar */}
+                <header className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-3">
+                        <FilePdf size={20} className="text-[var(--apple-accent)]" />
+                        <h2 className="text-xl font-bold tracking-tight">Exportar Relatório Global</h2>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-white/50 rounded-full transition-all">
+                        <X size={20} />
+                    </button>
+                </header>
 
-                <div className="p-10 pb-6">
-                    <header className="flex items-center gap-4 mb-8">
-                        <div className="p-3 rounded-2xl bg-[var(--apple-accent)] text-white shadow-lg shadow-[#007AFF]/20">
-                            <FilePdf size={24} />
+                <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                             <label className="text-[10px] uppercase font-black tracking-widest text-[var(--apple-text-secondary)] ml-1">Início</label>
+                             <input type="datetime-local" className="apple-datepicker" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                         </div>
-                        <div>
-                            <h2 className="text-2xl font-black tracking-tight">Exportar Inteligência</h2>
-                            <p className="text-sm text-[var(--apple-text-secondary)] font-medium">Relatórios analíticos e links de acesso seguro.</p>
-                        </div>
-                    </header>
-
-                    <div className="space-y-8">
-                        {/* Date Pickers */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--apple-text-secondary)] ml-1 flex items-center gap-2">
-                                    <Calendar size={12} className="text-[var(--apple-accent)]" /> Início do Período
-                                </label>
-                                <input 
-                                    type="datetime-local" 
-                                    className="apple-datepicker"
-                                    value={startDate}
-                                    onChange={(e) => setStartDate(e.target.value)}
-                                />
-                            </div>
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--apple-text-secondary)] ml-1 flex items-center gap-2">
-                                    <Clock size={12} className="text-[#AF52DE]" /> Fim do Período
-                                </label>
-                                <input 
-                                    type="datetime-local" 
-                                    className="apple-datepicker"
-                                    value={endDate}
-                                    onChange={(e) => setEndDate(e.target.value)}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Link Sharing Expiration */}
-                        <div className="p-6 bg-[var(--apple-input-bg)] rounded-[2rem] border border-[var(--apple-border)]">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2 rounded-xl bg-[#34C759]/10 text-[#34C759]">
-                                    <Shield size={18} />
-                                </div>
-                                <h3 className="font-bold text-sm">Tempo de Autodestruição do Link</h3>
-                            </div>
-                            <div className="grid grid-cols-4 gap-2">
-                                {[
-                                    { id: '5m', label: '5m' },
-                                    { id: '1h', label: '1h' },
-                                    { id: '1d', label: '1d' },
-                                    { id: 'indefinite', label: '♾️' }
-                                ].map((t) => (
-                                    <button 
-                                        key={t.id}
-                                        onClick={() => setExpiration(t.id as any)}
-                                        className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${expiration === t.id ? 'bg-[var(--apple-accent)] text-white shadow-lg' : 'bg-white/5 text-[var(--apple-text-secondary)] hover:bg-white/10'}`}
-                                    >
-                                        {t.label}
-                                    </button>
-                                ))}
-                            </div>
+                        <div className="space-y-2">
+                             <label className="text-[10px] uppercase font-black tracking-widest text-[var(--apple-text-secondary)] ml-1">Fim</label>
+                             <input type="datetime-local" className="apple-datepicker" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
                         </div>
                     </div>
-                </div>
 
-                {/* Footer Actions */}
-                <div className="p-10 pt-6 flex flex-col gap-3">
-                    <button 
-                        onClick={handleExportPDF}
-                        className="w-full bg-[var(--apple-text)] text-[var(--apple-bg)] h-14 rounded-2xl flex items-center justify-center gap-3 font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl"
-                    >
-                        <FilePdf size={18} /> Gerar PDF Global em Uma Linha
-                    </button>
-                    <button 
-                        onClick={handleShare}
-                        className="w-full bg-[#AF52DE] text-white h-14 rounded-2xl flex items-center justify-center gap-3 font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-[#AF52DE]/20"
-                    >
-                        <Activity size={18} /> Compartilhar Visão Segura (Clipboard)
-                    </button>
+                    <div className="p-4 bg-[var(--apple-input-bg)] rounded-2xl border border-[var(--apple-border)]">
+                        <h3 className="text-[10px] uppercase font-black tracking-widest text-[var(--apple-text-secondary)] mb-4">Tempo de Autodestruição do Link</h3>
+                        <div className="grid grid-cols-4 gap-2">
+                            {['5m', '1h', '1d', 'indefinite'].map((t) => (
+                                <button 
+                                    key={t}
+                                    onClick={() => setExpiration(t as any)}
+                                    className={`py-2 rounded-xl text-[10px] font-black uppercase transition-all ${expiration === t ? 'bg-[var(--apple-accent)] text-white shadow-lg' : 'bg-white/50 text-[var(--apple-text-secondary)] hover:bg-white'}`}
+                                >
+                                    {t === 'indefinite' ? '♾️' : t}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                        <button 
+                            onClick={handleExportPDF}
+                            className="w-full bg-[var(--apple-text)] text-[var(--apple-bg)] h-12 rounded-xl flex items-center justify-center gap-2 font-bold text-sm shadow-xl"
+                        >
+                            <Download size={18} /> Gerar PDF Global
+                        </button>
+                        <button 
+                            onClick={handleShare}
+                            className="w-full bg-[#AF52DE] text-white h-12 rounded-xl flex items-center justify-center gap-2 font-bold text-sm shadow-xl shadow-[#AF52DE]/20"
+                        >
+                            <Activity size={18} /> Copiar Link de Compartilhamento
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

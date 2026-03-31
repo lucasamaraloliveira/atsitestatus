@@ -11,8 +11,8 @@ import {
     PlusCircle,
     Activity,
     BarChart3,
-    Shield,
-    UserCircle
+    UserCircle,
+    Shield
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -45,71 +45,66 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     return (
         <aside 
-            className={`fixed left-4 top-4 bottom-4 glass border border-[var(--apple-border)] transition-all duration-300 z-40 flex flex-col rounded-[2.5rem] shadow-2xl ${isCollapsed ? 'w-24' : 'w-64'}`}
+            className={`fixed left-4 top-4 bottom-4 glass border border-[var(--apple-border)] transition-all duration-300 z-40 flex flex-col rounded-3xl shadow-2xl ${isCollapsed ? 'w-24' : 'w-64'}`}
         >
             {/* Header */}
-            <div className={`p-8 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+            <div className={`p-6 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
                 {!isCollapsed && (
                     <div className="flex items-center gap-3 animate-fade-in text-nowrap">
-                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#007AFF] to-[#5AC8FA] flex items-center justify-center text-white font-black text-sm shadow-lg shadow-[#007AFF]/20">AT</div>
-                        <span className="font-black text-lg text-[var(--apple-text)] tracking-tighter italic uppercase">SiteStatus</span>
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0071E3] to-[#5AC8FA] flex items-center justify-center text-white font-black text-sm shadow-lg shadow-[#0071E3]/20">AT</div>
+                        <span className="font-bold text-[var(--apple-text)] tracking-tight">ATSiteStatus</span>
                     </div>
                 )}
                 {isCollapsed && (
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#007AFF] to-[#5AC8FA] flex items-center justify-center text-white font-black text-sm shadow-lg shadow-[#007AFF]/20 animate-pulse-slow">AT</div>
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#0071E3] to-[#5AC8FA] flex items-center justify-center text-white font-black text-sm">AT</div>
                 )}
             </div>
 
             {/* Collapse Toggle */}
             <button 
                 onClick={() => setIsCollapsed(!isCollapsed)}
-                className="absolute -right-3 top-20 w-7 h-7 rounded-full bg-[var(--apple-card-bg)] border border-[var(--apple-border)] flex items-center justify-center text-[var(--apple-text-secondary)] hover:text-[var(--apple-accent)] shadow-md transition-all z-50 hover:scale-110 active:scale-90"
+                className="absolute -right-3 top-16 w-6 h-6 rounded-full bg-[var(--apple-card-bg)] border border-[var(--apple-border)] flex items-center justify-center text-[var(--apple-text-secondary)] hover:text-[var(--apple-accent)] shadow-sm transition-colors z-50"
             >
                 {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
             </button>
 
             {/* Navigation */}
-            <nav className="flex-grow px-4 mt-6 space-y-2 overflow-y-auto no-scrollbar">
+            <nav className="flex-grow px-3 mt-4 space-y-2 overflow-y-auto no-scrollbar">
                 {menuItems.map((item) => (
                     <button
                         key={item.id}
                         onClick={() => setActiveView(item.id)}
-                        className={`w-full flex items-center gap-4 p-4 rounded-3xl transition-all group ${
+                        className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all ${
                             activeView === item.id 
-                                ? 'bg-[var(--apple-accent)] text-white shadow-[0_8px_20px_-4px_rgba(0,122,255,0.4)]' 
+                                ? 'bg-[var(--apple-input-bg)] text-[var(--apple-accent)]' 
                                 : 'text-[var(--apple-text-secondary)] hover:bg-[var(--apple-input-bg)] hover:text-[var(--apple-text)]'
-                        } ${isCollapsed ? 'justify-center py-5' : ''}`}
+                        } ${isCollapsed ? 'flex-col gap-1 py-4 border-none items-center justify-center' : ''}`}
                     >
-                        <item.icon size={isCollapsed ? 28 : 22} className={`shrink-0 ${activeView === item.id ? 'scale-110' : 'group-hover:scale-110'} transition-transform duration-300`} />
-                        {!isCollapsed && <span className="text-sm font-bold tracking-tight">{item.label}</span>}
+                        <item.icon size={isCollapsed ? 24 : 20} />
+                        {!isCollapsed && <span className="text-sm font-medium tracking-tight">{item.label}</span>}
                     </button>
                 ))}
             </nav>
 
-            {/* Footer / Profile */}
-            <div className="p-4 mt-auto">
+            {/* User Profile Footer */}
+            <div className="p-4 border-t border-[var(--apple-border)]">
                 {!isCollapsed ? (
-                    <div className="p-4 glass-dark rounded-[2rem] border border-white/5 flex items-center gap-4 hover:bg-white/5 transition-all">
+                    <div className="flex items-center gap-3 p-2">
                         {userProfile?.photoUrl ? (
-                            <img src={userProfile.photoUrl} alt="Perfil" className="w-10 h-10 rounded-xl object-cover ring-2 ring-white/10" />
+                            <img src={userProfile.photoUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
                         ) : (
-                            <div className="w-10 h-10 rounded-xl bg-[var(--apple-accent)]/10 text-[var(--apple-accent)] flex items-center justify-center border border-white/5">
-                                <UserCircle size={24} />
+                            <div className="w-8 h-8 rounded-full bg-[var(--apple-accent)]/10 text-[var(--apple-accent)] flex items-center justify-center">
+                                <UserCircle size={20} />
                             </div>
                         )}
                         <div className="min-w-0">
-                            <p className="text-xs font-black truncate text-white uppercase tracking-tight">{userProfile?.name || 'Admin'}</p>
-                            <div className="flex items-center gap-1 mt-0.5">
-                                <Shield size={10} className="text-[#FF9500]" />
-                                <span className="text-[9px] font-black uppercase text-[#FF9500] tracking-widest">{userRole}</span>
-                            </div>
+                            <p className="text-xs font-bold truncate text-[var(--apple-text)]">{userProfile?.name || 'Admin'}</p>
+                            <span className="text-[10px] text-[var(--apple-text-secondary)] uppercase tracking-widest font-black">{userRole}</span>
                         </div>
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-[var(--apple-text-secondary)]">
-                            <UserCircle size={28} />
-                        </div>
+                    <div className="flex flex-col items-center">
+                        <UserCircle size={24} className="text-[var(--apple-text-secondary)]" />
                     </div>
                 )}
             </div>
