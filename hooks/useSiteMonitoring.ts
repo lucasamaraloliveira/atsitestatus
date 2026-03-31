@@ -187,42 +187,51 @@ export const useSiteMonitoring = (username: string | null) => {
     }, []);
 
     const handleCheckStatus = useCallback(async (siteId: string, url: string) => {
-        const siteBeforeCheck = sites.find(s => s.id === siteId);
-        // Atualizar status localmente primeiro para feedback imediato (será sobrescrito pelo onSnapshot do Firestore)
+        // Atualizar status localmente primeiro para feedback imediato
         setSites(prev => prev.map(s => s.id === siteId ? { ...s, status: CheckStatus.CHECKING, message: 'Verificando status...' } : s));
         
         try {
             const result = await checkWebsiteStatus(url);
             
-            if (siteBeforeCheck) {
-                const siteName = siteBeforeCheck.name || url;
-                if (siteBeforeCheck.status === CheckStatus.ONLINE && (result.status === CheckStatus.OFFLINE || result.status === CheckStatus.ERROR)) {
-                    const message = `Alerta: O site ${siteName} ficou offline!`;
-                    addToastNotification(message, 'alert');
-                    sendNotification('Site Offline', { body: siteName });
-                } else if (result.status === CheckStatus.ONLINE && result.latency && result.latency > HIGH_LATENCY_THRESHOLD) {
-                     const message = `Atenção: Latência alta em ${siteName} (${result.latency}ms).`;
-                     addToastNotification(message, 'warning');
+            setSites(prev => {
+                const siteToCheck = prev.find(s => s.id === siteId);
+                if (siteToCheck) {
+                    const siteName = siteToCheck.name || url;
+                    if (siteToCheck.status === CheckStatus.ONLINE && (result.status === CheckStatus.OFFLINE || result.status === CheckStatus.ERROR)) {
+                        const message = `Alerta: O site ${siteName} ficou offline!`;
+                        addToastNotification(message, 'alert');
+                        sendNotification('Site Offline', { body: siteName });
+                    } else if (result.status === CheckStatus.ONLINE && result.latency && result.latency > HIGH_LATENCY_THRESHOLD) {
+                        const message = `Atenção: Latência alta em ${siteName} (${result.latency}ms).`;
+                        addToastNotification(message, 'warning');
+                    }
                 }
-            }
 
-            const updatedSites = sites.map(s => s.id === siteId ? {
-                ...s,
-                status: result.status,
-                message: result.message,
-                timestamp: new Date().toLocaleString(),
-                latency: result.latency
-            } : s);
+                const updatedSites = prev.map(s => s.id === siteId ? {
+                    ...s,
+                    status: result.status,
+                    message: result.message,
+                    timestamp: new Date().toLocaleString(),
+                    latency: result.latency
+                } : s);
+                
+                // Salvar a lista atualizada no Firestore APÓS garantir que incluímos todas as mudanças
+                saveToFirestore(updatedSites);
+                return updatedSites;
+            });
             
-            await saveToFirestore(updatedSites);
             await addLogEntry(siteId, result.status, result.message, result.latency);
         } catch (error) {
-            const errorMessage = "Falha ao verificar. Verifique o console para detalhes.";
-            const updatedSites = sites.map(s => s.id === siteId ? { ...s, status: CheckStatus.ERROR, message: errorMessage, timestamp: new Date().toLocaleString() } : s);
-            await saveToFirestore(updatedSites);
+            console.error("Erro no handleCheckStatus:", error);
+            const errorMessage = "Falha ao verificar.";
+            setSites(prev => {
+                const updatedSites = prev.map(s => s.id === siteId ? { ...s, status: CheckStatus.ERROR, message: errorMessage, timestamp: new Date().toLocaleString() } : s);
+                saveToFirestore(updatedSites);
+                return updatedSites;
+            });
             await addLogEntry(siteId, CheckStatus.ERROR, errorMessage);
         }
-    }, [sites, saveToFirestore, addLogEntry, addToastNotification]);
+    }, [saveToFirestore, addLogEntry, addToastNotification]);
 
     const handleAddSite = async () => {
         let url = newSiteUrl.trim();
@@ -242,11 +251,18 @@ export const useSiteMonitoring = (username: string | null) => {
             timestamp: new Date().toLocaleString()
         };
         
-        const updatedSites = [...sites, newSite];
+        // Usar atualização funcional para garantir persistência correta
+        setSites(prev => {
+            const updatedSites = [...prev, newSite];
+            saveToFirestore(updatedSites);
+            return updatedSites;
+        });
+        
         setNewSiteUrl('');
         setNewSiteName('');
-        await saveToFirestore(updatedSites);
-        handleCheckStatus(newSite.id, newSite.url);
+        
+        // Iniciar verificação após um pequeno delay para garantir que o Firestore processou o novo site
+        setTimeout(() => handleCheckStatus(newSite.id, newSite.url), 500);
     };
 
     const handleRequestDelete = (id: string) => {
