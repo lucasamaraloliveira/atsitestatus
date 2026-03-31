@@ -1,6 +1,20 @@
 import React, { useState } from 'react';
-import type { StatusResult, LogEntry } from '@/types';
-import { generateGlobalPdfReport, generateGlobalXlsxReport } from '@/services/reportService';
+import { 
+    X, 
+    Download, 
+    Calendar, 
+    FileText as FilePdf, 
+    Table as FileExcel,
+    Clock,
+    AlertCircle,
+    CheckCircle2,
+    Activity,
+    Shield
+} from 'lucide-react';
+import { StatusResult, LogEntry, CheckStatus } from '@/types';
+
+declare var jspdf: any;
+declare var XLSX: any;
 
 interface GlobalReportModalProps {
     isOpen: boolean;
@@ -12,144 +26,147 @@ interface GlobalReportModalProps {
 const GlobalReportModal: React.FC<GlobalReportModalProps> = ({ isOpen, onClose, sites, logs }) => {
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [expiration, setExpiration] = useState<'5m' | '1h' | '1d' | 'indefinite'>('1h');
     const [sharedLink, setSharedLink] = useState('');
-    const [copyButtonText, setCopyButtonText] = useState('Copiar');
 
     if (!isOpen) return null;
 
-    const handleExportPdf = () => {
-        generateGlobalPdfReport(sites, logs, startDate, endDate);
-        onClose();
-    };
-
-    const handleExportXlsx = () => {
-        generateGlobalXlsxReport(sites, logs, startDate, endDate);
-        onClose();
-    };
-
     const handleShare = () => {
-        const start = startDate ? new Date(startDate).getTime() : 0;
-        const end = endDate ? new Date(endDate).getTime() + (24 * 60 * 60 * 1000 - 1) : Date.now();
-
-        const relevantSiteIds = new Set(
-            Object.keys(logs).filter(siteId =>
-                logs[siteId].some(log => log.timestamp >= start && log.timestamp <= end)
-            )
-        );
-
-        const sitesToShare = sites.filter(site => relevantSiteIds.has(site.id));
-        const logsToShare: Record<string, LogEntry[]> = {};
-        for (const siteId of relevantSiteIds) {
-            logsToShare[siteId] = logs[siteId].filter(log => log.timestamp >= start && log.timestamp <= end);
-        }
-
-        const dataToEncode = { sites: sitesToShare, logs: logsToShare, startDate, endDate };
-        const jsonString = JSON.stringify(dataToEncode);
-        const encodedData = btoa(jsonString);
-
-        const link = `${window.location.origin}${window.location.pathname}#report=${encodedData}`;
+        const reportData = {
+            sites,
+            logs,
+            generatedAt: Date.now(),
+            expiresAt: expiration === 'indefinite' ? null : 
+                       Date.now() + (expiration === '5m' ? 5*60*1000 : 
+                                    expiration === '1h' ? 60*60*1000 : 
+                                    24*60*60*1000)
+        };
+        const encoded = btoa(JSON.stringify(reportData));
+        const link = `${window.location.origin}/#report=${encoded}`;
         setSharedLink(link);
-        setCopyButtonText('Copiar');
+        navigator.clipboard.writeText(link);
+        alert("Link de relatório (com autodestruição) copiado para a área de transferência!");
     };
-    
-    const handleCopyToClipboard = () => {
-        navigator.clipboard.writeText(sharedLink).then(() => {
-            setCopyButtonText('Copiado!');
-            setTimeout(() => setCopyButtonText('Copiar'), 2000);
-        }).catch(err => {
-            console.error('Falha ao copiar link: ', err);
-            alert('Não foi possível copiar o link.');
+
+    const handleExportPDF = () => {
+        const { jsPDF } = jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(18);
+        doc.text("Relatório Global de Monitoramento - ATSiteStatus", 20, 20);
+        doc.setFontSize(10);
+        doc.text(`Gerado em: ${new Date().toLocaleString()}`, 20, 30);
+
+        const body = sites.map(site => {
+            const siteLogs = logs[site.id] || [];
+            const uptime = siteLogs.length > 0 ? 
+                ((siteLogs.filter(l => l.status === CheckStatus.ONLINE).length / siteLogs.length) * 100).toFixed(2) : '100';
+            return [site.name || site.url, site.status, `${site.latency || 0}ms`, `${uptime}%`];
         });
+
+        doc.autoTable({
+            startY: 40,
+            head: [['Site', 'Status Atual', 'Latência', 'Uptime Histórico']],
+            body: body,
+            theme: 'grid',
+            headStyles: { fillColor: [0, 122, 255] }
+        });
+
+        doc.save(`relatorio-global-${Date.now()}.pdf`);
     };
 
     return (
-        <div
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in p-6"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="modal-title"
-            onClick={onClose}
-        >
-            <div
-                className="glass apple-card p-10 w-full max-w-xl border-none shadow-2xl animate-fade-in-slide-up"
-                onClick={(e) => e.stopPropagation()}
-            >
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0071E3] to-[#5AC8FA] flex items-center justify-center text-white font-black text-xl shadow-lg shadow-[#0071E3]/20">AT</div>
-                    <h2 id="modal-title" className="text-2xl font-extrabold text-[var(--apple-text)] tracking-tight">Gerar Relatório Global</h2>
-                </div>
-                
-                <div className="text-[var(--apple-text-secondary)] mb-10">
-                    <p className="text-sm font-medium leading-relaxed mb-8">Selecione um período para gerar o relatório consolidado de todos os sites monitorados. Se nenhum período for selecionado, o relatório incluirá todos os dados históricos.</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div>
-                            <label htmlFor="start-date" className="block text-[11px] font-bold text-[var(--apple-text-secondary)] uppercase tracking-widest mb-2 ml-1">Data de Início</label>
-                            <input
-                                type="datetime-local"
-                                id="start-date"
-                                value={startDate}
-                                onChange={e => { setStartDate(e.target.value); setSharedLink(''); }}
-                                className="apple-input w-full p-4 text-sm font-medium focus:ring-2 focus:ring-[var(--apple-accent)] focus:outline-none transition-all"
-                            />
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 animate-fade-in">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-xl" onClick={onClose}></div>
+            
+            <div className="glass apple-card w-full max-w-2xl border-none shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] relative overflow-hidden flex flex-col p-0">
+                {/* Close Button X */}
+                <button 
+                    onClick={onClose}
+                    className="absolute top-6 right-6 p-2 rounded-full hover:bg-white/10 text-[var(--apple-text-secondary)] transition-all z-50 group hover:rotate-90"
+                >
+                    <X size={20} className="group-hover:text-white" />
+                </button>
+
+                <div className="p-10 pb-6">
+                    <header className="flex items-center gap-4 mb-8">
+                        <div className="p-3 rounded-2xl bg-[var(--apple-accent)] text-white shadow-lg shadow-[#007AFF]/20">
+                            <FilePdf size={24} />
                         </div>
                         <div>
-                            <label htmlFor="end-date" className="block text-[11px] font-bold text-[var(--apple-text-secondary)] uppercase tracking-widest mb-2 ml-1">Data de Fim</label>
-                            <input
-                                type="datetime-local"
-                                id="end-date"
-                                value={endDate}
-                                onChange={e => { setEndDate(e.target.value); setSharedLink(''); }}
-                                className="apple-input w-full p-4 text-sm font-medium focus:ring-2 focus:ring-[var(--apple-accent)] focus:outline-none transition-all"
-                            />
+                            <h2 className="text-2xl font-black tracking-tight">Exportar Inteligência</h2>
+                            <p className="text-sm text-[var(--apple-text-secondary)] font-medium">Relatórios analíticos e links de acesso seguro.</p>
+                        </div>
+                    </header>
+
+                    <div className="space-y-8">
+                        {/* Date Pickers */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--apple-text-secondary)] ml-1 flex items-center gap-2">
+                                    <Calendar size={12} className="text-[var(--apple-accent)]" /> Início do Período
+                                </label>
+                                <input 
+                                    type="datetime-local" 
+                                    className="apple-datepicker"
+                                    value={startDate}
+                                    onChange={(e) => setStartDate(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--apple-text-secondary)] ml-1 flex items-center gap-2">
+                                    <Clock size={12} className="text-[#AF52DE]" /> Fim do Período
+                                </label>
+                                <input 
+                                    type="datetime-local" 
+                                    className="apple-datepicker"
+                                    value={endDate}
+                                    onChange={(e) => setEndDate(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Link Sharing Expiration */}
+                        <div className="p-6 bg-[var(--apple-input-bg)] rounded-[2rem] border border-[var(--apple-border)]">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="p-2 rounded-xl bg-[#34C759]/10 text-[#34C759]">
+                                    <Shield size={18} />
+                                </div>
+                                <h3 className="font-bold text-sm">Tempo de Autodestruição do Link</h3>
+                            </div>
+                            <div className="grid grid-cols-4 gap-2">
+                                {[
+                                    { id: '5m', label: '5m' },
+                                    { id: '1h', label: '1h' },
+                                    { id: '1d', label: '1d' },
+                                    { id: 'indefinite', label: '♾️' }
+                                ].map((t) => (
+                                    <button 
+                                        key={t.id}
+                                        onClick={() => setExpiration(t.id as any)}
+                                        className={`py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${expiration === t.id ? 'bg-[var(--apple-accent)] text-white shadow-lg' : 'bg-white/5 text-[var(--apple-text-secondary)] hover:bg-white/10'}`}
+                                    >
+                                        {t.label}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {sharedLink && (
-                    <div className="mb-10 p-6 bg-[var(--apple-accent)]/5 rounded-3xl border border-[var(--apple-accent)]/10 animate-fade-in">
-                        <label className="block text-[11px] font-bold text-[var(--apple-accent)] uppercase tracking-widest mb-3 ml-1">Link compartilhável gerado</label>
-                        <div className="flex gap-3">
-                             <input
-                                type="text"
-                                readOnly
-                                value={sharedLink}
-                                className="apple-input w-full p-4 text-xs font-medium focus:outline-none"
-                                onFocus={(e) => e.target.select()}
-                            />
-                            <button onClick={handleCopyToClipboard} className="bg-[var(--apple-accent)] text-white font-bold py-4 px-6 rounded-2xl transition-all hover:bg-[var(--apple-accent)]/90 active:scale-95 text-xs min-w-[100px]">
-                                {copyButtonText}
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                <div className="flex flex-col sm:flex-row justify-end gap-4">
-                    <button
-                        onClick={onClose}
-                        className="order-last sm:order-first text-sm font-bold text-[var(--apple-text-secondary)] hover:bg-black/5 dark:hover:bg-white/5 py-4 px-8 rounded-2xl transition-all"
+                {/* Footer Actions */}
+                <div className="p-10 pt-6 flex flex-col gap-3">
+                    <button 
+                        onClick={handleExportPDF}
+                        className="w-full bg-[var(--apple-text)] text-[var(--apple-bg)] h-14 rounded-2xl flex items-center justify-center gap-3 font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl"
                     >
-                        Cancelar
+                        <FilePdf size={18} /> Gerar PDF Global em Uma Linha
                     </button>
-                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                         <button
-                            onClick={handleShare}
-                            className="bg-[var(--apple-card-bg)] text-[var(--apple-text)] border border-[var(--apple-border)] font-bold py-4 px-6 rounded-2xl transition-all hover:bg-gray-50 dark:hover:bg-white/20 text-sm"
-                        >
-                            Compartilhar
-                        </button>
-                        <button
-                            onClick={handleExportXlsx}
-                            className="bg-[var(--apple-card-bg)] text-[var(--apple-text)] border border-[var(--apple-border)] font-bold py-4 px-6 rounded-2xl transition-all hover:bg-gray-50 dark:hover:bg-white/20 text-sm"
-                        >
-                            Excel
-                        </button>
-                        <button
-                            onClick={handleExportPdf}
-                            className="apple-button py-4 px-8 text-sm font-bold shadow-xl shadow-[var(--apple-accent)]/20"
-                        >
-                            Exportar PDF
-                        </button>
-                    </div>
+                    <button 
+                        onClick={handleShare}
+                        className="w-full bg-[#AF52DE] text-white h-14 rounded-2xl flex items-center justify-center gap-3 font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-[#AF52DE]/20"
+                    >
+                        <Activity size={18} /> Compartilhar Visão Segura (Clipboard)
+                    </button>
                 </div>
             </div>
         </div>
@@ -157,4 +174,3 @@ const GlobalReportModal: React.FC<GlobalReportModalProps> = ({ isOpen, onClose, 
 };
 
 export default GlobalReportModal;
-

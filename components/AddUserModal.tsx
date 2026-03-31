@@ -1,0 +1,137 @@
+import React, { useState } from 'react';
+import { X, User, Lock, Eye, EyeOff, Plus, UserPlus, Shield, ShieldAlert, ShieldCheck } from 'lucide-react';
+
+interface AddUserModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onAdd: (username: string, password?: string, name?: string, permissions?: any) => Promise<void>;
+}
+
+const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onAdd }) => {
+    const [name, setName] = useState('');
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [roleProfile, setRoleProfile] = useState<'viewer' | 'operator' | 'admin'>('viewer');
+    const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
+    if (!isOpen) return null;
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!username.trim() || !password.trim()) return;
+
+        setIsLoading(true);
+        const permissions = {
+            canEdit: roleProfile !== 'viewer',
+            canDelete: roleProfile === 'admin',
+            canExport: roleProfile !== 'viewer',
+            canManageTeam: roleProfile === 'admin'
+        };
+
+        await onAdd(username.trim(), password, name.trim(), permissions);
+        setIsLoading(false);
+        
+        // Reset states
+        setName('');
+        setUsername('');
+        setPassword('');
+        setRoleProfile('viewer');
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+            <div className="glass apple-card w-full max-w-md p-8 animate-fade-in-slide-up border-none shadow-2xl relative" onClick={e => e.stopPropagation()}>
+                <button onClick={onClose} className="absolute right-6 top-6 p-2 rounded-full hover:bg-white/10 transition-colors text-[var(--apple-text-secondary)]">
+                    <X size={20} />
+                </button>
+
+                <div className="flex items-center gap-4 mb-8">
+                    <div className="p-4 rounded-2xl bg-[var(--apple-accent)] text-white shadow-lg shadow-[var(--apple-accent)]/20">
+                        <UserPlus size={24} />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-black text-[var(--apple-text)]">Novo Membro</h2>
+                        <p className="text-sm text-[var(--apple-text-secondary)]">Adicione alguém à sua equipe.</p>
+                    </div>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)] ml-1">Perfil de Acesso</label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {[
+                                { id: 'viewer', label: 'Ver', icon: Shield },
+                                { id: 'operator', label: 'Operar', icon: ShieldCheck },
+                                { id: 'admin', label: 'Admin', icon: ShieldAlert }
+                            ].map((role) => (
+                                <button 
+                                    key={role.id}
+                                    type="button"
+                                    onClick={() => setRoleProfile(role.id as any)}
+                                    className={`py-3 rounded-xl border flex flex-col items-center gap-1 transition-all ${roleProfile === role.id ? 'bg-[var(--apple-accent)] border-[var(--apple-accent)] text-white shadow-lg' : 'bg-[var(--apple-input-bg)] border-[var(--apple-border)] text-[var(--apple-text-secondary)] hover:bg-white/5'}`}
+                                >
+                                    <role.icon size={16} />
+                                    <span className="text-[10px] font-black uppercase">{role.label}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)] ml-1">Nome Completo</label>
+                        <input 
+                            type="text" 
+                            placeholder="ex: João Silva"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 px-6 text-sm font-medium outline-none"
+                            required
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)] ml-1">Login</label>
+                            <input 
+                                type="text" 
+                                placeholder="joao.infra"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 px-6 text-sm font-medium outline-none"
+                                required
+                            />
+                        </div>
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)] ml-1">Senha</label>
+                            <div className="relative">
+                                <input 
+                                    type={showPassword ? "text" : "password"} 
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 px-6 text-sm font-medium outline-none"
+                                    required
+                                />
+                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)]">
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button 
+                        type="submit" 
+                        disabled={isLoading}
+                        className="w-full h-14 bg-[var(--apple-accent)] hover:bg-[#0062CC] text-white font-black text-xs uppercase tracking-[0.15em] rounded-2xl transition-all shadow-xl shadow-[var(--apple-accent)]/20 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 mt-4"
+                    >
+                        {isLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <><Plus size={18} /> Cadastrar Membro</>}
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+export default AddUserModal;
