@@ -65,7 +65,9 @@ const App: React.FC = () => {
         selectedSiteId, setSelectedSiteId, recentlyDeleted, notifications, removeNotification, addToastNotification,
         isDeleteModalOpen, siteToDelete, isGlobalReportModalOpen, setIsGlobalReportModalOpen,
         isClearHistoryModalOpen, siteToClearHistory,
-        childUsers, addChildUser, removeChildUser, userRole, userProfile,
+        childUsers, addChildUser, removeChildUser, userRole, userProfile, handleUpdateProfile,
+        userToDelete, isDeleteUserModalOpen, handleConfirmDeleteUser, handleCloseDeleteUserModal, 
+        recentlyDeletedUser, handleUndoDeleteUser,
         handleAddSite, handleRequestDelete, handleConfirmDelete,
         handleCloseDeleteModal, handleUndoDelete, handleEditSite, handleUpdateSite, handleRefreshSite, handleRefreshAll,
         requestClearHistory, confirmClearHistory, closeClearHistoryModal,
@@ -200,6 +202,8 @@ const App: React.FC = () => {
                         saveEmailSettings={saveEmailSettings} inactivityTimeout={inactivityTimeout}
                         setInactivityTimeout={setInactivityTimeout} childUsers={childUsers}
                         addChildUser={addChildUser} removeChildUser={removeChildUser} userRole={userRole}
+                        userProfile={userProfile}
+                        handleUpdateProfile={handleUpdateProfile}
                     />
                 );
             case 'reports':
@@ -355,6 +359,13 @@ const App: React.FC = () => {
                 Deseja apagar os registros de {siteToClearHistory?.name || siteToClearHistory?.url}?
             </ConfirmationModal>
 
+            <ConfirmationModal 
+                isOpen={isDeleteUserModalOpen} onClose={handleCloseDeleteUserModal} onConfirm={handleConfirmDeleteUser}
+                title="Remover Membro" confirmText="Remover" confirmVariant="danger"
+            >
+                Tem certeza que deseja remover {userToDelete?.name || userToDelete?.username} da equipe? O acesso será revogado imediatamente.
+            </ConfirmationModal>
+
             <GlobalReportModal isOpen={isGlobalReportModalOpen} onClose={() => setIsGlobalReportModalOpen(false)} sites={sites} logs={logs} />
             <AddSiteModal isOpen={isAddSiteModalOpen} onClose={() => setIsAddSiteModalOpen(false)} onAdd={handleAddSite} />
             
@@ -363,6 +374,14 @@ const App: React.FC = () => {
                     <div className="bg-[#1C1C1E] text-white px-6 py-4 rounded-3xl flex items-center gap-6 shadow-2xl border border-white/10">
                         <span className="text-sm font-bold">Site removido.</span>
                         <button onClick={handleUndoDelete} className="text-[var(--apple-accent)] font-black uppercase text-[10px] tracking-widest">Desfazer</button>
+                    </div>
+                </div>
+            )}
+            {recentlyDeletedUser && (
+                <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[100] animate-fade-in-slide-up">
+                    <div className="bg-[#1C1C1E] text-white px-6 py-4 rounded-3xl flex items-center gap-6 shadow-2xl border border-white/10">
+                        <span className="text-sm font-bold">Membro removido.</span>
+                        <button onClick={handleUndoDeleteUser} className="text-[var(--apple-accent)] font-black uppercase text-[10px] tracking-widest">Desfazer</button>
                     </div>
                 </div>
             )}
