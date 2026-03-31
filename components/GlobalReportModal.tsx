@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import type { StatusResult, LogEntry } from '@/types';
 import { generateGlobalPdfReport, generateGlobalXlsxReport } from '@/services/reportService';
-import { X, FileText, Share2, FileSpreadsheet } from 'lucide-react';
 
 interface GlobalReportModalProps {
     isOpen: boolean;
@@ -54,15 +53,12 @@ const GlobalReportModal: React.FC<GlobalReportModalProps> = ({ isOpen, onClose, 
     };
     
     const handleCopyToClipboard = () => {
-        if (!navigator.clipboard) {
-            alert('Não foi possível copiar automaticamente.');
-            return;
-        }
         navigator.clipboard.writeText(sharedLink).then(() => {
             setCopyButtonText('Copiado!');
             setTimeout(() => setCopyButtonText('Copiar'), 2000);
         }).catch(err => {
             console.error('Falha ao copiar link: ', err);
+            alert('Não foi possível copiar o link.');
         });
     };
 
@@ -75,45 +71,35 @@ const GlobalReportModal: React.FC<GlobalReportModalProps> = ({ isOpen, onClose, 
             onClick={onClose}
         >
             <div
-                className="glass apple-card p-10 w-full max-w-xl border-none shadow-2xl animate-fade-in-slide-up relative"
+                className="glass apple-card p-10 w-full max-w-xl border-none shadow-2xl animate-fade-in-slide-up"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Close Button X */}
-                <button 
-                    onClick={onClose} 
-                    className="absolute right-6 top-6 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-[var(--apple-text-secondary)]"
-                    aria-label="Fechar"
-                >
-                    <X size={20} />
-                </button>
-
-                <div className="flex items-center gap-4 mb-8">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0071E3] to-[#5AC8FA] flex items-center justify-center text-white font-black text-xl shadow-lg shadow-[#0071E3]/20">AT</div>
-                    <div>
-                        <h2 id="modal-title" className="text-2xl font-black text-[var(--apple-text)] tracking-tight">Relatório Global</h2>
-                        <p className="text-sm text-[var(--apple-text-secondary)] font-medium">Extraia dados da sua infraestrutura.</p>
-                    </div>
+                <div className="flex items-center gap-3 mb-8">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0071E3] to-[#5AC8FA] flex items-center justify-center text-white font-black text-xl shadow-lg shadow-[#0071E3]/20">AT</div>
+                    <h2 id="modal-title" className="text-2xl font-extrabold text-[var(--apple-text)] tracking-tight">Gerar Relatório Global</h2>
                 </div>
                 
-                <div className="text-[var(--apple-text)] mb-10">
-                    <p className="text-sm font-medium leading-relaxed mb-10 opacity-70">Selecione o período desejado. Se vazio, exportaremos todo o histórico disponível.</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                        <div className="space-y-2">
-                            <label className="block text-[10px] font-black text-[var(--apple-text-secondary)] uppercase tracking-widest ml-1">Data de Início</label>
+                <div className="text-[var(--apple-text-secondary)] mb-10">
+                    <p className="text-sm font-medium leading-relaxed mb-8">Selecione um período para gerar o relatório consolidado de todos os sites monitorados. Se nenhum período for selecionado, o relatório incluirá todos os dados históricos.</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div>
+                            <label htmlFor="start-date" className="block text-[11px] font-bold text-[var(--apple-text-secondary)] uppercase tracking-widest mb-2 ml-1">Data de Início</label>
                             <input
                                 type="datetime-local"
+                                id="start-date"
                                 value={startDate}
                                 onChange={e => { setStartDate(e.target.value); setSharedLink(''); }}
-                                className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl p-4 text-sm font-medium outline-none"
+                                className="apple-input w-full p-4 text-sm font-medium focus:ring-2 focus:ring-[var(--apple-accent)] focus:outline-none transition-all"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label className="block text-[10px] font-black text-[var(--apple-text-secondary)] uppercase tracking-widest ml-1">Data de Fim</label>
+                        <div>
+                            <label htmlFor="end-date" className="block text-[11px] font-bold text-[var(--apple-text-secondary)] uppercase tracking-widest mb-2 ml-1">Data de Fim</label>
                             <input
                                 type="datetime-local"
+                                id="end-date"
                                 value={endDate}
                                 onChange={e => { setEndDate(e.target.value); setSharedLink(''); }}
-                                className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl p-4 text-sm font-medium outline-none"
+                                className="apple-input w-full p-4 text-sm font-medium focus:ring-2 focus:ring-[var(--apple-accent)] focus:outline-none transition-all"
                             />
                         </div>
                     </div>
@@ -121,44 +107,49 @@ const GlobalReportModal: React.FC<GlobalReportModalProps> = ({ isOpen, onClose, 
 
                 {sharedLink && (
                     <div className="mb-10 p-6 bg-[var(--apple-accent)]/5 rounded-3xl border border-[var(--apple-accent)]/10 animate-fade-in">
-                        <label className="block text-[11px] font-bold text-[var(--apple-accent)] uppercase tracking-widest mb-3 ml-1">Link compartilhável</label>
+                        <label className="block text-[11px] font-bold text-[var(--apple-accent)] uppercase tracking-widest mb-3 ml-1">Link compartilhável gerado</label>
                         <div className="flex gap-3">
                              <input
                                 type="text"
                                 readOnly
                                 value={sharedLink}
-                                className="w-full bg-white/5 border border-[var(--apple-border)] rounded-xl px-4 text-xs font-medium outline-none"
+                                className="apple-input w-full p-4 text-xs font-medium focus:outline-none"
                                 onFocus={(e) => e.target.select()}
                             />
-                            <button onClick={handleCopyToClipboard} className="bg-[var(--apple-accent)] text-white font-bold py-4 px-6 rounded-xl transition-all hover:bg-[var(--apple-accent)]/90 active:scale-95 text-xs min-w-[100px]">
+                            <button onClick={handleCopyToClipboard} className="bg-[var(--apple-accent)] text-white font-bold py-4 px-6 rounded-2xl transition-all hover:bg-[var(--apple-accent)]/90 active:scale-95 text-xs min-w-[100px]">
                                 {copyButtonText}
                             </button>
                         </div>
                     </div>
                 )}
 
-                <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <button
+                <div className="flex flex-col sm:flex-row justify-end gap-4">
+                    <button
+                        onClick={onClose}
+                        className="order-last sm:order-first text-sm font-bold text-[var(--apple-text-secondary)] hover:bg-black/5 dark:hover:bg-white/5 py-4 px-8 rounded-2xl transition-all"
+                    >
+                        Cancelar
+                    </button>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                         <button
                             onClick={handleShare}
-                            className="h-14 bg-[var(--apple-input-bg)] text-[var(--apple-text)] font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all hover:bg-white/10 flex items-center justify-center gap-3 border border-white/5"
+                            className="bg-[var(--apple-card-bg)] text-[var(--apple-text)] border border-[var(--apple-border)] font-bold py-4 px-6 rounded-2xl transition-all hover:bg-gray-50 dark:hover:bg-white/20 text-sm"
                         >
-                            <Share2 size={16} /> Link Direto
+                            Compartilhar
                         </button>
                         <button
                             onClick={handleExportXlsx}
-                            className="h-14 bg-[var(--apple-input-bg)] text-[var(--apple-text)] font-black text-[10px] uppercase tracking-widest rounded-2xl transition-all hover:bg-white/10 flex items-center justify-center gap-3 border border-white/5"
+                            className="bg-[var(--apple-card-bg)] text-[var(--apple-text)] border border-[var(--apple-border)] font-bold py-4 px-6 rounded-2xl transition-all hover:bg-gray-50 dark:hover:bg-white/20 text-sm"
                         >
-                            <FileSpreadsheet size={16} /> Planilha Excel
+                            Excel
+                        </button>
+                        <button
+                            onClick={handleExportPdf}
+                            className="apple-button py-4 px-8 text-sm font-bold shadow-xl shadow-[var(--apple-accent)]/20"
+                        >
+                            Exportar PDF
                         </button>
                     </div>
-                    
-                    <button
-                        onClick={handleExportPdf}
-                        className="w-full h-16 bg-[var(--apple-accent)] text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-[var(--apple-accent)]/20 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-4 border border-[var(--apple-accent)]/30"
-                    >
-                        <FileText size={20} /> Exportar Arquivo PDF
-                    </button>
                 </div>
             </div>
         </div>
@@ -166,3 +157,4 @@ const GlobalReportModal: React.FC<GlobalReportModalProps> = ({ isOpen, onClose, 
 };
 
 export default GlobalReportModal;
+
