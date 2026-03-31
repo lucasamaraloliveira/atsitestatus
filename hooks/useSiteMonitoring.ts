@@ -50,6 +50,9 @@ export const useSiteMonitoring = (username: string | null) => {
     const undoTimeoutRef = useRef<number | null>(null);
     const unsubRef = useRef<(() => void) | null>(null);
 
+    // Bloqueio para evitar que o onSnapshot sobrescreva o estado logo após uma ação manual
+    const lockRef = useRef<boolean>(false);
+
     // Sincronização em tempo real com Firestore para Lista de Sites e Configurações
     useEffect(() => {
         if (!username) {
@@ -64,7 +67,7 @@ export const useSiteMonitoring = (username: string | null) => {
         const fetchUserData = (targetUser: string, isParentFetch = false): (() => void) => {
             const userRef = doc(db, 'users', targetUser);
             return onSnapshot(userRef, (snapshot) => {
-                if (snapshot.exists()) {
+                if (snapshot.exists() && !lockRef.current) {
                     const data = snapshot.data();
                     
                     // Se o usuário atual for um "filho", buscamos as configurações do "pai"
@@ -84,7 +87,7 @@ export const useSiteMonitoring = (username: string | null) => {
                     setMonitoringInterval(data.monitoringInterval || 60);
                     setChildUsers(data.childUsers || []);
                     setEffectiveOwnerId(targetUser);
-                } else if (!isParentFetch) {
+                } else if (!snapshot.exists() && !isParentFetch) {
                     setDoc(userRef, { sites: [], isMonitoring: false, monitoringInterval: 60, childUsers: [] }, { merge: true });
                     setEffectiveOwnerId(targetUser);
                     setUserRole('admin');
@@ -122,14 +125,39 @@ export const useSiteMonitoring = (username: string | null) => {
 
     const saveToFirestore = useCallback(async (updatedSites: StatusResult[], updatedInterval?: number, updatedMonitoring?: boolean, updatedChildUsers?: any[]) => {
         if (!effectiveOwnerId) return;
-        const userRef = doc(db, 'users', effectiveOwnerId);
-        await setDoc(userRef, { 
-            sites: updatedSites, 
-            monitoringInterval: updatedInterval ?? monitoringInterval, 
-            isMonitoring: updatedMonitoring ?? isMonitoring,
-            childUsers: updatedChildUsers ?? (updatedChildUsers === undefined ? childUsers : updatedChildUsers)
-        }, { merge: true });
+        try {
+            const userRef = doc(db, 'users', effectiveOwnerId);
+            await setDoc(userRef, { 
+                sites: updatedSites, 
+                monitoringInterval: updatedInterval ?? monitoringInterval, 
+                isMonitoring: updatedMonitoring ?? isMonitoring,
+                childUsers: updatedChildUsers ?? childUsers
+            }, { merge: true });
+        } catch (error) {
+            console.error("Erro ao salvar no Firestore:", error);
+        }
     }, [effectiveOwnerId, monitoringInterval, isMonitoring, childUsers]);
+
+    const handleSetIsMonitoring = async (val: boolean) => {
+        lockRef.current = true;
+        setIsMonitoring(val);
+        try {
+            await saveToFirestore(sites, monitoringInterval, val);
+        } finally {
+            // Pequeno delay para garantir que o onSnapshot pegue a mudança
+            setTimeout(() => { lockRef.current = false; }, 2000);
+        }
+    };
+
+    const handleSetMonitoringInterval = async (val: number) => {
+        lockRef.current = true;
+        setMonitoringInterval(val);
+        try {
+            await saveToFirestore(sites, val, isMonitoring);
+        } finally {
+            setTimeout(() => { lockRef.current = false; }, 2000);
+        }
+    };
 
     const addChildUser = async (user: any) => {
         if (!effectiveOwnerId || userRole !== 'admin') return;
@@ -361,17 +389,6 @@ export const useSiteMonitoring = (username: string | null) => {
         }
         return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
     }, [isMonitoring, monitoringInterval, handleRefreshAll]);
-
-    // Atualizar no Firestore quando mudar localmente (exceto na carga inicial)
-    const handleSetIsMonitoring = async (val: boolean) => {
-        setIsMonitoring(val);
-        await saveToFirestore(sites, monitoringInterval, val);
-    };
-
-    const handleSetMonitoringInterval = async (val: number) => {
-        setMonitoringInterval(val);
-        await saveToFirestore(sites, val, isMonitoring);
-    };
 
     return {
         sites, logs, newSiteUrl, setNewSiteUrl, newSiteName, setNewSiteName, filter, setFilter, sortOrder, setSortOrder,
