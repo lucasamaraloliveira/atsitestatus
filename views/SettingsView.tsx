@@ -14,11 +14,7 @@ import {
     ShieldCheck,
     Lock,
     User,
-    Image as ImageIcon,
-    Eye,
-    Zap,
-    Map,
-    Clock
+    Image as ImageIcon
 } from 'lucide-react';
 import AddUserModal from '../components/AddUserModal';
 
@@ -33,13 +29,11 @@ interface SettingsViewProps {
     inactivityTimeout: number;
     setInactivityTimeout: (seconds: number) => void;
     childUsers: any[];
-    addChildUser: (username: string, password?: string, name?: string, permissions?: any) => Promise<void>;
+    addChildUser: (username: string, password?: string, name?: string) => Promise<void>;
     removeChildUser: (id: string) => void;
     userRole: 'admin' | 'child';
     userProfile: any;
     handleUpdateProfile: (name: string, password?: string, photoUrl?: string) => Promise<void>;
-    isActivityTrackingEnabled: boolean;
-    setIsActivityTrackingEnabled: (val: boolean) => void;
 }
 
 const SettingsView: React.FC<SettingsViewProps> = ({
@@ -57,9 +51,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     removeChildUser,
     userRole,
     userProfile,
-    handleUpdateProfile,
-    isActivityTrackingEnabled,
-    setIsActivityTrackingEnabled
+    handleUpdateProfile
 }) => {
     const [localEmail, setLocalEmail] = useState(notificationEmail);
     const [localType, setLocalType] = useState(emailNotifyType);
@@ -73,22 +65,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({
         setLocalEmail(notificationEmail);
         setLocalType(emailNotifyType);
     }, [notificationEmail, emailNotifyType]);
-
-    const formatTimestamp = (ts: number | null) => {
-        if (!ts) return 'Nunca';
-        const date = new Date(ts);
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    };
-
-    const getViewLabel = (view: string) => {
-        const views: Record<string, string> = {
-            'dashboard': 'Dashboard',
-            'activity': 'Atividade',
-            'reports': 'Relatórios',
-            'settings': 'Ajustes'
-        };
-        return views[view] || view;
-    };
 
     return (
         <div className="animate-fade-in pb-20">
@@ -201,15 +177,19 @@ const SettingsView: React.FC<SettingsViewProps> = ({
 
                                 <div className="flex items-center justify-between p-6 bg-[var(--apple-input-bg)] rounded-3xl group transition-all hover:bg-white/5">
                                     <div>
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)]">Rastreamento de Equipe</span>
-                                        <p className="text-sm font-bold mt-1">Monitor de Atividade</p>
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)]">Frequência</span>
+                                        <p className="text-sm font-bold mt-1">Intervalo Global</p>
                                     </div>
-                                    <button 
-                                        onClick={() => setIsActivityTrackingEnabled(!isActivityTrackingEnabled)}
-                                        className={`w-10 h-6 rounded-full transition-all relative ${isActivityTrackingEnabled ? 'bg-[#34C759]' : 'bg-gray-200 dark:bg-white/10'}`}
+                                    <select 
+                                        value={monitoringInterval}
+                                        onChange={(e) => setMonitoringInterval(Number(e.target.value))}
+                                        className="bg-transparent font-black text-[var(--apple-accent)] outline-none cursor-pointer"
                                     >
-                                        <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${isActivityTrackingEnabled ? 'translate-x-4' : 'translate-x-0'}`}></div>
-                                    </button>
+                                        <option value={30}>30s</option>
+                                        <option value={60}>1 min</option>
+                                        <option value={300}>5 min</option>
+                                        <option value={600}>10 min</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -270,11 +250,11 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                 )}
 
                 {activeTab === 'team' && (
-                    <div className="max-w-5xl animate-fade-in">
+                    <div className="max-w-4xl animate-fade-in">
                         <header className="flex justify-between items-center mb-8">
                             <div>
-                                <h3 className="text-2xl font-black tracking-tight">Controle de Equipe</h3>
-                                <p className="text-sm text-[var(--apple-text-secondary)]">Gerencie permissões e monitore acessos em tempo real.</p>
+                                <h3 className="text-2xl font-black tracking-tight">Equipe</h3>
+                                <p className="text-sm text-[var(--apple-text-secondary)]">Gerencie quem tem acesso ao painel.</p>
                             </div>
                             {userRole === 'admin' && (
                                 <button 
@@ -287,100 +267,55 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                             )}
                         </header>
 
-                        <div className="grid grid-cols-1 gap-6">
-                            {childUsers.length === 0 ? (
-                                <div className="glass apple-card p-12 text-center border-none shadow-xl">
-                                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 text-[var(--apple-text-secondary)] opacity-30">
-                                        <Users size={32} />
-                                    </div>
-                                    <h4 className="font-bold text-[var(--apple-text)]">Nenhum membro ainda</h4>
-                                    <p className="text-sm text-[var(--apple-text-secondary)] mt-2">Sua equipe aparecerá aqui.</p>
+                        {childUsers.length === 0 ? (
+                            <div className="glass apple-card p-12 text-center border-none shadow-xl">
+                                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-6 text-[var(--apple-text-secondary)] opacity-30">
+                                    <Users size={32} />
                                 </div>
-                            ) : (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {childUsers.map((user) => (
-                                        <div key={user.id} className="glass apple-card p-6 border-none shadow-2xl relative overflow-hidden group hover:scale-[1.02] transition-all">
-                                            <div className="flex items-start justify-between mb-6">
-                                                <div className="flex items-center gap-4">
-                                                    {user.photoUrl ? (
-                                                        <img src={user.photoUrl} alt="" className="w-14 h-14 rounded-2xl object-cover border border-white/10" />
-                                                    ) : (
-                                                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--apple-input-bg)] to-white/5 flex items-center justify-center text-[var(--apple-accent)] font-black text-xl border border-white/5">
-                                                            {user.name?.charAt(0) || user.username.charAt(0)}
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <span className="font-bold text-base block tracking-tight">{user.name || user.username}</span>
-                                                        <div className="flex items-center gap-1.5 text-[var(--apple-text-secondary)] mt-1">
-                                                            <Shield size={12} />
-                                                            <span className="text-[10px] font-black uppercase tracking-widest">{user.role || 'Membro'}</span>
-                                                        </div>
-                                                    </div>
+                                <h4 className="font-bold text-[var(--apple-text)]">Nenhum membro ainda</h4>
+                                <p className="text-sm text-[var(--apple-text-secondary)] mt-2">Sua equipe aparecerá aqui.</p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {childUsers.map((user) => (
+                                    <div key={user.id} className="glass apple-card p-5 flex items-center justify-between border-none shadow-xl group hover:scale-[1.02] transition-all">
+                                        <div className="flex items-center gap-4">
+                                            {user.photoUrl ? (
+                                                <img src={user.photoUrl} alt="" className="w-12 h-12 rounded-2xl object-cover border border-[var(--apple-border)]" />
+                                            ) : (
+                                                <div className="w-12 h-12 rounded-2xl bg-[var(--apple-input-bg)] flex items-center justify-center text-[var(--apple-accent)] font-black text-lg border border-[var(--apple-border)]">
+                                                    {user.name?.charAt(0) || user.username.charAt(0)}
                                                 </div>
-                                                {userRole === 'admin' && (
-                                                    <button 
-                                                        onClick={() => removeChildUser(user.id)}
-                                                        className="p-2 text-[#FF3B30] opacity-0 group-hover:opacity-100 transition-all hover:bg-[#FF3B30]/10 rounded-xl"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            {/* Monitor de Atividade Vivo */}
-                                            <div className="bg-black/20 rounded-2xl p-4 border border-white/5">
-                                                <div className="flex items-center justify-between mb-3 border-b border-white/5 pb-2">
-                                                    <span className="text-[9px] font-black uppercase tracking-widest text-white/30">Radar de Atividade</span>
-                                                    <div className="flex items-center gap-1.5">
-                                                        <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${user.lastActivity ? 'bg-[#34C759]' : 'bg-gray-500'}`}></div>
-                                                        <span className="text-[9px] font-black uppercase text-white/50">{user.lastActivity ? 'Ativo' : 'Offline'}</span>
-                                                    </div>
+                                            )}
+                                            <div>
+                                                <span className="font-bold text-sm block tracking-tight">{user.name || user.username}</span>
+                                                <div className="flex items-center gap-2 text-[var(--apple-text-secondary)]">
+                                                    <Shield size={10} />
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest">Colaborador</span>
                                                 </div>
-                                                
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-2">
-                                                            <Map size={12} className="text-[var(--apple-accent)]" />
-                                                            <span className="text-[10px] font-bold text-white/70">Menu Atual</span>
-                                                        </div>
-                                                        <span className="text-[10px] font-black text-white">{user.lastActivity ? getViewLabel(user.lastActivity.view) : '---'}</span>
-                                                    </div>
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-2">
-                                                            <Zap size={12} className="text-[#FF9500]" />
-                                                            <span className="text-[10px] font-bold text-white/70">Última Ação</span>
-                                                        </div>
-                                                        <span className="text-[10px] font-black text-white">{user.lastActivity?.action || 'Conectando...'}</span>
-                                                    </div>
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-2">
-                                                            <Clock size={12} className="text-[#5AC8FA]" />
-                                                            <span className="text-[10px] font-bold text-white/70">Horário</span>
-                                                        </div>
-                                                        <span className="text-[10px] font-black text-white/40">{formatTimestamp(user.lastActivity?.timestamp)}</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Permissions Badge */}
-                                            <div className="mt-4 flex gap-2">
-                                                {user.permissions?.canEdit && <span title="Pode Editar Sites" className="p-1 px-2 bg-[var(--apple-accent)]/10 text-[var(--apple-accent)] rounded-lg text-[8px] font-black uppercase">Editor</span>}
-                                                {user.permissions?.canManageTeam && <span title="Admin de Equipe" className="p-1 px-2 bg-[#FF9500]/10 text-[#FF9500] rounded-lg text-[8px] font-black uppercase">Staff</span>}
                                             </div>
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="mt-12 p-10 glass-dark rounded-[3rem] border border-white/5 relative overflow-hidden group">
-                           <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--apple-accent)]/10 rounded-full translate-x-1/2 -translate-y-1/2 blur-2xl"></div>
-                            <div className="flex items-center gap-4 text-[var(--apple-accent)] mb-4">
-                                <ShieldCheck size={28} />
-                                <h4 className="font-black text-base uppercase tracking-widest">Protocolos de Segurança</h4>
+                                        {userRole === 'admin' && (
+                                            <button 
+                                                onClick={() => removeChildUser(user.id)}
+                                                className="p-3 bg-[#FF3B30]/10 text-[#FF3B30] rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-[#FF3B30]/20"
+                                                title="Remover Membro"
+                                            >
+                                                <UserMinus size={18} />
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
                             </div>
-                            <p className="text-sm text-white/50 leading-relaxed font-medium max-w-2xl">
-                                O rastreamento de atividade permite auditar acessos e garantir que a infraestrutura esteja sendo monitorada corretamente. Usuários com perfil 'Viewer' não possuem registro de escrita, apenas telemetria de visualização.
+                        )}
+                        
+                        <div className="mt-12 p-8 glass-dark rounded-[2rem] border border-white/5">
+                            <div className="flex items-center gap-4 text-[var(--apple-accent)] mb-4">
+                                <ShieldCheck size={24} />
+                                <h4 className="font-black text-sm uppercase tracking-widest">Segurança de Equipe</h4>
+                            </div>
+                            <p className="text-sm text-white/50 leading-relaxed font-medium">
+                                Novos membros adicionados terão acesso de visualização e controle básico. Somente administradores podem gerenciar outros membros.
                             </p>
                         </div>
                     </div>
@@ -390,7 +325,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
             <AddUserModal 
                 isOpen={isAddUserModalOpen} 
                 onClose={() => setIsAddUserModalOpen(false)} 
-                onAdd={(u, p, n, perms) => addChildUser(u, p, n, perms)} 
+                onAdd={(u, p, n) => addChildUser(u, p, n)} 
             />
         </div>
     );

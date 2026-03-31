@@ -1,17 +1,16 @@
 import React, { useState } from 'react';
-import { X, User, Lock, Eye, EyeOff, Plus, UserPlus, Shield, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { X, User, Lock, Eye, EyeOff, Plus, UserPlus } from 'lucide-react';
 
 interface AddUserModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAdd: (username: string, password?: string, name?: string, permissions?: any) => Promise<void>;
+    onAdd: (username: string, password?: string, name?: string) => Promise<void>;
 }
 
 const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onAdd }) => {
     const [name, setName] = useState('');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
-    const [roleProfile, setRoleProfile] = useState<'viewer' | 'operator' | 'admin'>('viewer');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -22,21 +21,13 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onAdd }) =
         if (!username.trim() || !password.trim()) return;
 
         setIsLoading(true);
-        const permissions = {
-            canEdit: roleProfile !== 'viewer',
-            canDelete: roleProfile === 'admin',
-            canExport: roleProfile !== 'viewer',
-            canManageTeam: roleProfile === 'admin'
-        };
-
-        await onAdd(username.trim(), password, name.trim(), permissions);
+        await onAdd(username.trim(), password, name.trim());
         setIsLoading(false);
         
         // Reset states
         setName('');
         setUsername('');
         setPassword('');
-        setRoleProfile('viewer');
         onClose();
     };
 
@@ -58,75 +49,64 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onAdd }) =
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)] ml-1">Perfil de Acesso</label>
-                        <div className="grid grid-cols-3 gap-2">
-                            {[
-                                { id: 'viewer', label: 'Ver', icon: Shield },
-                                { id: 'operator', label: 'Operar', icon: ShieldCheck },
-                                { id: 'admin', label: 'Admin', icon: ShieldAlert }
-                            ].map((role) => (
-                                <button 
-                                    key={role.id}
-                                    type="button"
-                                    onClick={() => setRoleProfile(role.id as any)}
-                                    className={`py-3 rounded-xl border flex flex-col items-center gap-1 transition-all ${roleProfile === role.id ? 'bg-[var(--apple-accent)] border-[var(--apple-accent)] text-white shadow-lg' : 'bg-[var(--apple-input-bg)] border-[var(--apple-border)] text-[var(--apple-text-secondary)] hover:bg-white/5'}`}
-                                >
-                                    <role.icon size={16} />
-                                    <span className="text-[10px] font-black uppercase">{role.label}</span>
-                                </button>
-                            ))}
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--apple-text-secondary)] ml-1">Nome Completo</label>
+                        <div className="relative group">
+                            <User className="absolute right-6 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] transition-all duration-300 group-focus-within:opacity-0 group-focus-within:translate-x-4" size={20} />
+                            <input 
+                                type="text" 
+                                placeholder="ex: João Silva"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 pl-6 pr-14 text-sm font-medium focus:ring-4 focus:ring-[var(--apple-accent)]/10 focus:border-[var(--apple-accent)] transition-all outline-none"
+                                required
+                                autoFocus
+                            />
                         </div>
                     </div>
 
                     <div className="space-y-3">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)] ml-1">Nome Completo</label>
-                        <input 
-                            type="text" 
-                            placeholder="ex: João Silva"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 px-6 text-sm font-medium outline-none"
-                            required
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4">
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)] ml-1">Login</label>
+                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--apple-text-secondary)] ml-1">Usuário / Login</label>
+                        <div className="relative group">
+                            <User className="absolute right-6 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] transition-all duration-300 group-focus-within:opacity-0 group-focus-within:translate-x-4" size={20} />
                             <input 
                                 type="text" 
-                                placeholder="joao.infra"
+                                placeholder="ex: joao.infra"
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 px-6 text-sm font-medium outline-none"
+                                className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 pl-6 pr-14 text-sm font-medium focus:ring-4 focus:ring-[var(--apple-accent)]/10 focus:border-[var(--apple-accent)] transition-all outline-none"
                                 required
                             />
                         </div>
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)] ml-1">Senha</label>
-                            <div className="relative">
-                                <input 
-                                    type={showPassword ? "text" : "password"} 
-                                    placeholder="••••••••"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 px-6 text-sm font-medium outline-none"
-                                    required
-                                />
-                                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)]">
-                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
-                            </div>
+                    </div>
+
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--apple-text-secondary)] ml-1">Senha de Acesso</label>
+                        <div className="relative group">
+                            <button 
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-6 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)] transition-colors z-10"
+                            >
+                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
+                            <input 
+                                type={showPassword ? "text" : "password"} 
+                                placeholder="••••••••"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 pl-6 pr-14 text-sm font-medium focus:ring-4 focus:ring-[var(--apple-accent)]/10 focus:border-[var(--apple-accent)] transition-all outline-none"
+                                required
+                            />
                         </div>
                     </div>
 
                     <button 
                         type="submit" 
                         disabled={isLoading}
-                        className="w-full h-14 bg-[var(--apple-accent)] hover:bg-[#0062CC] text-white font-black text-xs uppercase tracking-[0.15em] rounded-2xl transition-all shadow-xl shadow-[var(--apple-accent)]/20 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 mt-4"
+                        className="w-full h-14 bg-[var(--apple-accent)] hover:bg-[#0062CC] text-white font-black text-xs uppercase tracking-[0.15em] rounded-2xl transition-all shadow-xl shadow-[var(--apple-accent)]/20 active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50"
                     >
-                        {isLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <><Plus size={18} /> Cadastrar Membro</>}
+                        {isLoading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <><Plus size={18} /> Criar Membro</>}
                     </button>
                 </form>
             </div>
