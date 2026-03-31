@@ -20,6 +20,8 @@ interface SettingsViewProps {
     notificationEmail: string;
     emailNotifyType: 'success' | 'error' | 'all';
     saveEmailSettings: (email: string, type: 'success' | 'error' | 'all') => void;
+    inactivityTimeout: number;
+    setInactivityTimeout: (seconds: number) => void;
     childUsers: any[];
     addChildUser: (user: any) => void;
     removeChildUser: (id: string) => void;
@@ -34,6 +36,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     notificationEmail,
     emailNotifyType,
     saveEmailSettings,
+    inactivityTimeout,
+    setInactivityTimeout,
     childUsers,
     addChildUser,
     removeChildUser,
@@ -145,7 +149,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                             <div className="space-y-3">
                                 <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">E-mail para Alertas</label>
                                 <div className="relative group">
-                                    <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] group-focus-within:opacity-0 transition-opacity duration-300 pointer-events-none">
+                                    <div className="absolute left-5 inset-y-0 flex items-center text-[var(--apple-text-secondary)] group-focus-within:opacity-0 transition-opacity duration-300 pointer-events-none">
                                         <Bell size={18} />
                                     </div>
                                     <input 
@@ -153,9 +157,31 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                                         value={localEmail}
                                         onChange={(e) => setLocalEmail(e.target.value)}
                                         placeholder="ex: suporte@suaempresa.com"
-                                        className="apple-input w-full pl-14 focus:pl-6 py-4 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20 transition-all"
+                                        className="apple-input w-full pl-14 focus:pl-6 py-4 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20 transition-all font-bold"
                                     />
                                 </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">Auto-Logout (Por Inatividade)</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {[
+                                        { val: 300, lbl: '5 Min' },
+                                        { val: 900, lbl: '15 Min' },
+                                        { val: 1800, lbl: '30 Min' },
+                                        { val: 3600, lbl: '1 Hora' },
+                                        { val: -1, lbl: 'Nunca' }
+                                    ].map(opt => (
+                                        <button
+                                            key={opt.val}
+                                            onClick={() => setInactivityTimeout(opt.val)}
+                                            className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${inactivityTimeout === opt.val ? 'bg-[var(--apple-accent)] text-white border-transparent shadow-lg shadow-[var(--apple-accent)]/20' : 'bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)] border-transparent hover:bg-white/10'}`}
+                                        >
+                                            {opt.lbl}
+                                        </button>
+                                    ))}
+                                </div>
+                                <p className="text-[9px] text-[var(--apple-text-secondary)] font-bold italic ml-1">Tempo de espera antes de encerrar sua sessão automaticamente.</p>
                             </div>
 
                             <div className="space-y-3">
@@ -178,7 +204,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                                 </div>
                             </div>
 
-                            <div className="flex flex-col gap-4">
+                            <div className="flex flex-col gap-4 pt-4">
                                 <button 
                                     onClick={() => {
                                         handleSaveEmail();

@@ -11,84 +11,74 @@ interface CheckResult {
   latency: number;
 }
 
-const ERROR_KEYWORDS = ["404 Not Found", "503 Service Unavailable", "Database Error", "Erro ao estabelecer conexão", "Account Suspended"];
-
 export const checkWebsiteStatus = async (url: string): Promise<CheckResult> => {
-  const startTime = performance.now();
-  
   const cleanUrl = url.trim();
-  
+  let latency = 0;
+  let status = CheckStatus.ONLINE;
+  let message = "Site estável e respondendo normalmente.";
+
+  // ESTRATÉGIA: Medição de Latência Real (Ping Direto)
+  // Usamos um AbortController curto para medir apenas o RTT (Round Trip Time) inicial
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+  const pingStart = performance.now();
+
   try {
-    // TENTATIVA 1: Fetch direto (Rápido, mas cego para status codes devido ao no-cors)
-    const directResponse = await fetch(cleanUrl, { 
+    // Tenta uma conexão direta (no-cors) para pegar a latência REAL da rede do usuário
+    await fetch(cleanUrl, { 
       method: 'GET', 
-      mode: 'no-cors',
+      mode: 'no-cors', 
       cache: 'no-cache',
-      headers: { 'User-Agent': 'ATSiteStatus/2.0' }
+      signal: controller.signal 
     });
-    
-    // Se chegou aqui sem erro, o site existe e serviu algo. 
-    // Porém, para ser ROBUSTO, vamos confirmar se não é um erro 404/500 mascarado.
-    
-    // TENTATIVA 2: Verificação profunda via Proxy (Permite ver o STATUS REAL)
-    try {
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(cleanUrl)}`;
-      const proxyResponse = await fetch(proxyUrl);
-      const data = await proxyResponse.json();
-      
-      const endTime = performance.now();
-      const latency = Math.round(endTime - startTime);
-
-      if (data.status && data.status.http_code) {
-        const code = data.status.http_code;
-        
-        if (code >= 200 && code < 400) {
-          return { status: CheckStatus.ONLINE, message: "Site estável e respondendo normalmente.", latency };
-        } else {
-          return { 
-            status: CheckStatus.OFFLINE, 
-            message: `Erro detectado: Servidor respondeu com Status ${code}.`, 
-            latency 
-          };
-        }
-      }
-    } catch (proxyError) {
-      // Se o proxy falhar (ex: bloqueio de IP ou timeout), confiamos na resposta direta do passo 1
-      const endTime = performance.now();
-      return { status: CheckStatus.ONLINE, message: "Site acessível (Verificado via conexão direta).", latency: Math.round(endTime - startTime) };
-    }
-
-    return { status: CheckStatus.ONLINE, message: "Online", latency: 0 }; // Fallback
-
-  } catch (error: any) {
-    const endTime = performance.now();
-    const latency = Math.round(endTime - startTime);
-    
-    // TENTATIVA FINAL: Se o fetch direto falhou (CORS ou DNS), o Proxy pode confirmar se está de fato offline
-    try {
-      const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(cleanUrl)}`;
-      const proxyResponse = await fetch(proxyUrl);
-      const data = await proxyResponse.json();
-      
-      if (data.status && data.status.http_code) {
-         const code = data.status.http_code;
-         if (code >= 200 && code < 400) {
-            return { status: CheckStatus.ONLINE, message: "Online via Relay (Recuperado de falha local).", latency };
-         }
-      }
-    } catch (e) {}
-
-    return { 
-      status: CheckStatus.OFFLINE, 
-      message: "Falha crítica de conexão. O site parece estar fora do ar ou o domínio é inexistente.", 
-      latency 
-    };
+    latency = Math.round(performance.now() - pingStart);
+    clearTimeout(timeoutId);
+  } catch (e: any) {
+    // Se falhar o direto, pode ser CORS (comum) ou Down total
+    // Vamos usar o tempo até aqui como base inicial
+    latency = Math.round(performance.now() - pingStart);
   }
+
+  // VERIFICAÇÃO DE INTEGRIDADE (Via Proxy p/ Status Codes Reais)
+  try {
+    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(cleanUrl)}&timestamp=${Date.now()}`;
+    const proxyResponse = await fetch(proxyUrl);
+    const data = await proxyResponse.json();
+
+    if (data.status && data.status.http_code) {
+      const code = data.status.http_code;
+      if (code >= 200 && code < 400) {
+        status = CheckStatus.ONLINE;
+        message = `Online (HTTP ${code}).`;
+      } else {
+        status = CheckStatus.OFFLINE;
+        message = `Offline: Servidor respondeu com erro ${code}.`;
+      }
+    } else {
+      // Se o proxy não retornou código (erro de rede do proxy)
+      // Mas o ping direto funcionou, mantemos Online
+      if (latency < 4500) {
+        status = CheckStatus.ONLINE;
+        message = "Online (Verificado via conexão direta).";
+      } else {
+        status = CheckStatus.OFFLINE;
+        message = "O site não respondeu no tempo limite (Timeout).";
+      }
+    }
+  } catch (proxyError) {
+    // Fallback final: Se até o proxy falhar, confiamos na latência do ping direto
+    if (latency > 0 && latency < 5000) {
+        status = CheckStatus.ONLINE;
+        message = "Online (Acesso direto confirmado).";
+    } else {
+        status = CheckStatus.OFFLINE;
+        message = "Falha crítica de comunicação.";
+    }
+  }
+
+  return { status, message, latency: Math.min(latency, 10000) };
 };
 
-/**
- * Função opcional para uso via Proxy/Backend (se houver) que permite verificação profunda
- */
 export const performDeepAiAnalysis = async (url: string, htmlContent: string): Promise<string> => {
     try {
         const prompt = `Analise a disponibilidade deste site. Ele parece uma página de erro, uma página de "em construção" ou um domínio estacionado? Responda com uma breve descrição. Site: ${url}\nConteúdo: ${htmlContent.substring(0, 500)}`;

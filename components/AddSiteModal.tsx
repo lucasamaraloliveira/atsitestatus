@@ -37,10 +37,10 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onAdd }) =
                 </header>
 
                 <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                    <div className="space-y-2">
-                        <label className="text-xs font-black uppercase tracking-wider text-[var(--apple-text-secondary)] ml-1">URL do Site</label>
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--apple-text-secondary)] ml-1">URL do Site</label>
                         <div className="relative group">
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] pointer-events-none group-focus-within:text-[var(--apple-accent)] transition-colors">
+                            <div className="absolute left-5 inset-y-0 flex items-center text-[var(--apple-text-secondary)] pointer-events-none group-focus-within:opacity-0 transition-opacity duration-300">
                                 <Globe size={18} />
                             </div>
                             <input 
@@ -48,17 +48,17 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onAdd }) =
                                 placeholder="ex: google.com.br"
                                 value={url}
                                 onChange={(e) => setUrl(e.target.value)}
-                                className="apple-input w-full pl-12 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20 transition-all font-medium py-4"
+                                className="apple-input w-full pl-14 focus:pl-5 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20 transition-all font-bold py-4 text-sm"
                                 required
                                 autoFocus
                             />
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="text-xs font-black uppercase tracking-wider text-[var(--apple-text-secondary)] ml-1">Nome amigável (Opcional)</label>
+                    <div className="space-y-3">
+                        <label className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--apple-text-secondary)] ml-1">Nome amigável (Opcional)</label>
                         <div className="relative group">
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] pointer-events-none group-focus-within:text-[var(--apple-accent)] transition-colors">
+                            <div className="absolute left-5 inset-y-0 flex items-center text-[var(--apple-text-secondary)] pointer-events-none group-focus-within:opacity-0 transition-opacity duration-300">
                                 <Type size={18} />
                             </div>
                             <input 
@@ -66,7 +66,7 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onAdd }) =
                                 placeholder="ex: Site do Cliente A"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="apple-input w-full pl-12 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20 transition-all font-medium py-4"
+                                className="apple-input w-full pl-14 focus:pl-5 bg-[var(--apple-input-bg)] border-2 border-transparent focus:border-[var(--apple-accent)]/20 transition-all font-bold py-4 text-sm"
                             />
                         </div>
                     </div>

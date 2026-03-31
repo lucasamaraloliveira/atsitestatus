@@ -118,43 +118,42 @@ const App: React.FC = () => {
         setIsMonitoring,
         monitoringInterval,
         setMonitoringInterval,
-        selectedSiteId,
-        setSelectedSiteId,
-        recentlyDeleted,
-        notifications,
-        removeNotification,
-        isDeleteModalOpen,
-        siteToDelete,
-        isGlobalReportModalOpen,
-        setIsGlobalReportModalOpen,
-        isClearHistoryModalOpen,
-        siteToClearHistory,
-        childUsers,
-        addChildUser,
-        removeChildUser,
-        userRole,
-        userProfile,
-        handleAddSite,
-        handleRequestDelete,
-        handleConfirmDelete,
-        handleCloseDeleteModal,
-        handleUndoDelete,
-        handleEditSite,
-        handleUpdateSite,
-        handleRefreshSite,
-        handleRefreshAll,
-        requestClearHistory,
-        confirmClearHistory,
-        closeClearHistoryModal,
-        viewMode,
-        setViewMode,
-        isAddSiteModalOpen,
-        setIsAddSiteModalOpen,
-        notificationEmail,
-        emailNotifyType,
-        saveEmailSettings,
+        selectedSiteId, setSelectedSiteId, recentlyDeleted, notifications, removeNotification,
+        isDeleteModalOpen, siteToDelete, isGlobalReportModalOpen, setIsGlobalReportModalOpen,
+        isClearHistoryModalOpen, siteToClearHistory,
+        childUsers, addChildUser, removeChildUser, userRole, userProfile,
+        handleAddSite, handleRequestDelete, handleConfirmDelete,
+        handleCloseDeleteModal, handleUndoDelete, handleEditSite, handleUpdateSite, handleRefreshSite, handleRefreshAll,
+        requestClearHistory, confirmClearHistory, closeClearHistoryModal,
+        viewMode, setViewMode, isAddSiteModalOpen, setIsAddSiteModalOpen,
+        notificationEmail, emailNotifyType, setNotificationEmail, setEmailNotifyType, saveEmailSettings,
+        inactivityTimeout, setInactivityTimeout, addToastNotification,
         clearAllLogs
     } = useSiteMonitoring(currentUser);
+
+    // Watchdog de Inatividade (Auto-Logout)
+    useEffect(() => {
+        if (!currentUser || inactivityTimeout === -1) return;
+
+        let timeoutId: number;
+        const resetTimer = () => {
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = window.setTimeout(() => {
+                handleLogout();
+                addToastNotification("Sessão encerrada por inatividade.", "alert");
+            }, inactivityTimeout * 1000);
+        };
+
+        const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+        events.forEach(event => window.addEventListener(event, resetTimer));
+        
+        resetTimer(); // Inicia o timer na montagem
+
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId);
+            events.forEach(event => window.removeEventListener(event, resetTimer));
+        };
+    }, [currentUser, inactivityTimeout]);
 
     const handleLogin = async (username: string, password?: string): Promise<boolean> => {
         if (!username.trim()) return false;
@@ -480,6 +479,8 @@ const App: React.FC = () => {
                         notificationEmail={notificationEmail}
                         emailNotifyType={emailNotifyType}
                         saveEmailSettings={saveEmailSettings}
+                        inactivityTimeout={inactivityTimeout}
+                        setInactivityTimeout={setInactivityTimeout}
                         childUsers={childUsers}
                         addChildUser={addChildUser}
                         removeChildUser={removeChildUser}
