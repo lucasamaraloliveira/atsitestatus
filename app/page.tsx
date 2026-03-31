@@ -29,7 +29,7 @@ const App: React.FC = () => {
     const [activeView, setActiveView] = useState('dashboard');
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
-    const [showSplash, setShowSplash] = useState(true);
+    const [showSplash, setShowSplash] = useState(false);
 
     useEffect(() => {
         setIsMounted(true);
@@ -42,9 +42,6 @@ const App: React.FC = () => {
         else if (window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme('dark');
         
         setSidebarCollapsed(savedCollapsed);
-
-        const timer = setTimeout(() => setShowSplash(false), 3000);
-        return () => clearTimeout(timer);
     }, []);
 
     useEffect(() => {
@@ -59,6 +56,7 @@ const App: React.FC = () => {
     const handleLogout = () => {
         localStorage.removeItem('currentUser');
         setCurrentUser(null);
+        setShowSplash(false);
     };
 
     const {
@@ -97,6 +95,14 @@ const App: React.FC = () => {
         };
     }, [currentUser, inactivityTimeout]);
 
+    // Efeito para timer do Splash
+    useEffect(() => {
+        if (showSplash) {
+            const timer = setTimeout(() => setShowSplash(false), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [showSplash]);
+
     const handleRegister = async (username: string, password: string, name: string): Promise<boolean> => {
         if (!username.trim() || !password.trim()) return false;
         try {
@@ -105,6 +111,7 @@ const App: React.FC = () => {
             await setDoc(doc(db, 'users', username), { username, password, name, role: 'admin', sites: [], isMonitoring: false, monitoringInterval: 60, childUsers: [], createdAt: Date.now() });
             localStorage.setItem('currentUser', username);
             setCurrentUser(username);
+            setShowSplash(true);
             return true;
         } catch (error) {
             console.error("Erro no registro:", error);
@@ -125,6 +132,7 @@ const App: React.FC = () => {
                 }
                 localStorage.setItem('currentUser', username);
                 setCurrentUser(username);
+                setShowSplash(true);
                 return true;
             }
             if (userSnap.exists()) {
@@ -132,6 +140,7 @@ const App: React.FC = () => {
                 if (userData.password === password) {
                     localStorage.setItem('currentUser', username);
                     setCurrentUser(username);
+                    setShowSplash(true);
                     return true;
                 }
             }
@@ -204,10 +213,10 @@ const App: React.FC = () => {
                             <button onClick={() => setIsGlobalReportModalOpen(true)} className="apple-button h-11 px-6 shadow-lg">Exportar PDF</button>
                         </header>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="glass apple-card p-8 text-center">
+                            <div className="glass apple-card p-8 text-center border-none shadow-xl">
                                 <BarChart3 size={40} className="mx-auto mb-4 text-[var(--apple-accent)]" />
-                                <h3 className="font-bold text-lg">Performance Local</h3>
-                                <p className="text-sm text-[var(--apple-text-secondary)] mt-2">Dados processados em tempo real na sua região.</p>
+                                <h3 className="font-bold text-lg">Performance Máxima</h3>
+                                <p className="text-sm text-[var(--apple-text-secondary)] mt-2">Dados otimizados e relatórios consolidados.</p>
                             </div>
                         </div>
                     </div>
@@ -220,7 +229,7 @@ const App: React.FC = () => {
                             <h2 className="text-4xl font-extrabold tracking-tight">Atividade</h2>
                             {allLogs.length > 0 && <button onClick={clearAllLogs} className="px-4 py-2 bg-[#FF3B30]/10 text-[#FF3B30] text-[10px] font-black uppercase tracking-widest rounded-xl">Limpar Tudo</button>}
                         </header>
-                        <div className="glass apple-card p-0 overflow-hidden">
+                        <div className="glass apple-card p-0 overflow-hidden border-none shadow-2xl">
                             <div className="divide-y divide-[var(--apple-border)]">
                                 {allLogs.sort((a, b) => b.timestamp - a.timestamp).slice(0, 50).map((log, idx) => (
                                     <div key={idx} className="p-5 flex items-center justify-between hover:bg-white/5 transition-colors">
@@ -243,6 +252,7 @@ const App: React.FC = () => {
     };
 
     if (!isMounted) return null;
+
     if (showSplash) {
         return (
             <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[var(--apple-bg)] animate-fade-in">
@@ -270,7 +280,7 @@ const App: React.FC = () => {
                 />
             </div>
 
-            <main className="flex-1 md:ml-0 overflow-y-auto w-full p-6 md:p-12 pb-32 md:pb-12">
+            <main className={`flex-1 transition-all duration-300 overflow-y-auto w-full p-6 md:p-12 pb-32 md:pb-12 ${sidebarCollapsed ? 'md:ml-24' : 'md:ml-72'}`}>
                 {/* Header Mobile Minimalista */}
                 <header className="flex md:hidden items-center justify-between mb-8">
                     <div className="flex items-center gap-2">
@@ -286,7 +296,6 @@ const App: React.FC = () => {
                 {renderActiveView()}
             </main>
 
-            {/* Bottom Navigation Mobile - Premium iOS Style */}
             <nav className="fixed bottom-0 left-0 right-0 h-20 md:hidden z-[90] flex items-center justify-around px-2 glass-dark border-t border-white/5 pb-5">
                 {[
                     { id: 'dashboard', icon: LayoutDashboard, label: 'Painel' },
@@ -309,7 +318,6 @@ const App: React.FC = () => {
                 ))}
             </nav>
 
-            {/* Toast e Modais - Sincronizados com Interfaces Reais */}
             {notifications.map(n => <NotificationToast key={n.id} message={n.message} type={n.type} onDismiss={() => removeNotification(n.id)} />)}
             
             <ConfirmationModal 
