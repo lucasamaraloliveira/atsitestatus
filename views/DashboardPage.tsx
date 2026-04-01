@@ -18,6 +18,7 @@ import {
     AlertCircle,
     ArrowUpRight
 } from 'lucide-react';
+import LatencySparkline from '@/components/LatencySparkline';
 
 interface DashboardPageProps {
     sites: StatusResult[];
@@ -191,7 +192,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     {filteredSites.map((site) => (
                         <div key={site.id} className="glass apple-card animate-fade-in-slide-up hover:translate-y-[-4px] transition-all group">
                             <div className="p-6 md:p-8">
-                                <div className="flex items-start justify-between mb-6 md:mb-8">
+                                <div className="flex items-start justify-between mb-6">
                                     <div className="flex items-center gap-4">
                                         <div className={`p-4 rounded-2xl ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]/10 text-[#007AFF]' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'}`}>
                                             <Globe size={24} />
@@ -210,18 +211,23 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                     </div>
                                 </div>
 
-                                <div className="space-y-3 md:space-y-4">
+                                <div className="space-y-3 mb-6">
                                     <div className="flex items-center justify-between p-4 bg-[var(--apple-input-bg)] rounded-2xl">
                                         <div className="flex items-center gap-3"><Activity size={14} className="text-[var(--apple-text-secondary)]"/><span className="text-xs font-bold text-[var(--apple-text-secondary)]">Latência</span></div>
                                         <span className="font-black text-[var(--apple-text)] text-sm">{site.latency ? `${site.latency}ms` : '--'}</span>
                                     </div>
-                                    <div className="flex items-center justify-between p-4 bg-[var(--apple-input-bg)] rounded-2xl">
-                                        <div className="flex items-center gap-3"><Clock size={14} className="text-[var(--apple-text-secondary)]"/><span className="text-xs font-bold text-[var(--apple-text-secondary)]">Verificação</span></div>
-                                        <span className="font-black text-[var(--apple-text)] text-[10px]">{site.timestamp ? site.timestamp.split(',')[1] : '--'}</span>
+                                    
+                                    <div className="p-4 bg-[var(--apple-input-bg)] rounded-2xl">
+                                        <p className="text-[9px] font-black uppercase tracking-[0.15em] text-[var(--apple-text-secondary)] mb-3">Tendência de Performance</p>
+                                        <LatencySparkline logs={logs[site.id] || []} color={site.status === CheckStatus.ONLINE ? '#34C759' : '#FF3B30'} height={50} />
+                                    </div>
+
+                                    <div className="flex items-center justify-between px-4 text-[var(--apple-text-secondary)]">
+                                        <div className="flex items-center gap-2"><Clock size={12} className="opacity-50"/><span className="text-[10px] font-bold italic">Último check: {site.timestamp ? site.timestamp.split(',')[1] : '--'}</span></div>
                                     </div>
                                 </div>
 
-                                <button onClick={() => setSelectedSiteId(site.id)} className="w-full mt-6 md:mt-8 py-3.5 md:py-4 rounded-2xl bg-[var(--apple-input-bg)] text-[var(--apple-text)] font-semibold text-xs hover:bg-[var(--apple-accent)] hover:text-white transition-all flex items-center justify-center gap-2">
+                                <button onClick={() => setSelectedSiteId(site.id)} className="w-full py-4 rounded-2xl bg-[var(--apple-input-bg)] text-[var(--apple-text)] font-semibold text-xs hover:bg-[var(--apple-accent)] hover:text-white transition-all flex items-center justify-center gap-2 border border-[var(--apple-border)]">
                                     Histórico Detalhado <ArrowUpRight size={14} />
                                 </button>
                             </div>
@@ -230,13 +236,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                 </div>
             ) : (
                 <div className="glass apple-card overflow-x-auto border-none shadow-2xl no-scrollbar">
-                    <table className="w-full text-left border-collapse min-w-[700px]">
+                    <table className="w-full text-left border-collapse min-w-[850px]">
                         <thead>
                             <tr className="bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)] text-[10px] font-black uppercase tracking-[0.15em]">
                                 <th className="px-8 py-6">Website</th>
                                 <th className="px-8 py-6">Status</th>
                                 <th className="px-8 py-6">Latência</th>
-                                <th className="px-8 py-6">Visto pela última vez</th>
+                                <th className="px-8 py-6">Tendência</th>
+                                <th className="px-8 py-6">Check</th>
                                 <th className="px-8 py-6 text-right">Ações</th>
                             </tr>
                         </thead>
@@ -253,7 +260,10 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                         <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]/10 text-[#007AFF]' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'}`}>{site.status}</span>
                                     </td>
                                     <td className="px-8 py-5 text-sm font-black text-[var(--apple-text)]">{site.latency ? `${site.latency}ms` : '--'}</td>
-                                    <td className="px-8 py-5 text-[10px] font-bold text-[var(--apple-text-secondary)]">{site.timestamp || '--'}</td>
+                                    <td className="px-8 py-5 w-[140px]">
+                                        <LatencySparkline logs={logs[site.id] || []} color={site.status === CheckStatus.ONLINE ? '#34C759' : '#FF3B30'} height={24} />
+                                    </td>
+                                    <td className="px-8 py-5 text-[10px] font-bold text-[var(--apple-text-secondary)]">{site.timestamp ? site.timestamp.split(',')[1] : '--'}</td>
                                     <td className="px-8 py-5 text-right">
                                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button onClick={(e) => { e.stopPropagation(); handleRefreshSite(site.id); }} className="p-2 rounded-lg hover:bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)]"><RefreshCw size={14} /></button>
@@ -266,6 +276,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     </table>
                 </div>
             )}
+
 
             {filteredSites.length === 0 && (
                 <div className="glass apple-card py-20 text-center border-none shadow-xl border border-[var(--apple-border)]">
