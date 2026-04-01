@@ -91,21 +91,29 @@ export async function POST(req: Request) {
             access_key: accessKey,
             subject: `[ALERTA STATUS] ${siteName} está ${status.toUpperCase()}`,
             from_name: "ATSiteStatus Alertas",
-            to_email: to, // Se for Pro. Se for Free, irá para o e-email da conta.
-            replyto: "no-reply@atsitestatus.com", // Evita sugestão de resposta
-            message: `Alerta de Monitoramento: ${siteName} (${url}) está ${status}. Detalhes: ${message}`,
+            to_email: to,
+            replyto: "no-reply@atsitestatus.com",
+            message: `Alerta: ${siteName} está ${status}.`,
             html: htmlContent,
-            botcheck: false, // Opcional, para evitar atrasos de validação
-            redirect: ""     // Evita redirecionamentos desnecessários
+            botcheck: false,
+            redirect: ""
         })
     });
 
-    const result = await response.json();
-
-    if (result.success) {
-        return NextResponse.json({ success: true, message: 'Email enviado com sucesso via Web3Forms' });
+    const contentType = response.headers.get('content-type');
+    
+    if (contentType && contentType.includes('application/json')) {
+        const result = await response.json();
+        if (result.success) {
+            return NextResponse.json({ success: true, message: 'Email enviado' });
+        } else {
+            console.error('Erro Web3Forms:', result);
+            return NextResponse.json({ error: result.message || 'Erro no envio' }, { status: 400 });
+        }
     } else {
-        return NextResponse.json({ error: result.message || 'Falha no Web3Forms' }, { status: 500 });
+        const text = await response.text();
+        console.error('Resposta não-JSON do Web3Forms:', text);
+        return NextResponse.json({ error: 'O serviço de e-mail retornou um erro inesperado' }, { status: 500 });
     }
 
   } catch (error) {
