@@ -207,9 +207,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                             <div className="p-6 md:p-8">
                                 <div className="flex items-start justify-between mb-6">
                                     <div className="flex items-center gap-4">
-                                        <div className={`p-4 rounded-2xl ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]/10 text-[#007AFF]' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'} transition-colors duration-500`}>
+                                        <a 
+                                            href={site.url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            onClick={(e) => e.stopPropagation()}
+                                            title="Acessar Site"
+                                            className={`p-4 rounded-2xl ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]/10 text-[#007AFF]' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'} transition-all duration-500 hover:scale-110 active:scale-95`}
+                                        >
                                             <Globe size={24} className={site.status === CheckStatus.CHECKING ? 'animate-pulse' : ''} />
-                                        </div>
+                                        </a>
                                         <div>
                                             <h3 className="font-black text-lg text-[var(--apple-text)] truncate max-w-[120px] sm:max-w-[140px]">{site.name || site.url}</h3>
                                             <div className="flex items-center gap-1.5 mt-0.5">
@@ -271,9 +278,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                 {/* Row 1: Logo, Title and Status */}
                                 <div className="flex items-center justify-between md:justify-start gap-3 min-w-0">
                                     <div className="flex items-center gap-3 min-w-0">
-                                        <div className={`p-2.5 rounded-xl ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]/10 text-[#007AFF]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'} shrink-0 transition-colors duration-500`}>
+                                        <a 
+                                            href={site.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={(e) => e.stopPropagation()}
+                                            title="Acessar Site"
+                                            className={`p-2.5 rounded-xl ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]/10 text-[#007AFF]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'} shrink-0 transition-all duration-500 hover:scale-110 active:scale-95`}
+                                        >
                                             <Globe size={18} className={site.status === CheckStatus.CHECKING ? 'animate-pulse' : ''} />
-                                        </div>
+                                        </a>
                                         <span className="font-bold text-[15px] md:text-sm tracking-tight truncate text-[var(--apple-text)]">{site.name || site.url}</span>
                                     </div>
                                     <span className={`md:hidden px-3 py-1 rounded-full text-[9px] font-black uppercase ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]/10 text-[#007AFF]' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'}`}>
