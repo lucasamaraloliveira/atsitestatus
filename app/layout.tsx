@@ -21,15 +21,25 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "ATSiteStatus - Monitoramento de Sites",
+  title: "ATSiteStatus - Monitoramento Premium",
   description: "Monitoramento inteligente e disponibilidade em tempo real para sua infraestrutura digital.",
+  manifest: "/manifest.json",
+  themeColor: "#007AFF",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "ATSiteStatus",
+  },
   icons: {
     icon: [
       { url: "/favicon.ico" },
-      { url: "/favicon.png", type: "image/png" },
+      { url: "/manifest-icon-192.png", sizes: "192x192", type: "image/png" },
     ],
     shortcut: "/favicon.ico",
-    apple: "/favicon.png",
+    apple: [
+      { url: "/manifest-icon-512.png" },
+      { url: "/favicon.png" },
+    ],
   },
 };
 
@@ -40,9 +50,14 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="pt-BR"
       className={`${geistSans.variable} ${geistMono.variable} ${outfit.variable} h-full antialiased`}
     >
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      </head>
       <body className="min-h-full flex flex-col">
         {children}
         {/* Bibliotecas pesadas carregadas de forma otimizada */}
