@@ -1,14 +1,14 @@
 import React from 'react';
-import { 
-    CheckStatus 
+import {
+    CheckStatus
 } from '@/types';
 import type { StatusResult, LogEntry } from '@/types';
-import { 
-    Search, 
-    RefreshCw, 
-    Trash2, 
-    Edit2, 
-    Clock, 
+import {
+    Search,
+    RefreshCw,
+    Trash2,
+    Edit2,
+    Clock,
     Activity,
     ChevronRight,
     LayoutGrid,
@@ -74,19 +74,19 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     const [searchQuery, setSearchQuery] = React.useState('');
     const userRole = userProfile?.role || 'admin';
     const userProfileType = userProfile?.profile || 'admin';
-    
+
     // Regras de acesso
     const canAdd = userRole === 'admin' || userProfileType === 'analyst';
     const canEdit = userRole === 'admin' || userProfileType === 'analyst';
-    const canDelete = userRole === 'admin'; 
+    const canDelete = userRole === 'admin';
 
     type FilterType = CheckStatus | 'ALL';
 
     const filteredSites = sites
         .filter(site => {
             const matchesStatus = filter === 'ALL' || site.status === filter;
-            const matchesSearch = !searchQuery.trim() || 
-                (site.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+            const matchesSearch = !searchQuery.trim() ||
+                (site.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                 site.url.toLowerCase().includes(searchQuery.toLowerCase());
             return matchesStatus && matchesSearch;
         })
@@ -103,7 +103,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     <h2 className="text-4xl font-extrabold text-[var(--apple-text)] tracking-tight">Painel de Controle</h2>
                     <p className="text-[var(--apple-text-secondary)] mt-2 font-medium">Controle total sobre a disponibilidade de sua infraestrutura.</p>
                 </div>
-                
+
                 <div className="flex items-center gap-4 bg-[var(--apple-input-bg)] p-1.5 rounded-3xl border border-[var(--apple-border)]">
                     <div className="flex items-center px-4 py-2 gap-3">
                         <div className={`w-3 h-3 rounded-full ${isMonitoring ? 'bg-[#34C759] shadow-[0_0_12px_rgba(52,199,89,0.5)] animate-pulse' : 'bg-gray-400'}`}></div>
@@ -114,7 +114,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     {userRole === 'admin' && (
                         <>
                             <div className="w-px h-6 bg-[var(--apple-border)]"></div>
-                            <button 
+                            <button
                                 onClick={() => setIsMonitoring(!isMonitoring)}
                                 className={`px-6 py-2 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${isMonitoring ? 'bg-[#FF3B30] text-white' : 'bg-[#34C759] text-white'}`}
                             >
@@ -133,7 +133,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                         <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] transition-colors group-focus-within:text-[var(--apple-accent)]">
                             <Search size={18} strokeWidth={2.5} />
                         </div>
-                        <input 
+                        <input
                             type="text"
                             placeholder="Buscar site por nome ou URL..."
                             value={searchQuery}
@@ -156,8 +156,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                 onClick={() => setFilter(item.value)}
                                 className={`relative z-10 flex items-center justify-center md:justify-start gap-2 px-4 py-2.5 rounded-[16px] md:rounded-[14px] text-[12px] md:text-[13px] font-bold transition-all duration-300
                                     ${item.value === 'ALL' ? 'col-span-2 sm:col-span-1 md:col-span-auto' : ''}
-                                    ${filter === item.value 
-                                        ? 'bg-[var(--apple-card-bg)] text-[var(--apple-text)] shadow-lg scale-[1.02]' 
+                                    ${filter === item.value
+                                        ? 'bg-[var(--apple-card-bg)] text-[var(--apple-text)] shadow-lg scale-[1.02]'
                                         : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)] opacity-60'
                                     }`}
                             >
@@ -171,7 +171,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                 {/* Secondary Controls - Sort & View Mode */}
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 bg-[var(--apple-input-bg)] p-1 rounded-2xl border border-[var(--apple-border)]">
-                        <button 
+                        <button
                             onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                             className="flex items-center gap-2 px-4 py-2 hover:bg-white/5 rounded-xl transition-all group"
                         >
@@ -182,17 +182,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                 {sortOrder === 'asc' ? 'A-Z' : 'Z-A'}
                             </span>
                         </button>
-                        
+
                         <div className="w-px h-4 bg-[var(--apple-border)]"></div>
-                        
+
                         <div className="flex items-center gap-1 px-1">
-                            <button 
+                            <button
                                 onClick={() => setViewMode('card')}
                                 className={`p-2 rounded-xl transition-all ${viewMode === 'card' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-md' : 'text-[var(--apple-text-secondary)] opacity-40 hover:opacity-100'}`}
                             >
                                 <LayoutGrid size={16} strokeWidth={2.5} />
                             </button>
-                            <button 
+                            <button
                                 onClick={() => setViewMode('list')}
                                 className={`p-2 rounded-xl transition-all ${viewMode === 'list' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-md' : 'text-[var(--apple-text-secondary)] opacity-40 hover:opacity-100'}`}
                             >
@@ -202,7 +202,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <button 
+                        <button
                             onClick={handleRefreshAll}
                             className="p-3.5 bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)] rounded-2xl border border-[var(--apple-border)] hover:text-[var(--apple-accent)] active:scale-95 transition-all shadow-sm"
                             title="Atualizar Tudo"
@@ -210,8 +210,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                             <RefreshCw size={18} strokeWidth={2.5} className={isMonitoring ? 'animate-spin opacity-50' : ''} />
                         </button>
                         {canAdd && (
-                            <button 
-                                onClick={onOpenAddSiteModal} 
+                            <button
+                                onClick={onOpenAddSiteModal}
                                 className="hidden md:flex bg-[#007AFF] hover:bg-[#0062CC] text-white font-bold py-3.5 px-6 rounded-2xl transition-all text-sm items-center gap-2 shadow-lg shadow-[#007AFF]/20"
                             >
                                 <Activity size={16} strokeWidth={2.5} />
@@ -229,9 +229,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                             <div className="p-6 md:p-8">
                                 <div className="flex items-start justify-between mb-6">
                                     <div className="flex items-center gap-4">
-                                        <a 
-                                            href={site.url} 
-                                            target="_blank" 
+                                        <a
+                                            href={site.url}
+                                            target="_blank"
                                             rel="noopener noreferrer"
                                             onClick={(e) => e.stopPropagation()}
                                             title="Acessar Site"
@@ -257,17 +257,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
                                 <div className="space-y-3 mb-6">
                                     <div className="flex items-center justify-between p-4 bg-[var(--apple-input-bg)] rounded-2xl">
-                                        <div className="flex items-center gap-3"><Activity size={14} className="text-[var(--apple-text-secondary)]"/><span className="text-xs font-bold text-[var(--apple-text-secondary)]">Latência</span></div>
+                                        <div className="flex items-center gap-3"><Activity size={14} className="text-[var(--apple-text-secondary)]" /><span className="text-xs font-bold text-[var(--apple-text-secondary)]">Latência</span></div>
                                         <span className="font-black text-[var(--apple-text)] text-sm">{site.latency ? `${site.latency}ms` : '--'}</span>
                                     </div>
-                                    
+
                                     <div className="p-4 bg-[var(--apple-input-bg)] rounded-2xl">
                                         <p className="text-[9px] font-black uppercase tracking-[0.15em] text-[var(--apple-text-secondary)] mb-3">Tendência de Performance</p>
                                         <LatencySparkline logs={logs[site.id] || []} color={site.status === CheckStatus.ONLINE ? '#34C759' : site.status === CheckStatus.CHECKING ? '#007AFF' : site.status === CheckStatus.ERROR ? '#FF9500' : '#FF3B30'} height={50} />
                                     </div>
 
                                     <div className="flex items-center justify-between px-4 text-[var(--apple-text-secondary)]">
-                                        <div className="flex items-center gap-2"><Clock size={12} className="opacity-50"/><span className="text-[10px] font-bold italic">Último check: {site.timestamp ? site.timestamp.split(',')[1] : '--'}</span></div>
+                                        <div className="flex items-center gap-2"><Clock size={12} className="opacity-50" /><span className="text-[10px] font-bold italic">Último check: {site.timestamp ? site.timestamp.split(',')[1] : '--'}</span></div>
                                     </div>
                                 </div>
 
@@ -292,15 +292,15 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
                     <div className="divide-y divide-[var(--apple-border)]">
                         {filteredSites.map((site) => (
-                            <div 
-                                key={site.id} 
-                                onClick={() => setSelectedSiteId(site.id)} 
+                            <div
+                                key={site.id}
+                                onClick={() => setSelectedSiteId(site.id)}
                                 className="px-5 py-6 md:px-8 hover:bg-white/5 transition-colors cursor-pointer group flex flex-col md:grid md:grid-cols-[1fr_120px_100px_140px_120px_100px] md:items-center gap-5 md:gap-0"
                             >
                                 {/* Row 1: Logo, Title and Status */}
                                 <div className="flex items-center justify-between md:justify-start gap-3 min-w-0">
                                     <div className="flex items-center gap-3 min-w-0">
-                                        <a 
+                                        <a
                                             href={site.url}
                                             target="_blank"
                                             rel="noopener noreferrer"
@@ -362,31 +362,31 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                 {/* Actions Cell */}
                                 <div className="flex items-center justify-between md:justify-end gap-3 md:opacity-0 md:group-hover:opacity-100 transition-opacity min-w-[100px]">
                                     <div className="flex items-center gap-2">
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); handleRefreshSite(site.id); }} 
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleRefreshSite(site.id); }}
                                             className="p-3 md:p-2 bg-[var(--apple-input-bg)] md:bg-transparent rounded-xl md:rounded-lg text-[var(--apple-text-secondary)] hover:text-[var(--apple-accent)] transition-all"
                                         >
                                             <RefreshCw size={14} strokeWidth={2.5} />
                                             <span className="md:hidden text-[10px] font-bold ml-2">Atualizar</span>
                                         </button>
-                                            {canEdit && (
-                                                <button 
-                                                    onClick={(e) => { e.stopPropagation(); handleEditSite(site.id); }} 
-                                                    className="p-3 md:p-2 bg-[var(--apple-input-bg)] md:bg-transparent rounded-xl md:rounded-lg text-[var(--apple-text-secondary)] hover:text-[var(--apple-accent)] transition-all"
-                                                >
-                                                    <Edit2 size={14} strokeWidth={2.5} />
-                                                    <span className="md:hidden text-[10px] font-bold ml-2">Editar</span>
-                                                </button>
-                                            )}
-                                            {canDelete && (
-                                                <button 
-                                                    onClick={(e) => { e.stopPropagation(); handleRequestDelete(site.id); }} 
-                                                    className="p-3 md:p-2 bg-[var(--apple-input-bg)] md:bg-transparent rounded-xl md:rounded-lg text-[#FF3B30]/60 hover:text-[#FF3B30] transition-all"
-                                                >
-                                                    <Trash2 size={14} strokeWidth={2.5} />
-                                                    <span className="md:hidden text-[10px] font-bold ml-2 text-[#FF3B30]">Remover</span>
-                                                </button>
-                                            )}
+                                        {canEdit && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleEditSite(site.id); }}
+                                                className="p-3 md:p-2 bg-[var(--apple-input-bg)] md:bg-transparent rounded-xl md:rounded-lg text-[var(--apple-text-secondary)] hover:text-[var(--apple-accent)] transition-all"
+                                            >
+                                                <Edit2 size={14} strokeWidth={2.5} />
+                                                <span className="md:hidden text-[10px] font-bold ml-2">Editar</span>
+                                            </button>
+                                        )}
+                                        {canDelete && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleRequestDelete(site.id); }}
+                                                className="p-3 md:p-2 bg-[var(--apple-input-bg)] md:bg-transparent rounded-xl md:rounded-lg text-[#FF3B30]/60 hover:text-[#FF3B30] transition-all"
+                                            >
+                                                <Trash2 size={14} strokeWidth={2.5} />
+                                                <span className="md:hidden text-[10px] font-bold ml-2 text-[#FF3B30]">Remover</span>
+                                            </button>
+                                        )}
                                     </div>
                                     <ChevronRight size={14} className="md:hidden text-[var(--apple-text-secondary)] opacity-30" />
                                 </div>

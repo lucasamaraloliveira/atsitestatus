@@ -4,15 +4,15 @@ import { requestNotificationPermission, sendNotification } from '@/services/noti
 import { CheckStatus } from '@/types';
 import type { StatusResult, LogEntry, AudioSettings } from '@/types';
 import { db } from '@/services/firebase';
-import { 
-    doc, 
-    onSnapshot, 
-    setDoc, 
-    collection, 
-    addDoc, 
-    query, 
-    orderBy, 
-    limit, 
+import {
+    doc,
+    onSnapshot,
+    setDoc,
+    collection,
+    addDoc,
+    query,
+    orderBy,
+    limit,
     getDocs,
     deleteDoc,
     writeBatch
@@ -20,7 +20,7 @@ import {
 
 type NotificationType = { id: number; message: string; type: 'alert' | 'warning' | 'success' | 'info' };
 const MAX_LOG_ENTRIES_PER_SITE = 100;
-const HIGH_LATENCY_THRESHOLD = 1500; 
+const HIGH_LATENCY_THRESHOLD = 1500;
 
 export const useSiteMonitoring = (username: string | null) => {
     const [sites, setSites] = useState<StatusResult[]>([]);
@@ -43,7 +43,7 @@ export const useSiteMonitoring = (username: string | null) => {
 
     const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
     const [isAddSiteModalOpen, setIsAddSiteModalOpen] = useState(false);
-    
+
     // Configurações de E-mail e Segurança
     const [notificationEmail, setNotificationEmail] = useState('');
     const [emailNotifyType, setEmailNotifyType] = useState<'success' | 'error' | 'all'>('error');
@@ -113,12 +113,12 @@ export const useSiteMonitoring = (username: string | null) => {
             return onSnapshot(userRef, (snapshot) => {
                 if (snapshot.exists() && !lockRef.current) {
                     const data = snapshot.data();
-                    
+
                     let finalEffectiveId = targetUser;
 
                     if (!isParentFetch && data.role === 'child' && data.parentId) {
                         setUserRole('child');
-                        setUserProfile(data); 
+                        setUserProfile(data);
                         if (unsubRef.current) unsubRef.current();
                         unsubRef.current = fetchUserData(data.parentId, true);
                         return;
@@ -136,7 +136,7 @@ export const useSiteMonitoring = (username: string | null) => {
                     // CARREGAMENTO DE ESTADOS (Independente se é pai ou filho buscando do pai)
                     setIsMonitoring(!!data.isMonitoring);
                     setMonitoringInterval(data.monitoringInterval || 60);
-                    
+
                     if (!isParentFetch) {
                         if (data.notificationEmail) setNotificationEmail(data.notificationEmail);
                         if (data.emailNotifyType) setEmailNotifyType(data.emailNotifyType);
@@ -152,7 +152,7 @@ export const useSiteMonitoring = (username: string | null) => {
                     if (isParentFetch || data.role !== 'child') {
                         setSites(data.sites || []);
                         setChildUsers(data.childUsers || []);
-                        setEffectiveOwnerId(targetUser); 
+                        setEffectiveOwnerId(targetUser);
                     }
 
                 } else if (!snapshot.exists() && !isParentFetch) {
@@ -184,7 +184,7 @@ export const useSiteMonitoring = (username: string | null) => {
             });
         });
         return () => unsubscribes.forEach(unsub => unsub());
-    }, [effectiveOwnerId, sites.length]); 
+    }, [effectiveOwnerId, sites.length]);
 
     const cleanData = (obj: any): any => {
         if (Array.isArray(obj)) return obj.map(cleanData);
@@ -199,17 +199,17 @@ export const useSiteMonitoring = (username: string | null) => {
     };
 
     const saveToFirestore = useCallback(async (
-        updatedSites?: StatusResult[], 
-        updatedInterval?: number, 
-        updatedMonitoring?: boolean, 
+        updatedSites?: StatusResult[],
+        updatedInterval?: number,
+        updatedMonitoring?: boolean,
         updatedChildUsers?: any[],
         updatedViewMode?: 'card' | 'list'
     ) => {
         if (!username || !effectiveOwnerId) return;
-        
+
         try {
             const batch = writeBatch(db);
-            
+
             // 1. DADOS INDIVIDUAIS (Salva no próprio documento do usuário logado)
             const selfRef = doc(db, 'users', username);
             const personalData: any = cleanData({
@@ -218,7 +218,7 @@ export const useSiteMonitoring = (username: string | null) => {
                 audioSettings // Agora salvando configurações de áudio pessoais
             });
             batch.set(selfRef, personalData, { merge: true });
-            
+
             // 2. DADOS COMPARTILHADOS (Ativo, Intervalo, E-mail, Equipe e Sites)
             // Salva no documento do Administrador (effectiveOwnerId)
             const ownerRef = doc(db, 'users', effectiveOwnerId);
@@ -228,10 +228,10 @@ export const useSiteMonitoring = (username: string | null) => {
                 notificationEmail,
                 emailNotifyType
             });
-            
+
             if (updatedSites) sharedData.sites = cleanData(updatedSites);
             if (updatedChildUsers) sharedData.childUsers = cleanData(updatedChildUsers);
-            
+
             batch.set(ownerRef, sharedData, { merge: true });
 
             await batch.commit();
@@ -322,11 +322,11 @@ export const useSiteMonitoring = (username: string | null) => {
             const updatedChildUsers = childUsers.filter(u => u.id !== childToDelete.id);
             setRecentlyDeletedChild(childToDelete);
             await saveToFirestore(sites, monitoringInterval, isMonitoring, updatedChildUsers);
-            
+
             // Opcional: deletar o documento individual do usuário filho (pode ser mantido ou deletado)
             // Se deletar, o undo fica mais complexo, mas por padrão vamos deletar para manter a integridade.
             await deleteDoc(doc(db, 'users', childToDelete.username));
-            
+
             setIsDeleteChildModalOpen(false);
             setChildToDelete(null);
             addToastNotification(`O operador removido. Clique aqui para desfazer`, "warning");
@@ -343,7 +343,7 @@ export const useSiteMonitoring = (username: string | null) => {
             await saveToFirestore(sites, monitoringInterval, isMonitoring, updatedChildUsers);
             const childUserRef = doc(db, 'users', recentlyDeletedChild.username);
             await setDoc(childUserRef, { ...recentlyDeletedChild, role: 'child', parentId: effectiveOwnerId }, { merge: true });
-            
+
             setRecentlyDeletedChild(null);
             addToastNotification("Membro restaurado com sucesso.", "warning");
         } catch (error) {
@@ -385,10 +385,10 @@ export const useSiteMonitoring = (username: string | null) => {
 
     const sendEmailNotification = useCallback(async (siteName: string, url: string, status: string, message: string, latency?: number) => {
         if (!notificationEmail || !emailNotifyType) return;
-        
+
         // Regras de envio baseadas na configuração do usuário
-        const shouldSend = 
-            (emailNotifyType === 'all') || 
+        const shouldSend =
+            (emailNotifyType === 'all') ||
             (emailNotifyType === 'error' && (status === 'offline' || status === 'error')) ||
             (emailNotifyType === 'success' && status === 'online');
 
@@ -408,7 +408,7 @@ export const useSiteMonitoring = (username: string | null) => {
                     timestamp: new Date().toLocaleString()
                 })
             });
-            
+
             if (!response.ok) {
                 const data = await response.json();
                 console.error("❌ Erro no Servidor de E-mail:", data.error || "Erro desconhecido");
@@ -425,12 +425,12 @@ export const useSiteMonitoring = (username: string | null) => {
         try {
             const siteToProbe = sitesRef.current.find(s => s.id === siteId);
             const result = await checkWebsiteStatus(url, siteToProbe?.keyword);
-            
+
             setSites(prev => {
                 const siteToCheck = prev.find(s => s.id === siteId);
                 if (siteToCheck) {
                     const siteName = siteToCheck.name || url;
-                    
+
                     // Lógica de Notificação quando há MUDANÇA ou ERRO
                     if (siteToCheck.status !== result.status && siteToCheck.status !== CheckStatus.CHECKING) {
                         if (result.status === CheckStatus.OFFLINE || result.status === CheckStatus.ERROR) {
@@ -469,7 +469,7 @@ export const useSiteMonitoring = (username: string | null) => {
         let url = (urlParam || newSiteUrl).trim();
         const name = (nameParam || newSiteName).trim();
         const keyword = (keywordParam || "").trim();
-        
+
         if (!url) return;
         if (!url.startsWith('http://') && !url.startsWith('https://')) url = `https://${url}`;
         try { new URL(url); } catch (_) { alert("URL inválida."); return; }
@@ -483,13 +483,13 @@ export const useSiteMonitoring = (username: string | null) => {
             message: 'Aguardando verificação...',
             timestamp: new Date().toLocaleString()
         };
-        
+
         setSites(prev => {
             const updatedSites = [...prev, newSite];
             saveToFirestore(updatedSites);
             return updatedSites;
         });
-        
+
         setNewSiteUrl('');
         setNewSiteName('');
         setIsAddSiteModalOpen(false);
@@ -501,7 +501,7 @@ export const useSiteMonitoring = (username: string | null) => {
         const site = sites.find(s => s.id === id);
         if (site) { setSiteToDelete(site); setIsDeleteModalOpen(true); }
     };
-    
+
     const handleCloseDeleteModal = () => { setIsDeleteModalOpen(false); setSiteToDelete(null); }
 
     const handleConfirmDelete = async () => {
@@ -543,10 +543,10 @@ export const useSiteMonitoring = (username: string | null) => {
             const batch = writeBatch(db);
             snapshot.docs.forEach((doc) => batch.delete(doc.ref));
             await batch.commit();
-            
+
             // Limpa o estado local imediatamente para feedback visual
             setLogs(prev => ({ ...prev, [siteToClearHistory.id]: [] }));
-            
+
             addToastNotification(`Histórico de ${siteToClearHistory.name || siteToClearHistory.url} limpo com sucesso.`, "alert");
             setIsClearHistoryModalOpen(false);
             setSiteToClearHistory(null);
@@ -613,8 +613,8 @@ export const useSiteMonitoring = (username: string | null) => {
         childUsers, addChildUser, removeChildUser, updateChildUser, userRole, userProfile,
         isDeleteChildModalOpen, childToDelete, confirmDeleteChild: handleConfirmDeleteChild, undoDeleteChild: handleUndoDeleteChild, setIsDeleteChildModalOpen,
         handleAddSite, handleRequestDelete, handleConfirmDelete,
-        handleCloseDeleteModal, handleUndoDelete, handleEditSite: (id: string) => setEditingSiteId(id), handleUpdateSite, handleRefreshSite: (id: string) => { const s = sites.find(x => x.id === id); if(s) handleCheckStatus(id, s.url); }, handleRefreshAll,
-        requestClearHistory: (id: string) => { const s = sites.find(x => x.id === id); if(s) { setSiteToClearHistory(s); setIsClearHistoryModalOpen(true); } }, confirmClearHistory: handleConfirmClearHistory, closeClearHistoryModal: () => { setIsClearHistoryModalOpen(false); setSiteToClearHistory(null); },
+        handleCloseDeleteModal, handleUndoDelete, handleEditSite: (id: string) => setEditingSiteId(id), handleUpdateSite, handleRefreshSite: (id: string) => { const s = sites.find(x => x.id === id); if (s) handleCheckStatus(id, s.url); }, handleRefreshAll,
+        requestClearHistory: (id: string) => { const s = sites.find(x => x.id === id); if (s) { setSiteToClearHistory(s); setIsClearHistoryModalOpen(true); } }, confirmClearHistory: handleConfirmClearHistory, closeClearHistoryModal: () => { setIsClearHistoryModalOpen(false); setSiteToClearHistory(null); },
         viewMode, setViewMode: handleSetViewMode, isAddSiteModalOpen, setIsAddSiteModalOpen,
         notificationEmail, emailNotifyType, setNotificationEmail, setEmailNotifyType, saveEmailSettings: handleSetEmailSettings,
         inactivityTimeout, setInactivityTimeout: handleSetInactivityTimeout,

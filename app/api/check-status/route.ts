@@ -6,7 +6,7 @@ export const revalidate = 0;
 export async function POST(request: Request) {
     try {
         const { url, keyword } = await request.json();
-        
+
         if (!url) return NextResponse.json({ error: 'URL is required' }, { status: 400 });
 
         let cleanUrl = url.trim();
