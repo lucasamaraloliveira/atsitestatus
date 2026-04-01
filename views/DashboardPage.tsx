@@ -288,33 +288,43 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                     </span>
                                 </div>
 
-                                {/* Mobile Info Grid + Desktop Latency */}
-                                <div className="grid grid-cols-3 md:flex md:items-center gap-4 py-4 px-4 md:p-0 bg-[var(--apple-input-bg)] md:bg-transparent rounded-2xl md:rounded-none">
-                                    {/* Latency */}
-                                    <div className="flex flex-col md:block">
-                                        <span className="md:hidden text-[9px] font-black text-[var(--apple-text-secondary)] uppercase tracking-wider mb-1">Latência</span>
+                                {/* Latency - Desktop Cell */}
+                                <div className="hidden md:block text-sm font-black text-[var(--apple-text)]">
+                                    {site.latency ? `${site.latency}ms` : '--'}
+                                </div>
+
+                                {/* Trend - Desktop Cell */}
+                                <div className="hidden md:block w-[120px]">
+                                    <LatencySparkline logs={logs[site.id] || []} color={site.status === CheckStatus.ONLINE ? '#34C759' : '#FF3B30'} height={20} />
+                                </div>
+
+                                {/* Last Check - Desktop Cell */}
+                                <div className="hidden md:block text-[11px] font-bold text-[var(--apple-text-secondary)]">
+                                    {site.timestamp ? site.timestamp.split(',')[1] : '--'}
+                                </div>
+
+                                {/* Mobile Only Info Grid */}
+                                <div className="md:hidden grid grid-cols-3 gap-4 py-4 px-4 bg-[var(--apple-input-bg)] rounded-2xl">
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] font-black text-[var(--apple-text-secondary)] uppercase tracking-wider mb-1">Latência</span>
                                         <span className="text-sm font-black text-[var(--apple-text)]">{site.latency ? `${site.latency}ms` : '--'}</span>
                                     </div>
-
-                                    {/* Trend (Sparkline) */}
-                                    <div className="flex flex-col md:block">
-                                        <span className="md:hidden text-[9px] font-black text-[var(--apple-text-secondary)] uppercase tracking-wider mb-1">Tendência</span>
-                                        <div className="w-[80px] md:w-[120px]">
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] font-black text-[var(--apple-text-secondary)] uppercase tracking-wider mb-1">Tendência</span>
+                                        <div className="w-full">
                                             <LatencySparkline logs={logs[site.id] || []} color={site.status === CheckStatus.ONLINE ? '#34C759' : '#FF3B30'} height={20} />
                                         </div>
                                     </div>
-
-                                    {/* Last Check */}
-                                    <div className="flex flex-col md:block text-right md:text-left">
-                                        <span className="md:hidden text-[9px] font-black text-[var(--apple-text-secondary)] uppercase tracking-wider mb-1">Último Check</span>
-                                        <span className="text-[11px] font-bold text-[var(--apple-text-secondary)]">
+                                    <div className="flex flex-col text-right">
+                                        <span className="text-[9px] font-black text-[var(--apple-text-secondary)] uppercase tracking-wider mb-1">Check</span>
+                                        <span className="text-[11px] font-bold text-[var(--apple-text-secondary)] truncate">
                                             {site.timestamp ? site.timestamp.split(',')[1] : '--'}
                                         </span>
                                     </div>
                                 </div>
 
-                                {/* Actions Row - Final Row on Mobile */}
-                                <div className="flex items-center justify-between md:justify-end gap-3 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                {/* Actions Cell */}
+                                <div className="flex items-center justify-between md:justify-end gap-3 md:opacity-0 md:group-hover:opacity-100 transition-opacity min-w-[100px]">
                                     <div className="flex items-center gap-2">
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); handleRefreshSite(site.id); }} 
