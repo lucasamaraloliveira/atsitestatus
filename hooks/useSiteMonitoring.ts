@@ -374,7 +374,7 @@ export const useSiteMonitoring = (username: string | null) => {
         if (!shouldSend) return;
 
         try {
-            await fetch('/api/send-email', {
+            const response = await fetch('/api/send-email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -387,8 +387,15 @@ export const useSiteMonitoring = (username: string | null) => {
                     timestamp: new Date().toLocaleString()
                 })
             });
+            
+            if (!response.ok) {
+                const data = await response.json();
+                console.error("❌ Erro no Servidor de E-mail:", data.error || "Erro desconhecido");
+            } else {
+                console.log("✅ Alerta de e-mail enviado com sucesso!");
+            }
         } catch (error) {
-            console.error("Erro ao solicitar envio de e-mail:", error);
+            console.error("❌ Falha crítica ao tentar disparar o e-mail:", error);
         }
     }, [notificationEmail, emailNotifyType]);
 
