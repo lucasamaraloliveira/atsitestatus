@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { StatusResult, LogEntry } from '@/types';
 import { generateGlobalPdfReport, generateGlobalXlsxReport } from '@/services/reportService';
+import { X, FileSpreadsheet, Share2, Table } from 'lucide-react';
 
 interface GlobalReportModalProps {
     isOpen: boolean;
@@ -71,9 +72,18 @@ const GlobalReportModal: React.FC<GlobalReportModalProps> = ({ isOpen, onClose, 
             onClick={onClose}
         >
             <div
-                className="glass apple-card p-10 w-full max-w-xl border-none shadow-2xl animate-fade-in-slide-up"
+                className="glass apple-card p-10 w-full max-w-xl border-none shadow-2xl animate-fade-in-slide-up relative"
                 onClick={(e) => e.stopPropagation()}
             >
+                {/* Close Button UI */}
+                <button 
+                    onClick={onClose}
+                    className="absolute top-6 right-6 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[var(--apple-text-secondary)] transition-all hover:rotate-90"
+                    aria-label="Fechar modal"
+                >
+                    <X size={20} strokeWidth={2.5} />
+                </button>
+
                 <div className="flex items-center gap-3 mb-8">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0071E3] to-[#5AC8FA] flex items-center justify-center text-white font-black text-xl shadow-lg shadow-[#0071E3]/20">AT</div>
                     <h2 id="modal-title" className="text-2xl font-extrabold text-[var(--apple-text)] tracking-tight">Gerar Relatório Global</h2>
@@ -123,31 +133,29 @@ const GlobalReportModal: React.FC<GlobalReportModalProps> = ({ isOpen, onClose, 
                     </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row justify-end gap-4">
+                <div className="grid grid-cols-1 gap-4">
                     <button
-                        onClick={onClose}
-                        className="order-last sm:order-first text-sm font-bold text-[var(--apple-text-secondary)] hover:bg-black/5 dark:hover:bg-white/5 py-4 px-8 rounded-2xl transition-all"
+                        onClick={handleExportPdf}
+                        className="apple-button w-full py-4 text-sm font-bold shadow-xl shadow-[var(--apple-accent)]/20 flex items-center justify-center gap-2"
                     >
-                        Cancelar
+                        <FileSpreadsheet size={18} />
+                        Exportar Relatório em PDF
                     </button>
-                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                         <button
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                        <button
                             onClick={handleShare}
-                            className="bg-[var(--apple-card-bg)] text-[var(--apple-text)] border border-[var(--apple-border)] font-bold py-4 px-6 rounded-2xl transition-all hover:bg-gray-50 dark:hover:bg-white/20 text-sm"
+                            className="bg-[var(--apple-card-bg)] text-[var(--apple-text)] border border-[var(--apple-border)] font-bold py-3.5 px-6 rounded-2xl transition-all hover:bg-gray-50 dark:hover:bg-white/20 text-xs flex items-center justify-center gap-2"
                         >
+                            <Share2 size={16} />
                             Compartilhar
                         </button>
                         <button
                             onClick={handleExportXlsx}
-                            className="bg-[var(--apple-card-bg)] text-[var(--apple-text)] border border-[var(--apple-border)] font-bold py-4 px-6 rounded-2xl transition-all hover:bg-gray-50 dark:hover:bg-white/20 text-sm"
+                            className="bg-[var(--apple-card-bg)] text-[var(--apple-text)] border border-[var(--apple-border)] font-bold py-3.5 px-6 rounded-2xl transition-all hover:bg-gray-50 dark:hover:bg-white/20 text-xs flex items-center justify-center gap-2"
                         >
-                            Excel
-                        </button>
-                        <button
-                            onClick={handleExportPdf}
-                            className="apple-button py-4 px-8 text-sm font-bold shadow-xl shadow-[var(--apple-accent)]/20"
-                        >
-                            Exportar PDF
+                            <Table size={16} />
+                            Planilha Excel
                         </button>
                     </div>
                 </div>
