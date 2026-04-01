@@ -99,10 +99,11 @@ export const useSiteMonitoring = (username: string | null) => {
                 if (snapshot.exists() && !lockRef.current) {
                     const data = snapshot.data();
                     
+                    let finalEffectiveId = targetUser;
+
                     if (!isParentFetch && data.role === 'child' && data.parentId) {
                         setUserRole('child');
                         setUserProfile(data); 
-                        setEffectiveOwnerId(data.parentId);
                         if (unsubRef.current) unsubRef.current();
                         unsubRef.current = fetchUserData(data.parentId, true);
                         return;
@@ -111,14 +112,14 @@ export const useSiteMonitoring = (username: string | null) => {
                     if (isParentFetch) {
                         setUserRole('child');
                         setParentName(data.name || data.username);
-                        setEffectiveOwnerId(targetUser); 
                     } else {
                         setUserRole(data.role || 'admin');
                         setUserProfile(data);
                         setParentName(null);
-                        setEffectiveOwnerId(targetUser);
                     }
 
+                    // Carrega dados independente de ser pai ou admin direto
+                    setEffectiveOwnerId(targetUser); 
                     setSites(data.sites || []);
                     setIsMonitoring(!!data.isMonitoring);
                     setMonitoringInterval(data.monitoringInterval || 60);
@@ -128,10 +129,11 @@ export const useSiteMonitoring = (username: string | null) => {
                     if (data.emailNotifyType) setEmailNotifyType(data.emailNotifyType);
                     if (data.viewMode) setViewMode(data.viewMode);
                     if (data.inactivityTimeout) setInactivityTimeout(data.inactivityTimeout);
+
                 } else if (!snapshot.exists() && !isParentFetch) {
-                    // SE NÃO EXISTE E NÃO É FILHO, APENAS DEFINE COMO ADMIN SEM CRIAR DOC (O App.tsx gerencia a criação inicial se necessário)
                     setEffectiveOwnerId(targetUser);
                     setUserRole('admin');
+                    // A criação do documento é feita pelo App.tsx ou Dashboard, não aqui para evitar sobrescritas
                 }
             }, (error) => {
                 console.error("Erro no onSnapshot do usuário:", error);
