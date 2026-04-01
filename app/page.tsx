@@ -54,10 +54,17 @@ const App: React.FC = () => {
 
     const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light');
 
+    useEffect(() => {
+        if (currentUser) {
+            setActiveView('dashboard');
+        }
+    }, [currentUser]);
+
     const handleLogout = () => {
         localStorage.removeItem('currentUser');
         setCurrentUser(null);
         setShowSplash(false);
+        setActiveView('dashboard');
     };
 
     const {
