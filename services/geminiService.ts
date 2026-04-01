@@ -12,80 +12,66 @@ interface CheckResult {
 }
 
 export const checkWebsiteStatus = async (url: string, keyword?: string): Promise<CheckResult> => {
-  const cleanUrl = url.trim();
-  let latency = 0;
-  let status = CheckStatus.ONLINE;
-  let message = "Site estável e respondendo normalmente.";
+  let cleanUrl = url.trim();
+  if (!cleanUrl.startsWith('http')) cleanUrl = `https://${cleanUrl}`;
 
-  // ESTRATÉGIA: Medição de Latência Real (Ping Direto)
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000);
-  const pingStart = performance.now();
-
+  // ESTRATÉGIA: Monitoramento Server-Side (Tipo Postman/Insomnia)
+  // Agora usamos uma API interna no Backend para evitar as limitações do navegador.
   try {
-    await fetch(cleanUrl, { 
-      method: 'GET', 
-      mode: 'no-cors', 
-      cache: 'no-cache',
-      signal: controller.signal 
-    });
-    latency = Math.round(performance.now() - pingStart);
-    clearTimeout(timeoutId);
-  } catch (e: any) {
-    latency = Math.round(performance.now() - pingStart);
-  }
+      const response = await fetch('/api/check-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: cleanUrl, keyword })
+      });
 
-  // VERIFICAÇÃO DE INTEGRIDADE (Via Proxy p/ Status Codes e Conteúdo)
-  try {
-    const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(cleanUrl)}&timestamp=${Date.now()}`;
-    const proxyResponse = await fetch(proxyUrl);
-    const data = await proxyResponse.json();
+      const data = await response.json();
 
-    if (data.status && data.status.http_code) {
-      const code = data.status.http_code;
-      const htmlContent = data.contents || "";
-      
-      if (code >= 200 && code < 400) {
-        // Se houver palavra-chave, validamos o conteúdo
-        if (keyword && !htmlContent.toLowerCase().includes(keyword.toLowerCase())) {
-          status = CheckStatus.ERROR;
-          message = `Erro: Palavra-chave "${keyword}" não encontrada no conteúdo.`;
-        } else {
-          status = CheckStatus.ONLINE;
-          message = `Online (HTTP ${code}).`;
-        }
+      if (response.ok && data.ok) {
+          return {
+              status: CheckStatus.ONLINE,
+              message: data.message || "Online",
+              latency: data.latency || 0
+          };
       } else {
-        status = CheckStatus.OFFLINE;
-        message = `Offline: Servidor respondeu com erro ${code}.`;
+          return {
+              status: CheckStatus.OFFLINE,
+              message: data.message || "Offline: Falha na verificação.",
+              latency: data.latency || 0
+          };
       }
-    } else {
-      if (latency < 4500) {
-        status = CheckStatus.ONLINE;
-        message = "Online (Direto).";
-      } else {
-        status = CheckStatus.OFFLINE;
-        message = "O site não respondeu (Timeout).";
-      }
-    }
-  } catch (proxyError) {
-    if (latency > 0 && latency < 5000) {
-        status = CheckStatus.ONLINE;
-        message = "Online (Direto).";
-    } else {
-        status = CheckStatus.OFFLINE;
-        message = "Falha crítica de comunicação.";
-    }
-  }
 
-  return { status, message, latency: Math.min(latency, 10000) };
+  } catch (error: any) {
+      // Fallback robusto caso a API interna falhe (Ex: Problemas no servidor local)
+      console.warn("Aviso: Falha na API interna, recorrendo a verificação direta...");
+      try {
+          const pingStart = performance.now();
+          const pCtrl = new AbortController();
+          const pTid = setTimeout(() => pCtrl.abort(), 5000);
+          
+          await fetch(cleanUrl, { mode: 'no-cors', cache: 'no-cache', signal: pCtrl.signal });
+          clearTimeout(pTid);
+          
+          return {
+              status: CheckStatus.ONLINE,
+              message: "Online (Modo Reserva)",
+              latency: Math.round(performance.now() - pingStart)
+          };
+      } catch (e) {
+          return {
+              status: CheckStatus.OFFLINE,
+              message: "Site Indisponível (Erro Crítico)",
+              latency: 0
+          };
+      }
+  }
 };
 
 export const performDeepAiAnalysis = async (url: string, htmlContent: string): Promise<string> => {
     try {
-        const prompt = `Analise a disponibilidade deste site. Ele parece uma página de erro, uma página de "em construção" ou um domínio estacionado? Responda com uma breve descrição. Site: ${url}\nConteúdo: ${htmlContent.substring(0, 500)}`;
+        const prompt = `Analise o status deste site: ${url}. Parece fora do ar? Conteúdo: ${htmlContent.substring(0, 500)}`;
         const result = await model.generateContent(prompt);
         return result.response.text();
     } catch (e) {
-        return "Análise de IA indisponível.";
+        return "IA indisponível.";
     }
 };

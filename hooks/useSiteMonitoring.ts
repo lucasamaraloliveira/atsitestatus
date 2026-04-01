@@ -69,13 +69,14 @@ export const useSiteMonitoring = (username: string | null) => {
     const isMonitoringRef = useRef<boolean>(false);
     const intervalRefValue = useRef<number>(60);
     const lockRef = useRef<boolean>(false);
+    const isCheckingRef = useRef<boolean>(false); // Trava para evitar múltiplos ciclos simultâneos
 
     useEffect(() => { sitesRef.current = sites; }, [sites]);
     useEffect(() => { isMonitoringRef.current = isMonitoring; }, [isMonitoring]);
     useEffect(() => { intervalRefValue.current = monitoringInterval; }, [monitoringInterval]);
 
     const addToastNotification = useCallback((message: string, type: 'alert' | 'warning' | 'success' | 'info' = 'alert') => {
-        const id = Date.now();
+        const id = Date.now() + Math.floor(Math.random() * 1000);
         setNotifications(prev => [...prev, { id, message, type }]);
         // Auto-remove after 5 seconds
         setTimeout(() => {
@@ -132,14 +133,20 @@ export const useSiteMonitoring = (username: string | null) => {
                         setParentName(null);
                     }
 
+                    // CARREGAMENTO DE ESTADOS (Independente se é pai ou filho buscando do pai)
+                    setIsMonitoring(!!data.isMonitoring);
+                    setMonitoringInterval(data.monitoringInterval || 60);
+                    
                     if (!isParentFetch) {
-                        setIsMonitoring(!!data.isMonitoring);
-                        setMonitoringInterval(data.monitoringInterval || 60);
                         if (data.notificationEmail) setNotificationEmail(data.notificationEmail);
                         if (data.emailNotifyType) setEmailNotifyType(data.emailNotifyType);
                         if (data.viewMode) setViewMode(data.viewMode);
                         if (data.inactivityTimeout) setInactivityTimeout(data.inactivityTimeout);
                         if (data.audioSettings) setAudioSettings(data.audioSettings);
+                    } else {
+                        // Se for busca do pai (filho lendo do pai), sincroniza emails do alerta
+                        if (data.notificationEmail) setNotificationEmail(data.notificationEmail);
+                        if (data.emailNotifyType) setEmailNotifyType(data.emailNotifyType);
                     }
 
                     if (isParentFetch || data.role !== 'child') {
@@ -179,6 +186,18 @@ export const useSiteMonitoring = (username: string | null) => {
         return () => unsubscribes.forEach(unsub => unsub());
     }, [effectiveOwnerId, sites.length]); 
 
+    const cleanData = (obj: any): any => {
+        if (Array.isArray(obj)) return obj.map(cleanData);
+        if (obj !== null && typeof obj === 'object') {
+            return Object.fromEntries(
+                Object.entries(obj)
+                    .filter(([_, v]) => v !== undefined)
+                    .map(([k, v]) => [k, cleanData(v)])
+            );
+        }
+        return obj;
+    };
+
     const saveToFirestore = useCallback(async (
         updatedSites?: StatusResult[], 
         updatedInterval?: number, 
@@ -191,27 +210,29 @@ export const useSiteMonitoring = (username: string | null) => {
         try {
             const batch = writeBatch(db);
             
-            // 1. SEMPRE SALVA PREFERÊNCIAS INDIVIDUAIS NO DOC DO USUÁRIO LOGADO
+            // 1. DADOS INDIVIDUAIS (Salva no próprio documento do usuário logado)
             const selfRef = doc(db, 'users', username);
-            const personalData: any = {
+            const personalData: any = cleanData({
+                viewMode: updatedViewMode ?? viewMode,
+                inactivityTimeout,
+                audioSettings // Agora salvando configurações de áudio pessoais
+            });
+            batch.set(selfRef, personalData, { merge: true });
+            
+            // 2. DADOS COMPARTILHADOS (Ativo, Intervalo, E-mail, Equipe e Sites)
+            // Salva no documento do Administrador (effectiveOwnerId)
+            const ownerRef = doc(db, 'users', effectiveOwnerId);
+            const sharedData: any = cleanData({
                 monitoringInterval: updatedInterval ?? intervalRefValue.current,
                 isMonitoring: updatedMonitoring ?? isMonitoringRef.current,
-                viewMode: updatedViewMode ?? viewMode,
                 notificationEmail,
-                emailNotifyType,
-                inactivityTimeout
-            };
-            batch.set(selfRef, personalData, { merge: true });
-
-            // 2. SALVA DADOS COMPARTILHADOS NO DOC DO ADMINISTRADOR (effectiveOwnerId)
-            // Somente se for o Admin salvando mudanças na lista de sites ou na equipe
-            if (updatedSites || updatedChildUsers) {
-                const ownerRef = doc(db, 'users', effectiveOwnerId);
-                const sharedData: any = {};
-                if (updatedSites) sharedData.sites = updatedSites;
-                if (updatedChildUsers) sharedData.childUsers = updatedChildUsers;
-                batch.set(ownerRef, sharedData, { merge: true });
-            }
+                emailNotifyType
+            });
+            
+            if (updatedSites) sharedData.sites = cleanData(updatedSites);
+            if (updatedChildUsers) sharedData.childUsers = cleanData(updatedChildUsers);
+            
+            batch.set(ownerRef, sharedData, { merge: true });
 
             await batch.commit();
         } catch (error) {
@@ -542,23 +563,45 @@ export const useSiteMonitoring = (username: string | null) => {
         await setDoc(userRef, { audioSettings: settings }, { merge: true });
     };
 
-    const handleRefreshAll = useCallback(() => {
-        sites.forEach(site => handleCheckStatus(site.id, site.url));
-    }, [sites, handleCheckStatus]);
+    const handleRefreshAll = useCallback(async () => {
+        if (isCheckingRef.current) return;
+        isCheckingRef.current = true;
+        try {
+            const currentSites = sitesRef.current;
+            for (const site of currentSites) {
+                await handleCheckStatus(site.id, site.url);
+            }
+        } finally {
+            isCheckingRef.current = false;
+        }
+    }, [handleCheckStatus]);
 
     const refreshAllRef = useRef(handleRefreshAll);
     useEffect(() => { refreshAllRef.current = handleRefreshAll; }, [handleRefreshAll]);
 
     useEffect(() => {
-        if (!isMonitoring || monitoringInterval <= 0) {
-            if (intervalRef.current) clearInterval(intervalRef.current);
+        if (intervalRef.current) {
+            window.clearInterval(intervalRef.current);
             intervalRef.current = null;
-            return;
         }
-        if (intervalRef.current) clearInterval(intervalRef.current);
+
+        if (!isMonitoring || monitoringInterval <= 0) return;
+
+        // Primeira execução imediata
         refreshAllRef.current();
-        intervalRef.current = window.setInterval(() => { refreshAllRef.current(); }, monitoringInterval * 1000);
-        return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+
+        const id = window.setInterval(() => {
+            refreshAllRef.current();
+        }, monitoringInterval * 1000);
+
+        intervalRef.current = id;
+
+        return () => {
+            if (intervalRef.current) {
+                window.clearInterval(intervalRef.current);
+                intervalRef.current = null;
+            }
+        };
     }, [isMonitoring, monitoringInterval]);
 
     return {
