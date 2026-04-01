@@ -27,7 +27,8 @@ const SiteDetailsPage: React.FC<{
   logs: LogEntry[];
   onBack: () => void;
   onRequestClearHistory: (id: string) => void;
-}> = ({ site, logs, onBack, onRequestClearHistory }) => {
+  isReadOnly?: boolean;
+}> = ({ site, logs, onBack, onRequestClearHistory, isReadOnly = false }) => {
     const chartInstanceRef = useRef<any>(null);
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
@@ -349,7 +350,9 @@ const SiteDetailsPage: React.FC<{
                     <div className="flex gap-2 flex-wrap">
                         <button onClick={exportToPDF} className="flex items-center gap-2 bg-[var(--apple-input-bg)] py-3 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all border border-[var(--apple-border)]">PDF</button>
                         <button onClick={exportToXLSX} className="flex items-center gap-2 bg-[var(--apple-input-bg)] py-3 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all border border-[var(--apple-border)]">Excel</button>
-                        <button onClick={() => onRequestClearHistory(site.id)} className="flex items-center gap-2 bg-[#FF3B30]/10 text-[#FF3B30] py-3 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-[#FF3B30]/20 transition-all">Limpar Logs</button>
+                        {!isReadOnly && (
+                            <button onClick={() => onRequestClearHistory(site.id)} className="flex items-center gap-2 bg-[#FF3B30]/10 text-[#FF3B30] py-3 px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-[#FF3B30]/20 transition-all">Limpar Logs</button>
+                        )}
                     </div>
                 </div>
 

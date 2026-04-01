@@ -96,6 +96,29 @@ const App: React.FC = () => {
         };
     }, [currentUser, inactivityTimeout]);
 
+    // Detecção de Relatório Compartilhado
+    useEffect(() => {
+        const checkHash = () => {
+            const hash = window.location.hash;
+            if (hash.startsWith('#report=')) {
+                try {
+                    const encodedData = hash.replace('#report=', '');
+                    const jsonString = atob(encodedData);
+                    const data = JSON.parse(jsonString);
+                    setSharedReportData(data);
+                } catch (e) {
+                    console.error("Erro ao decodificar relatório:", e);
+                }
+            } else {
+                setSharedReportData(null);
+            }
+        };
+
+        checkHash();
+        window.addEventListener('hashchange', checkHash);
+        return () => window.removeEventListener('hashchange', checkHash);
+    }, []);
+
     // Efeito para timer do Splash
     useEffect(() => {
         if (showSplash) {
