@@ -118,88 +118,85 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                 </div>
             </header>
 
-            <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-8 gap-4 flex-wrap">
-                <div className="flex items-center gap-3 flex-wrap">
-                    {/* iOS-style Segmented Control - Status Filter */}
-                    <div className="relative flex items-center bg-[var(--apple-input-bg)] rounded-[14px] p-[3px] border border-[var(--apple-border)] backdrop-blur-xl shadow-sm">
+            <div className="flex flex-col gap-6 mb-10">
+                {/* Status Filters - Mobile Grid / Desktop Segmented */}
+                <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:flex items-center bg-[var(--apple-input-bg)] rounded-[22px] md:rounded-[18px] p-1 border border-[var(--apple-border)] backdrop-blur-xl shadow-sm gap-1">
                         {([
                             { value: 'ALL', label: 'Todos', icon: <Search size={13} strokeWidth={2.5} /> },
                             { value: 'Online', label: 'Online', icon: <div className="w-[7px] h-[7px] rounded-full bg-[#34C759]" /> },
                             { value: 'Offline', label: 'Offline', icon: <div className="w-[7px] h-[7px] rounded-full bg-[#FF3B30]" /> },
-                            { value: 'Verificando', label: 'Verificando', icon: <div className="w-[7px] h-[7px] rounded-full bg-[#007AFF]" /> },
+                            { value: 'Verificando', label: 'Verificando', icon: <div className="w-[10px] h-[10px] rounded-full border-2 border-[#007AFF] border-t-transparent animate-spin" /> },
                             { value: 'Erro', label: 'Erro', icon: <div className="w-[7px] h-[7px] rounded-full bg-[#FF9500]" /> },
                         ] as { value: FilterType; label: string; icon: React.ReactNode }[]).map((item) => (
                             <button
                                 key={item.value}
                                 onClick={() => setFilter(item.value)}
-                                className={`relative z-10 flex items-center gap-1.5 px-3.5 py-[7px] rounded-[11px] text-[12px] font-semibold transition-all duration-200 ease-in-out
+                                className={`relative z-10 flex items-center justify-center md:justify-start gap-2 px-4 py-2.5 rounded-[16px] md:rounded-[14px] text-[12px] md:text-[13px] font-bold transition-all duration-300
+                                    ${item.value === 'ALL' ? 'col-span-2 sm:col-span-1 md:col-span-auto' : ''}
                                     ${filter === item.value 
-                                        ? 'bg-[var(--apple-card-bg)] text-[var(--apple-text)] shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.3)]' 
-                                        : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'
+                                        ? 'bg-[var(--apple-card-bg)] text-[var(--apple-text)] shadow-lg scale-[1.02]' 
+                                        : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)] opacity-60'
                                     }`}
                             >
-                                {item.icon}
-                                <span className="hidden sm:inline">{item.label}</span>
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* iOS-style Segmented Control - Sort Order */}
-                    <div className="relative flex items-center bg-[var(--apple-input-bg)] rounded-[14px] p-[3px] border border-[var(--apple-border)] backdrop-blur-xl shadow-sm">
-                        {([
-                            { value: 'asc', label: 'A-Z' },
-                            { value: 'desc', label: 'Z-A' },
-                        ] as { value: 'asc' | 'desc'; label: string }[]).map((item) => (
-                            <button
-                                key={item.value}
-                                onClick={() => setSortOrder(item.value)}
-                                className={`relative z-10 flex items-center gap-1.5 px-4 py-[7px] rounded-[11px] text-[12px] font-semibold transition-all duration-200 ease-in-out
-                                    ${sortOrder === item.value 
-                                        ? 'bg-[var(--apple-card-bg)] text-[var(--apple-text)] shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.3)]' 
-                                        : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'
-                                    }`}
-                            >
+                                <div className="flex items-center justify-center w-4 h-4">{item.icon}</div>
                                 {item.label}
                             </button>
                         ))}
                     </div>
-
-                    {/* iOS-style Segmented Control - View Mode */}
-                    <div className="relative flex items-center bg-[var(--apple-input-bg)] rounded-[14px] p-[3px] border border-[var(--apple-border)] backdrop-blur-xl shadow-sm">
-                        <button 
-                            onClick={() => setViewMode('card')}
-                            className={`relative z-10 p-[7px] rounded-[11px] transition-all duration-200 ease-in-out
-                                ${viewMode === 'card' 
-                                    ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.3)]' 
-                                    : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'
-                                }`}
-                        >
-                            <LayoutGrid size={16} strokeWidth={2} />
-                        </button>
-                        <button 
-                            onClick={() => setViewMode('list')}
-                            className={`relative z-10 p-[7px] rounded-[11px] transition-all duration-200 ease-in-out
-                                ${viewMode === 'list' 
-                                    ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.3)]' 
-                                    : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'
-                                }`}
-                        >
-                            <List size={16} strokeWidth={2} />
-                        </button>
-                    </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <button onClick={handleRefreshAll} className="bg-[var(--apple-card-bg)] text-[var(--apple-text)] font-bold py-3 px-6 rounded-2xl border border-[var(--apple-border)] hover:bg-gray-50 dark:hover:bg-white/10 transition-all text-sm flex items-center gap-2">
-                        <RefreshCw size={14} className={isMonitoring ? 'animate-spin' : ''} />
-                        Atualizar
-                    </button>
-                    {canAdd && (
-                        <button onClick={onOpenAddSiteModal} className="bg-[#007AFF] hover:bg-[#0062CC] text-white font-bold py-3 px-6 rounded-2xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-[#007AFF]/20">
-                            <Activity size={16} />
-                            Novo Site
+                {/* Secondary Controls - Sort & View Mode */}
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 bg-[var(--apple-input-bg)] p-1 rounded-2xl border border-[var(--apple-border)]">
+                        <button 
+                            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                            className="flex items-center gap-2 px-4 py-2 hover:bg-white/5 rounded-xl transition-all group"
+                        >
+                            <div className={`transition-transform duration-300 ${sortOrder === 'desc' ? 'rotate-180' : ''}`}>
+                                <ChevronRight size={14} className="text-[var(--apple-accent)] rotate-90" />
+                            </div>
+                            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)] group-hover:text-[var(--apple-text)]">
+                                {sortOrder === 'asc' ? 'A-Z' : 'Z-A'}
+                            </span>
                         </button>
-                    )}
+                        
+                        <div className="w-px h-4 bg-[var(--apple-border)]"></div>
+                        
+                        <div className="flex items-center gap-1 px-1">
+                            <button 
+                                onClick={() => setViewMode('card')}
+                                className={`p-2 rounded-xl transition-all ${viewMode === 'card' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-md' : 'text-[var(--apple-text-secondary)] opacity-40 hover:opacity-100'}`}
+                            >
+                                <LayoutGrid size={16} strokeWidth={2.5} />
+                            </button>
+                            <button 
+                                onClick={() => setViewMode('list')}
+                                className={`p-2 rounded-xl transition-all ${viewMode === 'list' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-md' : 'text-[var(--apple-text-secondary)] opacity-40 hover:opacity-100'}`}
+                            >
+                                <List size={16} strokeWidth={2.5} />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={handleRefreshAll}
+                            className="p-3.5 bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)] rounded-2xl border border-[var(--apple-border)] hover:text-[var(--apple-accent)] active:scale-95 transition-all shadow-sm"
+                            title="Atualizar Tudo"
+                        >
+                            <RefreshCw size={18} strokeWidth={2.5} className={isMonitoring ? 'animate-spin opacity-50' : ''} />
+                        </button>
+                        {canAdd && (
+                            <button 
+                                onClick={onOpenAddSiteModal} 
+                                className="hidden md:flex bg-[#007AFF] hover:bg-[#0062CC] text-white font-bold py-3.5 px-6 rounded-2xl transition-all text-sm items-center gap-2 shadow-lg shadow-[#007AFF]/20"
+                            >
+                                <Activity size={16} strokeWidth={2.5} />
+                                Novo Site
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -253,45 +250,94 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     ))}
                 </div>
             ) : (
-                <div className="glass apple-card overflow-x-auto border-none shadow-2xl no-scrollbar">
-                    <table className="w-full text-left border-collapse min-w-[850px]">
-                        <thead>
-                            <tr className="bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)] text-[10px] font-black uppercase tracking-[0.15em]">
-                                <th className="px-8 py-6">Website</th>
-                                <th className="px-8 py-6">Status</th>
-                                <th className="px-8 py-6">Latência</th>
-                                <th className="px-8 py-6">Tendência</th>
-                                <th className="px-8 py-6">Check</th>
-                                <th className="px-8 py-6 text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[var(--apple-border)]">
-                            {filteredSites.map((site) => (
-                                <tr key={site.id} onClick={() => setSelectedSiteId(site.id)} className="hover:bg-white/5 transition-colors cursor-pointer group">
-                                    <td className="px-8 py-5">
-                                        <div className="flex items-center gap-3">
-                                            <Globe size={18} className="text-[var(--apple-text-secondary)]" />
-                                            <span className="font-bold text-sm tracking-tight">{site.name || site.url}</span>
+                <div className="glass apple-card border-none shadow-2xl overflow-hidden">
+                    {/* Header da "Lista" - Apenas Desktop */}
+                    <div className="hidden md:grid md:grid-cols-[1fr_120px_100px_140px_120px_100px] bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)] text-[10px] font-black uppercase tracking-[0.15em] px-8 py-5 border-b border-[var(--apple-border)]">
+                        <div>Website</div>
+                        <div>Status</div>
+                        <div>Latência</div>
+                        <div>Tendência</div>
+                        <div>Check</div>
+                        <div className="text-right">Ações</div>
+                    </div>
+
+                    <div className="divide-y divide-[var(--apple-border)]">
+                        {filteredSites.map((site) => (
+                            <div 
+                                key={site.id} 
+                                onClick={() => setSelectedSiteId(site.id)} 
+                                className="px-5 py-6 md:px-8 hover:bg-white/5 transition-colors cursor-pointer group flex flex-col md:grid md:grid-cols-[1fr_120px_100px_140px_120px_100px] md:items-center gap-5 md:gap-0"
+                            >
+                                {/* Row 1: Logo, Title and Status */}
+                                <div className="flex items-center justify-between md:justify-start gap-3 min-w-0">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className={`p-2.5 rounded-xl ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'} shrink-0`}>
+                                            <Globe size={18} />
                                         </div>
-                                    </td>
-                                    <td className="px-8 py-5">
-                                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]/10 text-[#007AFF]' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'}`}>{site.status}</span>
-                                    </td>
-                                    <td className="px-8 py-5 text-sm font-black text-[var(--apple-text)]">{site.latency ? `${site.latency}ms` : '--'}</td>
-                                    <td className="px-8 py-5 w-[140px]">
-                                        <LatencySparkline logs={logs[site.id] || []} color={site.status === CheckStatus.ONLINE ? '#34C759' : '#FF3B30'} height={24} />
-                                    </td>
-                                    <td className="px-8 py-5 text-[10px] font-bold text-[var(--apple-text-secondary)]">{site.timestamp ? site.timestamp.split(',')[1] : '--'}</td>
-                                    <td className="px-8 py-5 text-right">
-                                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button onClick={(e) => { e.stopPropagation(); handleRefreshSite(site.id); }} className="p-2 rounded-lg hover:bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)]"><RefreshCw size={14} /></button>
-                                            <button onClick={(e) => { e.stopPropagation(); handleRequestDelete(site.id); }} className="p-2 rounded-lg hover:bg-[#FF3B30]/10 text-[#FF3B30]"><Trash2 size={14} /></button>
+                                        <span className="font-bold text-[15px] md:text-sm tracking-tight truncate text-[var(--apple-text)]">{site.name || site.url}</span>
+                                    </div>
+                                    <span className={`md:hidden px-3 py-1 rounded-full text-[9px] font-black uppercase ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]/10 text-[#007AFF]' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'}`}>
+                                        {site.status}
+                                    </span>
+                                </div>
+
+                                {/* Desktop Status - MD and up */}
+                                <div className="hidden md:block">
+                                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]/10 text-[#007AFF]' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'}`}>
+                                        {site.status}
+                                    </span>
+                                </div>
+
+                                {/* Mobile Info Grid + Desktop Latency */}
+                                <div className="grid grid-cols-3 md:flex md:items-center gap-4 py-4 px-4 md:p-0 bg-[var(--apple-input-bg)] md:bg-transparent rounded-2xl md:rounded-none">
+                                    {/* Latency */}
+                                    <div className="flex flex-col md:block">
+                                        <span className="md:hidden text-[9px] font-black text-[var(--apple-text-secondary)] uppercase tracking-wider mb-1">Latência</span>
+                                        <span className="text-sm font-black text-[var(--apple-text)]">{site.latency ? `${site.latency}ms` : '--'}</span>
+                                    </div>
+
+                                    {/* Trend (Sparkline) */}
+                                    <div className="flex flex-col md:block">
+                                        <span className="md:hidden text-[9px] font-black text-[var(--apple-text-secondary)] uppercase tracking-wider mb-1">Tendência</span>
+                                        <div className="w-[80px] md:w-[120px]">
+                                            <LatencySparkline logs={logs[site.id] || []} color={site.status === CheckStatus.ONLINE ? '#34C759' : '#FF3B30'} height={20} />
                                         </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                                    </div>
+
+                                    {/* Last Check */}
+                                    <div className="flex flex-col md:block text-right md:text-left">
+                                        <span className="md:hidden text-[9px] font-black text-[var(--apple-text-secondary)] uppercase tracking-wider mb-1">Último Check</span>
+                                        <span className="text-[11px] font-bold text-[var(--apple-text-secondary)]">
+                                            {site.timestamp ? site.timestamp.split(',')[1] : '--'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Actions Row - Final Row on Mobile */}
+                                <div className="flex items-center justify-between md:justify-end gap-3 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                    <div className="flex items-center gap-2">
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); handleRefreshSite(site.id); }} 
+                                            className="p-3 md:p-2 bg-[var(--apple-input-bg)] md:bg-transparent rounded-xl md:rounded-lg text-[var(--apple-text-secondary)] hover:text-[var(--apple-accent)] transition-all"
+                                        >
+                                            <RefreshCw size={14} strokeWidth={2.5} />
+                                            <span className="md:hidden text-[10px] font-bold ml-2">Atualizar</span>
+                                        </button>
+                                        {canDelete && (
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); handleRequestDelete(site.id); }} 
+                                                className="p-3 md:p-2 bg-[var(--apple-input-bg)] md:bg-transparent rounded-xl md:rounded-lg text-[#FF3B30]/60 hover:text-[#FF3B30] transition-all"
+                                            >
+                                                <Trash2 size={14} strokeWidth={2.5} />
+                                                <span className="md:hidden text-[10px] font-bold ml-2 text-[#FF3B30]">Remover</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                    <ChevronRight size={14} className="md:hidden text-[var(--apple-text-secondary)] opacity-30" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
 

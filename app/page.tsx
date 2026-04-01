@@ -12,7 +12,7 @@ import SharedReportPage from '@/views/SharedReportPage';
 import SettingsView from '@/views/SettingsView';
 import ReportsView from '@/views/ReportsView';
 import Sidebar from '@/components/Sidebar';
-import { FileText, Activity, BarChart3, Trash2, Menu, X, LayoutDashboard, PlusCircle, Settings, LogOut } from 'lucide-react';
+import { FileText, Activity, BarChart3, Trash2, Menu, X, LayoutDashboard, PlusCircle, Settings, LogOut, Sun, Moon } from 'lucide-react';
 import { StatusResult, LogEntry, CheckStatus } from '@/types';
 import AddSiteModal from '@/components/AddSiteModal';
 
@@ -351,7 +351,24 @@ const App: React.FC = () => {
                 {renderActiveView()}
             </main>
 
-            <nav className="fixed bottom-0 left-0 right-0 h-20 md:hidden z-[90] flex items-center justify-around px-2 glass-dark border-t border-white/5 pb-5">
+            {/* Floating Theme Toggle - Mobile Only */}
+            <button 
+                onClick={toggleTheme}
+                className="fixed bottom-24 right-5 w-12 h-12 md:hidden z-[100] flex items-center justify-center glass rounded-2xl border border-[var(--apple-border)] shadow-2xl active:scale-95 transition-all duration-300 group"
+                aria-label="Alternar Tema"
+            >
+                <div className="relative w-6 h-6 flex items-center justify-center">
+                    {theme === 'dark' ? (
+                        <Sun size={20} className="text-[#FFDB5E] animate-in zoom-in duration-300" strokeWidth={2.5} />
+                    ) : (
+                        <Moon size={20} className="text-[#5856D6] animate-in zoom-in duration-300" strokeWidth={2.5} />
+                    )}
+                </div>
+                {/* Subtle highlight effect */}
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-white/5 to-transparent opacity-0 group-active:opacity-100 transition-opacity"></div>
+            </button>
+
+            <nav className="fixed bottom-0 left-0 right-0 h-20 md:hidden z-[90] flex items-center justify-around px-2 glass border-t border-[var(--apple-border)] pb-6 pt-2">
                 {[
                     { id: 'dashboard', icon: LayoutDashboard, label: 'Painel' },
                     { id: 'reports', icon: BarChart3, label: 'Relatórios' },
@@ -365,10 +382,10 @@ const App: React.FC = () => {
                             if(item.action) item.action();
                             else { setActiveView(item.id); setSelectedSiteId(null); }
                         }}
-                        className={`flex flex-col items-center justify-center transition-all ${activeView === item.id && !item.action ? 'text-[var(--apple-accent)] scale-110' : 'text-white/40'}`}
+                        className={`flex flex-col items-center justify-center transition-all ${activeView === item.id && !item.action ? 'text-[var(--apple-accent)] scale-110' : 'text-[var(--apple-text-secondary)] opacity-60'}`}
                     >
                         <item.icon size={item.id === 'add' ? 32 : 24} strokeWidth={activeView === item.id ? 2.5 : 2} className={item.id === 'add' ? 'text-[var(--apple-accent)]' : ''} />
-                        <span className="text-[9px] font-black uppercase tracking-tighter mt-1">{item.label}</span>
+                        <span className={`text-[9px] font-black uppercase tracking-tighter mt-1 ${activeView === item.id && !item.action ? 'text-[var(--apple-accent)]' : 'text-[var(--apple-text-secondary)]'}`}>{item.label}</span>
                     </button>
                 ))}
             </nav>
