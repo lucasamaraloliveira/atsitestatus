@@ -10,6 +10,7 @@ import GlobalReportModal from '@/components/GlobalReportModal';
 import LoginPage from '@/views/LoginPage';
 import SharedReportPage from '@/views/SharedReportPage';
 import SettingsView from '@/views/SettingsView';
+import ReportsView from '@/views/ReportsView';
 import Sidebar from '@/components/Sidebar';
 import { FileText, Activity, BarChart3, Trash2, Menu, X, LayoutDashboard, PlusCircle, Settings, LogOut } from 'lucide-react';
 import { StatusResult, LogEntry, CheckStatus } from '@/types';
@@ -204,22 +205,11 @@ const App: React.FC = () => {
                 );
             case 'reports':
                 return (
-                    <div className="animate-fade-in pb-20">
-                        <header className="flex justify-between items-end mb-10">
-                            <div>
-                                <h2 className="text-4xl font-extrabold tracking-tight">Relatórios</h2>
-                                <p className="text-[var(--apple-text-secondary)] font-medium">Análise de dados da infraestrutura.</p>
-                            </div>
-                            <button onClick={() => setIsGlobalReportModalOpen(true)} className="apple-button h-11 px-6 shadow-lg">Exportar PDF</button>
-                        </header>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="glass apple-card p-8 text-center border-none shadow-xl">
-                                <BarChart3 size={40} className="mx-auto mb-4 text-[var(--apple-accent)]" />
-                                <h3 className="font-bold text-lg">Performance Máxima</h3>
-                                <p className="text-sm text-[var(--apple-text-secondary)] mt-2">Dados otimizados e relatórios consolidados.</p>
-                            </div>
-                        </div>
-                    </div>
+                    <ReportsView
+                        sites={sites}
+                        logs={logs}
+                        onExportReport={() => setIsGlobalReportModalOpen(true)}
+                    />
                 );
             case 'activity':
                 const allLogs = Object.values(logs).flat() as LogEntry[];

@@ -13,8 +13,12 @@ import {
     Info 
 } from 'lucide-react';
 
-declare var jspdf: any;
-declare var XLSX: any;
+declare global {
+  interface Window {
+    jspdf: any;
+    XLSX: any;
+  }
+}
 
 type HistoryPoint = { timestamp: Date; status: CheckStatus, latency?: number };
 
@@ -59,26 +63,91 @@ const SiteDetailsPage: React.FC<{
     };
 
     const exportToPDF = () => {
-        const { jsPDF } = jspdf;
+        if (!window.jspdf) {
+            alert('Aguarde o carregamento das bibliotecas de exportação...');
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        doc.text(`Relatório de Monitoramento - ${site.name || site.url}`, 20, 10);
+
+        // Verificação extra para o plugin autoTable
+        if (typeof doc.autoTable !== 'function') {
+            alert('Aguarde o carregamento completo do plugin de tabelas...');
+            return;
+        }
+
+        const timestamp = new Date().toLocaleString();
+        
+        // --- Header ---
+        doc.setFillColor(0, 122, 255);
+        doc.rect(0, 0, 210, 40, 'F');
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Relatório de Monitoramento', 20, 20);
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Gerado em: ${timestamp}`, 20, 28);
+        doc.text(`Site: ${site.url}`, 20, 33);
+
+        // --- Summary Section ---
+        doc.setTextColor(29, 29, 31);
+        doc.setFontSize(14);
+        doc.text('Resumo de Disponibilidade', 20, 55);
+        
+        doc.setFontSize(10);
+        doc.text(`Uptime Médio: ${uptimePercentage}%`, 20, 65);
+        doc.text(`Total de Verificações: ${filteredLogs.length}`, 20, 70);
+        doc.text(`Filtro: ${startDate ? new Date(startDate).toLocaleDateString() : 'Início'} até ${endDate ? new Date(endDate).toLocaleDateString() : 'Agora'}`, 20, 75);
+
+        // --- Table ---
+        const tableData = filteredLogs.map(log => [
+            new Date(log.timestamp).toLocaleString(),
+            log.status,
+            `${log.latency || 0}ms`,
+            log.message
+        ]);
+
         doc.autoTable({
+            startY: 85,
             head: [['Data/Hora', 'Status', 'Latência', 'Mensagem']],
-            body: filteredLogs.map(log => [new Date(log.timestamp).toLocaleString(), log.status, `${log.latency || 0}ms`, log.message]),
+            body: tableData,
+            headStyles: { fillColor: [0, 122, 255], textColor: 255, fontStyle: 'bold' },
+            alternateRowStyles: { fillColor: [245, 245, 247] },
+            didParseCell: (data: any) => {
+                if (data.section === 'body' && data.column.index === 1) {
+                    const status = data.cell.raw;
+                    if (status === CheckStatus.ONLINE) data.cell.styles.textColor = [52, 199, 89];
+                    else if (status === CheckStatus.OFFLINE) data.cell.styles.textColor = [255, 59, 48];
+                    else if (status === CheckStatus.CHECKING) data.cell.styles.textColor = [0, 122, 255];
+                    else if (status === CheckStatus.ERROR) data.cell.styles.textColor = [255, 149, 0];
+                }
+            },
+            margin: { top: 85 },
+            styles: { fontSize: 9, cellPadding: 4 }
         });
-        doc.save(`detalhes-${site.id}.pdf`);
+
+        doc.save(`relatorio-${site.name || 'site'}-${new Date().getTime()}.pdf`);
     };
 
     const exportToXLSX = () => {
-        const worksheet = XLSX.utils.json_to_sheet(filteredLogs.map(log => ({
+        if (!window.XLSX) {
+            alert('Aguarde o carregamento das bibliotecas...');
+            return;
+        }
+
+        const worksheet = window.XLSX.utils.json_to_sheet(filteredLogs.map(log => ({
             'Data/Hora': new Date(log.timestamp).toLocaleString(),
             Status: log.status,
             'Latência (ms)': log.latency || 0,
             Mensagem: log.message
         })));
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Logs");
-        XLSX.writeFile(workbook, `detalhes-${site.id}.xlsx`);
+        const workbook = window.XLSX.utils.book_new();
+        window.XLSX.utils.book_append_sheet(workbook, worksheet, "Logs");
+        window.XLSX.writeFile(workbook, `detalhes-${site.id}.xlsx`);
     };
 
     const getStatusColor = (status: CheckStatus) => {
