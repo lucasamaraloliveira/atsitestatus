@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import https from 'https';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -12,12 +13,49 @@ export async function POST(request: Request) {
         let cleanUrl = url.trim();
         if (!cleanUrl.startsWith('http')) cleanUrl = `https://${cleanUrl}`;
 
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000);
+        const host = new URL(cleanUrl).hostname;
         const startTime = Date.now();
 
+        // 1. VERIFICAÇÃO DE SSL (Server-Side)
+        const checkSSL = () => {
+            return new Promise<{ expiryDate: number | null, daysRemaining: number | null }>((resolve) => {
+                try {
+                    const options = {
+                        hostname: host,
+                        port: 443,
+                        method: 'GET',
+                        rejectUnauthorized: false, // Permite ler certificados mesmo que estejam expirados ou inválidos para diagnóstico
+                        agent: false
+                    };
+
+                    const req = https.request(options, (res) => {
+                        const cert = (res.socket as any).getPeerCertificate();
+                        if (cert && cert.valid_to) {
+                            const expiryDate = new Date(cert.valid_to).getTime();
+                            const daysRemaining = Math.max(0, Math.ceil((expiryDate - Date.now()) / (1000 * 60 * 60 * 24)));
+                            resolve({ expiryDate, daysRemaining });
+                        } else {
+                            resolve({ expiryDate: null, daysRemaining: null });
+                        }
+                    });
+
+                    req.on('error', () => resolve({ expiryDate: null, daysRemaining: null }));
+                    req.setTimeout(5000, () => {
+                        req.destroy();
+                        resolve({ expiryDate: null, daysRemaining: null });
+                    });
+                    req.end();
+                } catch (e) {
+                    resolve({ expiryDate: null, daysRemaining: null });
+                }
+            });
+        };
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
+
         try {
-            // COMPORTAMENTO TIPO POSTMAN/INSOMNIA (Server-to-Server)
+            // 2. VERIFICAÇÃO DE STATUS E CONTEÚDO (Tipo Postman/Insomnia)
             const response = await fetch(cleanUrl, {
                 method: 'GET',
                 headers: {
@@ -28,7 +66,6 @@ export async function POST(request: Request) {
                 },
                 signal: controller.signal,
                 redirect: 'follow',
-                // Força o erro se houver problemas de SSL
             });
 
             const latency = Date.now() - startTime;
@@ -36,13 +73,17 @@ export async function POST(request: Request) {
             const htmlContent = await response.text();
             clearTimeout(timeoutId);
 
+            // Inicia o check de SSL em paralelo (se for https)
+            const sslResult = cleanUrl.startsWith('https') ? await checkSSL() : { expiryDate: null, daysRemaining: null };
+
             // Verificação de Erro HTTP
             if (status >= 400) {
                 return NextResponse.json({
                     ok: false,
                     status,
                     message: `Offline: Servidor retornou erro ${status}`,
-                    latency
+                    latency,
+                    ssl: sslResult
                 });
             }
 
@@ -52,7 +93,8 @@ export async function POST(request: Request) {
                     ok: false,
                     status,
                     message: `Alerta: Palavra-chave "${keyword}" não encontrada.`,
-                    latency
+                    latency,
+                    ssl: sslResult
                 });
             }
 
@@ -60,16 +102,19 @@ export async function POST(request: Request) {
                 ok: true,
                 status,
                 message: `Online (HTTP ${status})`,
-                latency
+                latency,
+                ssl: sslResult
             });
 
         } catch (fetchError: any) {
             clearTimeout(timeoutId);
+            const sslResult = cleanUrl.startsWith('https') ? await checkSSL() : { expiryDate: null, daysRemaining: null };
             return NextResponse.json({
                 ok: false,
                 status: 0,
                 message: fetchError.name === 'AbortError' ? 'Offline: Tempo de resposta esgotado (Timeout)' : 'Offline: Erro de DNS ou Conexão',
-                latency: Date.now() - startTime
+                latency: Date.now() - startTime,
+                ssl: sslResult
             });
         }
 

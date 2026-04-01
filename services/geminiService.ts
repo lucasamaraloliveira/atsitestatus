@@ -9,6 +9,8 @@ interface CheckResult {
     status: CheckStatus;
     message: string;
     latency: number;
+    sslExpiryDate?: number;
+    sslDaysRemaining?: number;
 }
 
 export const checkWebsiteStatus = async (url: string, keyword?: string): Promise<CheckResult> => {
@@ -30,13 +32,17 @@ export const checkWebsiteStatus = async (url: string, keyword?: string): Promise
             return {
                 status: CheckStatus.ONLINE,
                 message: data.message || "Online",
-                latency: data.latency || 0
+                latency: data.latency || 0,
+                sslExpiryDate: data.ssl?.expiryDate,
+                sslDaysRemaining: data.ssl?.daysRemaining
             };
         } else {
             return {
                 status: CheckStatus.OFFLINE,
                 message: data.message || "Offline: Falha na verificação.",
-                latency: data.latency || 0
+                latency: data.latency || 0,
+                sslExpiryDate: data.ssl?.expiryDate,
+                sslDaysRemaining: data.ssl?.daysRemaining
             };
         }
 

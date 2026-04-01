@@ -16,7 +16,8 @@ import {
     FileSpreadsheet,
     Globe,
     AlertCircle,
-    ArrowUpRight
+    ArrowUpRight,
+    ShieldCheck
 } from 'lucide-react';
 import LatencySparkline from '@/components/LatencySparkline';
 
@@ -241,9 +242,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                         </a>
                                         <div>
                                             <h3 className="font-black text-lg text-[var(--apple-text)] truncate max-w-[120px] sm:max-w-[140px]">{site.name || site.url}</h3>
-                                            <div className="flex items-center gap-1.5 mt-0.5">
-                                                <div className={`w-1.5 h-1.5 rounded-full ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF] animate-pulse' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]' : 'bg-[#FF3B30]'}`}></div>
-                                                <span className="text-[9px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)]">{site.status}</span>
+                                            <div className="flex flex-col mt-0.5">
+                                                <div className="flex items-center gap-1.5">
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF] animate-pulse' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]' : 'bg-[#FF3B30]'}`}></div>
+                                                    <span className="text-[9px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)]">{site.status}</span>
+                                                </div>
+                                                {site.sslDaysRemaining !== undefined && (
+                                                    <div className={`flex items-center gap-0.5 mt-0.5 ${site.sslDaysRemaining < 7 ? 'text-[#FF3B30]' : site.sslDaysRemaining < 15 ? 'text-[#FF9500]' : 'text-[var(--apple-text-secondary)] opacity-40'}`}>
+                                                        <ShieldCheck size={7} strokeWidth={3} />
+                                                        <span className="text-[7.5px] font-black uppercase tracking-tighter">Certificado: {site.sslDaysRemaining} Dias</span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -312,16 +321,30 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                         </a>
                                         <span className="font-bold text-[15px] md:text-sm tracking-tight truncate text-[var(--apple-text)]">{site.name || site.url}</span>
                                     </div>
-                                    <span className={`md:hidden px-3 py-1 rounded-full text-[9px] font-black uppercase ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]/10 text-[#007AFF]' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'}`}>
-                                        {site.status}
-                                    </span>
+                                    <div className="flex flex-col items-end">
+                                        <span className={`md:hidden px-3 py-1 rounded-full text-[9px] font-black uppercase ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]/10 text-[#007AFF]' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'}`}>
+                                            {site.status}
+                                        </span>
+                                        {site.sslDaysRemaining !== undefined && (
+                                            <div className={`md:hidden flex items-center gap-0.5 mt-1 ${site.sslDaysRemaining < 7 ? 'text-[#FF3B30]' : site.sslDaysRemaining < 15 ? 'text-[#FF9500]' : 'text-[var(--apple-text-secondary)] opacity-40'}`}>
+                                                <ShieldCheck size={7} strokeWidth={3} />
+                                                <span className="text-[7.5px] font-black">SSL: {site.sslDaysRemaining}D</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 {/* Desktop Status - MD and up */}
-                                <div className="hidden md:block">
+                                <div className="hidden md:flex flex-col items-center">
                                     <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]/10 text-[#007AFF]' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'}`}>
                                         {site.status}
                                     </span>
+                                    {site.sslDaysRemaining !== undefined && (
+                                        <div className={`flex items-center gap-0.5 mt-0.5 ${site.sslDaysRemaining < 7 ? 'text-[#FF3B30]' : site.sslDaysRemaining < 15 ? 'text-[#FF9500]' : 'text-[var(--apple-text-secondary)] opacity-40'}`}>
+                                            <ShieldCheck size={7} strokeWidth={3} />
+                                            <span className="text-[7.5px] font-black">SSL: {site.sslDaysRemaining}D</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Latency - Desktop Cell */}

@@ -426,12 +426,13 @@ export const useSiteMonitoring = (username: string | null) => {
             const siteToProbe = sitesRef.current.find(s => s.id === siteId);
             const result = await checkWebsiteStatus(url, siteToProbe?.keyword);
 
+            let finalUpdatedSites: StatusResult[] = [];
+
             setSites(prev => {
                 const siteToCheck = prev.find(s => s.id === siteId);
                 if (siteToCheck) {
                     const siteName = siteToCheck.name || url;
 
-                    // Lógica de Notificação quando há MUDANÇA ou ERRO
                     if (siteToCheck.status !== result.status && siteToCheck.status !== CheckStatus.CHECKING) {
                         if (result.status === CheckStatus.OFFLINE || result.status === CheckStatus.ERROR) {
                             addToastNotification(`Alerta: O site ${siteName} ficou offline!`, 'alert');
@@ -450,20 +451,31 @@ export const useSiteMonitoring = (username: string | null) => {
                         }
                     }
                 }
-                const updatedSites = prev.map(s => s.id === siteId ? { ...s, status: result.status, message: result.message, timestamp: new Date().toLocaleString(), latency: result.latency } : s);
-                saveToFirestore(updatedSites);
+                const updatedSites = prev.map(s => s.id === siteId ? { 
+                    ...s, 
+                    status: result.status, 
+                    message: result.message, 
+                    timestamp: new Date().toLocaleString(), 
+                    latency: result.latency,
+                    sslExpiryDate: result.sslExpiryDate,
+                    sslDaysRemaining: result.sslDaysRemaining
+                } : s);
+                finalUpdatedSites = updatedSites;
                 return updatedSites;
             });
+
+            if (finalUpdatedSites.length > 0) {
+                await saveToFirestore(finalUpdatedSites);
+            }
             await addLogEntry(siteId, result.status, result.message, result.latency);
         } catch (error) {
             console.error("Erro:", error);
             setSites(prev => {
                 const updatedSites = prev.map(s => s.id === siteId ? { ...s, status: CheckStatus.ERROR, message: "Falha na verificação.", timestamp: new Date().toLocaleString() } : s);
-                saveToFirestore(updatedSites);
                 return updatedSites;
             });
         }
-    }, [saveToFirestore, addLogEntry, addToastNotification, sendEmailNotification, emailNotifyType]);
+    }, [saveToFirestore, addLogEntry, addToastNotification, sendEmailNotification, emailNotifyType, audioSettings, playNotificationSound, sendNotification]);
 
     const handleAddSite = async (urlParam?: string, nameParam?: string, keywordParam?: string) => {
         let url = (urlParam || newSiteUrl).trim();
