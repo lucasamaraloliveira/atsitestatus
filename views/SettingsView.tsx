@@ -9,15 +9,8 @@ import {
     Shield,
     Bell,
     CheckCircle2,
-    AlertTriangle,
-    Trash2,
-    ShieldCheck,
-    X, 
-    FileText, 
-    Download, 
-    Clock
+    AlertTriangle
 } from 'lucide-react';
-import AddUserModal from '../components/AddUserModal';
 
 interface SettingsViewProps {
     isMonitoring: boolean;
@@ -30,11 +23,9 @@ interface SettingsViewProps {
     inactivityTimeout: number;
     setInactivityTimeout: (seconds: number) => void;
     childUsers: any[];
-    addChildUser: (username: string, password?: string, name?: string) => Promise<void>;
+    addChildUser: (user: any) => void;
     removeChildUser: (id: string) => void;
     userRole: 'admin' | 'child';
-    userProfile: any;
-    handleUpdateProfile: (name: string, password?: string, photoUrl?: string) => Promise<void>;
 }
 
 const SettingsView: React.FC<SettingsViewProps> = ({
@@ -50,260 +41,249 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     childUsers,
     addChildUser,
     removeChildUser,
-    userRole,
-    userProfile,
-    handleUpdateProfile
+    userRole
 }) => {
     const [localEmail, setLocalEmail] = useState(notificationEmail);
-    const [localName, setLocalName] = useState(userProfile?.name || '');
-    const [localPassword, setLocalPassword] = useState('');
-    const [localPhotoUrl, setLocalPhotoUrl] = useState(userProfile?.photoUrl || '');
+    const [localType, setLocalType] = useState(emailNotifyType);
     const [activeTab, setActiveTab] = useState<'preferences' | 'notifications' | 'team'>('preferences');
-    const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
 
     useEffect(() => {
         setLocalEmail(notificationEmail);
-        setLocalName(userProfile?.name || '');
-        setLocalPhotoUrl(userProfile?.photoUrl || '');
-    }, [notificationEmail, userProfile]);
+        setLocalType(emailNotifyType);
+    }, [notificationEmail, emailNotifyType]);
 
     const handleSaveEmail = () => {
-        saveEmailSettings(localEmail, emailNotifyType);
+        saveEmailSettings(localEmail, localType);
     };
 
     return (
-        <div className="animate-fade-in pb-24">
-            <header className="mb-10">
-                <h2 className="text-4xl font-extrabold tracking-tight">Ajustes</h2>
-                <p className="text-[var(--apple-text-secondary)] font-medium">Controle sua conta e equipe de monitoramento.</p>
+        <div className="animate-fade-in space-y-10 pb-20">
+            <header>
+                <h2 className="text-4xl font-extrabold text-[var(--apple-text)] tracking-tight">Configurações</h2>
+                <p className="text-[var(--apple-text-secondary)] font-medium mt-1">Gerencie seu ecossistema de monitoramento.</p>
             </header>
 
-            <div className="flex gap-2 mb-10 overflow-x-auto no-scrollbar scroll-smooth">
-                {[
-                    { id: 'preferences', label: 'Preferências', icon: SettingsIcon },
-                    { id: 'notifications', label: 'Notificações', icon: Bell },
-                    { id: 'team', label: 'Equipe', icon: Users, hidden: userRole !== 'admin' }
-                ].filter(tab => !tab.hidden).map((tab) => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id as any)}
-                        className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-black whitespace-nowrap uppercase tracking-widest transition-all ${
-                            activeTab === tab.id 
-                                ? 'bg-[var(--apple-text)] text-[var(--apple-bg)] shadow-lg' 
-                                : 'bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)] hover:bg-white/5 opacity-60 hover:opacity-100'
-                        }`}
+            <div className="flex bg-[var(--apple-input-bg)] p-1.5 rounded-2xl border border-[var(--apple-border)] w-fit mb-4">
+                <button 
+                    onClick={() => setActiveTab('preferences')}
+                    className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'preferences' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
+                >
+                    Preferências
+                </button>
+                <button 
+                    onClick={() => setActiveTab('notifications')}
+                    className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'notifications' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
+                >
+                    Notificações
+                </button>
+                {userRole === 'admin' && (
+                    <button 
+                        onClick={() => setActiveTab('team')}
+                        className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'team' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
                     >
-                        <tab.icon size={16} />
-                        {tab.label}
+                        Equipe
                     </button>
-                ))}
+                )}
             </div>
 
             <div className="grid grid-cols-1 gap-8">
                 {activeTab === 'preferences' && (
-                    <div className="max-w-2xl space-y-12 animate-fade-in">
-                        {/* Perfil Section */}
-                        <div className="space-y-8">
-                            <header className="flex items-center gap-3 mb-6">
-                                <Shield className="text-[var(--apple-accent)]" />
-                                <h3 className="text-xl font-bold tracking-tight">Seu Perfil</h3>
-                            </header>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">Seu Nome</label>
-                                    <input 
-                                        type="text" 
-                                        value={localName}
-                                        onChange={(e) => setLocalName(e.target.value)}
-                                        className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 px-6 text-sm font-medium outline-none text-[var(--apple-text)] focus:ring-4 focus:ring-[var(--apple-accent)]/10 transition-all"
-                                    />
-                                </div>
+                    <section className="glass apple-card p-10 border-none space-y-10 animate-fade-in">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 rounded-2xl bg-[var(--apple-accent)]/10 text-[var(--apple-accent)]">
+                                <Activity size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold">Motor de Monitoramento</h3>
+                                <p className="text-sm text-[var(--apple-text-secondary)]">Ajuste como o sistema analisa seus alvos.</p>
+                            </div>
+                        </div>
 
-                                <div className="space-y-3">
-                                    <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">Nova Senha (Opcional)</label>
-                                    <input 
-                                        type="password" 
-                                        value={localPassword}
-                                        onChange={(e) => setLocalPassword(e.target.value)}
-                                        placeholder="Mín 6 caracteres"
-                                        className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 px-6 text-sm font-medium outline-none text-[var(--apple-text)]"
-                                    />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="flex items-center justify-between p-6 bg-[var(--apple-input-bg)] rounded-3xl group transition-all hover:bg-white/5">
+                                <div>
+                                    <p className="font-bold">Status do Monitoramento</p>
+                                    <p className="text-[10px] text-[var(--apple-text-secondary)] uppercase font-black tracking-widest mt-1">{isMonitoring ? 'Ativo e processando' : 'Globalmente pausado'}</p>
                                 </div>
+                                <button 
+                                    onClick={() => setIsMonitoring(!isMonitoring)}
+                                    className={`w-14 h-7 rounded-full flex items-center transition-all px-1 ${isMonitoring ? 'bg-[#34C759]' : 'bg-gray-300 dark:bg-gray-700'}`}
+                                >
+                                    <div className={`w-5 h-5 bg-white rounded-full shadow-lg transition-all ${isMonitoring ? 'translate-x-[26px]' : 'translate-x-0'}`} />
+                                </button>
+                            </div>
+
+                            <div className="p-6 bg-[var(--apple-input-bg)] rounded-3xl space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <p className="font-bold">Intervalo de Verificação</p>
+                                    <span className="text-xs font-black text-[var(--apple-accent)] bg-[var(--apple-accent)]/10 px-3 py-1 rounded-full">{monitoringInterval}s</span>
+                                </div>
+                                <input 
+                                    type="range"
+                                    min="10"
+                                    max="1800"
+                                    step="10"
+                                    value={monitoringInterval}
+                                    onChange={(e) => setMonitoringInterval(parseInt(e.target.value))}
+                                    className="w-full h-1.5 bg-[var(--apple-border)] rounded-full appearance-none cursor-pointer accent-[var(--apple-accent)]"
+                                />
+                                <p className="text-[9px] text-[var(--apple-text-secondary)] font-bold uppercase tracking-widest text-center">Recomendado: 60s para estabilidade</p>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {activeTab === 'notifications' && (
+                    <section className="glass apple-card p-10 border-none space-y-10 animate-fade-in">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 rounded-2xl bg-[#FF9500]/10 text-[#FF9500]">
+                                <Mail size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold">Alertas e Notificações</h3>
+                                <p className="text-sm text-[var(--apple-text-secondary)]">Configurações para recebimento de logs via e-mail.</p>
+                            </div>
+                        </div>
+
+            <div className="max-w-2xl space-y-8">
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">E-mail para Alertas</label>
+                                    <div className="relative group">
+                                        <Bell 
+                                            size={20} 
+                                            className="absolute right-6 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] transition-all duration-300 group-focus-within:opacity-0 group-focus-within:translate-x-4" 
+                                        />
+                                        <input 
+                                            type="email" 
+                                            value={localEmail}
+                                            onChange={(e) => setLocalEmail(e.target.value)}
+                                            placeholder="seu-email@dominio.com"
+                                            className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 pl-6 pr-14 text-sm font-medium focus:ring-4 focus:ring-[var(--apple-accent)]/10 focus:border-[var(--apple-accent)] transition-all outline-none"
+                                        />
+                                    </div>
                             </div>
 
                             <div className="space-y-3">
-                                <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">URL da Foto de Perfil</label>
-                                <input 
-                                    type="url" 
-                                    value={localPhotoUrl}
-                                    onChange={(e) => setLocalPhotoUrl(e.target.value)}
-                                    placeholder="https://..."
-                                    className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 px-6 text-sm font-medium outline-none text-[var(--apple-accent)]"
-                                />
+                                <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">Auto-Logout (Por Inatividade)</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {[
+                                        { val: 300, lbl: '5 Min' },
+                                        { val: 900, lbl: '15 Min' },
+                                        { val: 1800, lbl: '30 Min' },
+                                        { val: 3600, lbl: '1 Hora' },
+                                        { val: -1, lbl: 'Nunca' }
+                                    ].map(opt => (
+                                        <button
+                                            key={opt.val}
+                                            onClick={() => setInactivityTimeout(opt.val)}
+                                            className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${inactivityTimeout === opt.val ? 'bg-[var(--apple-accent)] text-white border-transparent shadow-lg shadow-[var(--apple-accent)]/20' : 'bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)] border-transparent hover:bg-white/10'}`}
+                                        >
+                                            {opt.lbl}
+                                        </button>
+                                    ))}
+                                </div>
+                                <p className="text-[9px] text-[var(--apple-text-secondary)] font-bold italic ml-1">Tempo de espera antes de encerrar sua sessão automaticamente.</p>
                             </div>
 
-                            <button 
-                                onClick={() => {
-                                    handleUpdateProfile(localName, localPassword || undefined, localPhotoUrl || undefined);
-                                    setLocalPassword('');
-                                }}
-                                className="bg-[var(--apple-text)] text-[var(--apple-bg)] px-10 h-14 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.03] active:scale-[0.97] transition-all shadow-xl shadow-black/10"
-                            >
-                                Salvar Perfil
-                            </button>
-                        </div>
-
-                        <div className="h-px bg-[var(--apple-border)] w-full opacity-50"></div>
-
-                        <div className="space-y-8">
-                            <header className="flex items-center gap-3 mb-6">
-                                <Activity className="text-[var(--apple-accent)]" />
-                                <h3 className="text-xl font-bold tracking-tight">Monitoramento</h3>
-                            </header>
-                            
-                            <div className="flex items-center justify-between p-6 bg-[var(--apple-input-bg)] rounded-[2rem] border border-[var(--apple-border)]">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-[var(--apple-accent)]">
-                                        <Clock size={20} />
-                                    </div>
-                                    <div>
-                                        <span className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest block">Intervalo</span>
-                                        <span className="text-lg font-black">{monitoringInterval} seg</span>
-                                    </div>
-                                </div>
-                                <div className="flex gap-2">
-                                    {[30, 60, 120].map((int) => (
+                            <div className="space-y-3">
+                                <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">Severidade dos Alertas</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    {[
+                                        { id: 'error', label: 'Só Erros', color: '#FF3B30', desc: 'Alertas críticos' },
+                                        { id: 'success', label: 'Sucessos', color: '#34C759', desc: 'Confirm. de Uptime' },
+                                        { id: 'all', label: 'Todos', color: '#007AFF', desc: 'Log completo' }
+                                    ].map(type => (
                                         <button
-                                            key={int}
-                                            onClick={() => setMonitoringInterval(int)}
-                                            className={`w-12 h-12 rounded-xl text-xs font-black transition-all border-2 ${monitoringInterval === int ? 'bg-[var(--apple-accent)] text-white border-transparent' : 'border-transparent bg-white/5 text-[var(--apple-text-secondary)] hover:bg-white/10'}`}
+                                            key={type.id}
+                                            onClick={() => setLocalType(type.id as any)}
+                                            className={`p-5 rounded-2xl text-left transition-all border-2 flex flex-col gap-1 ${localType === type.id ? 'bg-white/10 border-[var(--apple-accent)] shadow-xl' : 'border-transparent bg-[var(--apple-input-bg)] opacity-60 hover:opacity-100'}`}
                                         >
-                                            {int === 120 ? '2m' : int + 's'}
+                                            <span className="text-xs font-black uppercase tracking-wider" style={{ color: localType === type.id ? type.color : 'inherit' }}>{type.label}</span>
+                                            <span className="text-[9px] font-bold opacity-60">{type.desc}</span>
                                         </button>
                                     ))}
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                )}
 
-                {activeTab === 'notifications' && (
-                    <div className="max-w-2xl space-y-10 animate-fade-in">
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">E-mail para Alertas</label>
-                            <div className="relative group">
-                                <Bell size={20} className="absolute right-6 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] opacity-40" />
-                                <input 
-                                    type="email" 
-                                    value={localEmail}
-                                    onChange={(e) => setLocalEmail(e.target.value)}
-                                    placeholder="suporte@empresa.com"
-                                    className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-[1.5rem] py-5 px-7 text-sm font-medium outline-none focus:ring-4 focus:ring-[var(--apple-accent)]/10 transition-all pr-16"
-                                />
+                            <div className="flex flex-col gap-4 pt-4">
+                                <button 
+                                    onClick={() => {
+                                        handleSaveEmail();
+                                        const btn = document.getElementById('save-email-btn');
+                                        if(btn) {
+                                            const originalText = btn.innerHTML;
+                                            btn.innerHTML = '✅ Configurações Salvas!';
+                                            btn.style.backgroundColor = '#34C759';
+                                            btn.style.color = 'white';
+                                            setTimeout(() => {
+                                                btn.innerHTML = originalText;
+                                                btn.style.backgroundColor = '';
+                                                btn.style.color = '';
+                                            }, 2000);
+                                        }
+                                    }}
+                                    id="save-email-btn"
+                                    className="w-full sm:w-fit px-12 bg-[var(--apple-text)] text-[var(--apple-bg)] py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-black/10 flex items-center justify-center gap-2"
+                                >
+                                    Salvar Preferências de Alerta
+                                </button>
+                                <p className="text-[9px] text-[var(--apple-text-secondary)] font-bold italic ml-2">As notificações serão enviadas conforme a severidade escolhida.</p>
                             </div>
                         </div>
-
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">Auto-Logout (Por Inatividade)</label>
-                            <div className="flex flex-wrap gap-2">
-                                {[
-                                    { val: 300, lbl: '5 Min' },
-                                    { val: 900, lbl: '15 Min' },
-                                    { val: 1800, lbl: '30 Min' },
-                                    { val: 3600, lbl: '1 Hora' },
-                                    { val: -1, lbl: 'Nunca' }
-                                ].map(opt => (
-                                    <button
-                                        key={opt.val}
-                                        onClick={() => setInactivityTimeout(opt.val)}
-                                        className={`px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${inactivityTimeout === opt.val ? 'bg-[var(--apple-accent)] text-white border-transparent shadow-[var(--apple-accent)]/20 shadow-xl' : 'bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)] border-transparent hover:bg-white/10'}`}
-                                    >
-                                        {opt.lbl}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <button 
-                            onClick={handleSaveEmail}
-                            className="w-full h-14 bg-[var(--apple-text)] text-[var(--apple-bg)] rounded-[1.5rem] font-black text-xs uppercase tracking-widest hover:opacity-90 transition-all shadow-xl"
-                        >
-                            Salvar Configurações de Alerta
-                        </button>
-                    </div>
+                    </section>
                 )}
 
-                {activeTab === 'team' && (
-                    <div className="max-w-4xl space-y-10 animate-fade-in">
-                        <header className="flex justify-between items-end">
-                            <div>
-                                <h3 className="text-2xl font-black tracking-tight">Equipe</h3>
-                                <p className="text-sm text-[var(--apple-text-secondary)]">Organize os membros que acessam este painel.</p>
+                {activeTab === 'team' && userRole === 'admin' && (
+                    <section className="glass apple-card p-10 border-none space-y-10 animate-fade-in">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 rounded-2xl bg-[#5856D6]/10 text-[#5856D6]">
+                                    <Users size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold">Gestão de Equipe</h3>
+                                    <p className="text-sm text-[var(--apple-text-secondary)]">Gerencie acessos e permissões de monitoramento.</p>
+                                </div>
                             </div>
                             <button 
-                                onClick={() => setIsAddUserModalOpen(true)}
-                                className="apple-button h-12 px-8 flex items-center gap-2 shadow-lg shadow-[var(--apple-accent)]/20 transition-all hover:scale-[1.03]"
+                                onClick={() => {
+                                    const user = prompt("Username do novo membro:");
+                                    if(user) addChildUser({ username: user, name: user, password: '123' });
+                                }}
+                                className="bg-[var(--apple-accent)] text-white px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 hover:opacity-90 transition-all active:scale-95"
                             >
-                                <UserPlus size={18} />
-                                <span className="text-[10px] uppercase font-black tracking-widest">Novo Membro</span>
+                                <UserPlus size={16} />
+                                Novo Membro
                             </button>
-                        </header>
+                        </div>
 
-                        {childUsers.length === 0 ? (
-                            <div className="p-20 glass apple-card text-center border-none shadow-xl">
-                                <div className="w-20 h-20 bg-white/5 rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-white/20">
-                                    <Users size={40} />
-                                </div>
-                                <h4 className="font-bold text-xl">Nenhum integrante ainda</h4>
-                                <p className="text-sm text-[var(--apple-text-secondary)] mt-2">Os membros da sua equipe aparecerão aqui.</p>
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {childUsers.map((user) => (
-                                    <div key={user.id} className="glass apple-card p-6 flex items-center justify-between border-none shadow-xl group transition-all hover:scale-[1.01]">
-                                        <div className="flex items-center gap-5">
-                                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--apple-accent)]/10 to-transparent flex items-center justify-center text-[var(--apple-accent)] font-black text-xl border border-[var(--apple-accent)]/10">
-                                                {user.photoUrl ? <img src={user.photoUrl} alt="Avatar" className="w-full h-full object-cover rounded-2xl" /> : (user.name?.charAt(0) || user.username.charAt(0))}
-                                            </div>
-                                            <div>
-                                                <span className="font-bold text-lg block leading-tight">{user.name || user.username}</span>
-                                                <div className="flex items-center gap-2 text-[var(--apple-text-secondary)] mt-1">
-                                                    <ShieldCheck size={12} className="text-[#34C759]" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest mt-0.5">Colaborador</span>
-                                                </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {childUsers.map(user => (
+                                <div key={user.id} className="p-6 bg-[var(--apple-input-bg)] rounded-3xl border border-[var(--apple-border)] flex items-center justify-between group hover:shadow-lg transition-all">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#5856D6] to-[#AF52DE] flex items-center justify-center text-white font-black text-sm shadow-lg shadow-[#5856D6]/20">
+                                            {user.name?.charAt(0) || user.username.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-sm">{user.name || user.username}</p>
+                                            <div className="flex items-center gap-1.5">
+                                                <Shield size={10} className="text-[#34C759]" />
+                                                <span className="text-[9px] font-black uppercase text-[var(--apple-text-secondary)] opacity-60">Acesso Operador</span>
                                             </div>
                                         </div>
-                                        <button 
-                                            onClick={() => removeChildUser(user.id)}
-                                            className="p-3 bg-[#FF3B30]/10 text-[#FF3B30] rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-[#FF3B30]/20"
-                                            title="Remover"
-                                        >
-                                            <UserMinus size={20} />
-                                        </button>
                                     </div>
-                                ))}
-                            </div>
-                        )}
-
-                        <div className="p-8 glass-dark rounded-[2.5rem] border border-white/5 mt-10">
-                            <div className="flex items-center gap-4 text-[#34C759] mb-4">
-                                <ShieldCheck size={28} />
-                                <h4 className="font-black text-xs uppercase tracking-widest">Segunraça de Infraestrutura</h4>
-                            </div>
-                            <p className="text-sm text-white/50 leading-relaxed font-medium">
-                                Membros têm acesso apenas à visualização dos alvos designados. A exclusão definitiva de qualquer dado de monitoramento permanece exclusiva da conta administrativa principal.
-                            </p>
+                                    <button 
+                                        onClick={() => removeChildUser(user.id)}
+                                        className="p-2.5 rounded-xl hover:bg-[#FF3B30]/10 text-[#FF3B30] opacity-0 group-hover:opacity-100 transition-all shadow-sm"
+                                    >
+                                        <UserMinus size={18} />
+                                    </button>
+                                </div>
+                            ))}
                         </div>
-                    </div>
+                    </section>
                 )}
             </div>
-
-            <AddUserModal 
-                isOpen={isAddUserModalOpen} 
-                onClose={() => setIsAddUserModalOpen(false)} 
-                onAdd={(u, p, n) => addChildUser(u, p, n)} 
-            />
         </div>
     );
 };

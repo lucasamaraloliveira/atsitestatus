@@ -65,9 +65,7 @@ const App: React.FC = () => {
         selectedSiteId, setSelectedSiteId, recentlyDeleted, notifications, removeNotification, addToastNotification,
         isDeleteModalOpen, siteToDelete, isGlobalReportModalOpen, setIsGlobalReportModalOpen,
         isClearHistoryModalOpen, siteToClearHistory,
-        childUsers, addChildUser, removeChildUser, userRole, userProfile, handleUpdateProfile,
-        userToDelete, isDeleteUserModalOpen, handleConfirmDeleteUser, handleCloseDeleteUserModal, 
-        recentlyDeletedUser, handleUndoDeleteUser,
+        childUsers, addChildUser, removeChildUser, userRole, userProfile,
         handleAddSite, handleRequestDelete, handleConfirmDelete,
         handleCloseDeleteModal, handleUndoDelete, handleEditSite, handleUpdateSite, handleRefreshSite, handleRefreshAll,
         requestClearHistory, confirmClearHistory, closeClearHistoryModal,
@@ -202,8 +200,6 @@ const App: React.FC = () => {
                         saveEmailSettings={saveEmailSettings} inactivityTimeout={inactivityTimeout}
                         setInactivityTimeout={setInactivityTimeout} childUsers={childUsers}
                         addChildUser={addChildUser} removeChildUser={removeChildUser} userRole={userRole}
-                        userProfile={userProfile}
-                        handleUpdateProfile={handleUpdateProfile}
                     />
                 );
             case 'reports':
@@ -258,7 +254,7 @@ const App: React.FC = () => {
                                 {allLogs.sort((a, b) => b.timestamp - a.timestamp).slice(0, 50).map((log, idx) => (
                                     <div key={idx} className="p-5 flex items-center justify-between hover:bg-white/5 transition-colors">
                                         <div className="flex items-center gap-4">
-                                            <div className={`w-2.5 h-2.5 rounded-full ${log.status === CheckStatus.ONLINE ? 'bg-[#34C759]' : 'bg-[#FF3B30]'}`}></div>
+                                            <div className={`w-2.5 h-2.5 rounded-full ${log.status === CheckStatus.ONLINE ? 'bg-[#34C759]' : log.status === CheckStatus.CHECKING ? 'bg-[#007AFF]' : log.status === CheckStatus.ERROR ? 'bg-[#FF9500]' : 'bg-[#FF3B30]'}`}></div>
                                             <div>
                                                 <span className="font-bold text-sm block tracking-tight">{log.status}</span>
                                                 <p className="text-[11px] text-[var(--apple-text-secondary)] font-medium">{log.message}</p>
@@ -359,13 +355,6 @@ const App: React.FC = () => {
                 Deseja apagar os registros de {siteToClearHistory?.name || siteToClearHistory?.url}?
             </ConfirmationModal>
 
-            <ConfirmationModal 
-                isOpen={isDeleteUserModalOpen} onClose={handleCloseDeleteUserModal} onConfirm={handleConfirmDeleteUser}
-                title="Remover Membro" confirmText="Remover" confirmVariant="danger"
-            >
-                Tem certeza que deseja remover {userToDelete?.name || userToDelete?.username} da equipe? O acesso será revogado imediatamente.
-            </ConfirmationModal>
-
             <GlobalReportModal isOpen={isGlobalReportModalOpen} onClose={() => setIsGlobalReportModalOpen(false)} sites={sites} logs={logs} />
             <AddSiteModal isOpen={isAddSiteModalOpen} onClose={() => setIsAddSiteModalOpen(false)} onAdd={handleAddSite} />
             
@@ -374,14 +363,6 @@ const App: React.FC = () => {
                     <div className="bg-[#1C1C1E] text-white px-6 py-4 rounded-3xl flex items-center gap-6 shadow-2xl border border-white/10">
                         <span className="text-sm font-bold">Site removido.</span>
                         <button onClick={handleUndoDelete} className="text-[var(--apple-accent)] font-black uppercase text-[10px] tracking-widest">Desfazer</button>
-                    </div>
-                </div>
-            )}
-            {recentlyDeletedUser && (
-                <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[100] animate-fade-in-slide-up">
-                    <div className="bg-[#1C1C1E] text-white px-6 py-4 rounded-3xl flex items-center gap-6 shadow-2xl border border-white/10">
-                        <span className="text-sm font-bold">Membro removido.</span>
-                        <button onClick={handleUndoDeleteUser} className="text-[var(--apple-accent)] font-black uppercase text-[10px] tracking-widest">Desfazer</button>
                     </div>
                 </div>
             )}

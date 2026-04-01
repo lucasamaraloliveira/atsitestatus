@@ -105,49 +105,71 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
             <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-8 gap-4 flex-wrap">
                 <div className="flex items-center gap-3 flex-wrap">
-                    <div className="flex items-center bg-[var(--apple-input-bg)] rounded-2xl p-1.5 border border-[var(--apple-border)] glass">
-                        <div className="relative group">
-                            <select 
-                                id="filter" 
-                                value={filter} 
-                                onChange={(e) => setFilter(e.target.value as FilterType)} 
-                                className="appearance-none bg-transparent pl-4 pr-10 py-2.5 rounded-xl text-sm font-bold focus:outline-none cursor-pointer text-[var(--apple-text)]"
+                    {/* iOS-style Segmented Control - Status Filter */}
+                    <div className="relative flex items-center bg-[var(--apple-input-bg)] rounded-[14px] p-[3px] border border-[var(--apple-border)] backdrop-blur-xl shadow-sm">
+                        {([
+                            { value: 'ALL', label: 'Todos', icon: <Search size={13} strokeWidth={2.5} /> },
+                            { value: 'Online', label: 'Online', icon: <div className="w-[7px] h-[7px] rounded-full bg-[#34C759]" /> },
+                            { value: 'Offline', label: 'Offline', icon: <div className="w-[7px] h-[7px] rounded-full bg-[#FF3B30]" /> },
+                            { value: 'Verificando', label: 'Verificando', icon: <div className="w-[7px] h-[7px] rounded-full bg-[#007AFF]" /> },
+                            { value: 'Erro', label: 'Erro', icon: <div className="w-[7px] h-[7px] rounded-full bg-[#FF9500]" /> },
+                        ] as { value: FilterType; label: string; icon: React.ReactNode }[]).map((item) => (
+                            <button
+                                key={item.value}
+                                onClick={() => setFilter(item.value)}
+                                className={`relative z-10 flex items-center gap-1.5 px-3.5 py-[7px] rounded-[11px] text-[12px] font-semibold transition-all duration-200 ease-in-out
+                                    ${filter === item.value 
+                                        ? 'bg-[var(--apple-card-bg)] text-[var(--apple-text)] shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.3)]' 
+                                        : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'
+                                    }`}
                             >
-                                <option value="ALL">🔍 Todos</option>
-                                <option value="Online">🟢 Online</option>
-                                <option value="Offline">🔴 Offline</option>
-                                <option value="Verificando">🔵 Verificando</option>
-                                <option value="Erro">🟠 Erro</option>
-                            </select>
-                        </div>
-                        
-                        <div className="w-px h-5 bg-[var(--apple-border)] mx-1"></div>
-                        
-                        <div className="relative group">
-                            <select 
-                                id="sort" 
-                                value={sortOrder} 
-                                onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')} 
-                                className="appearance-none bg-transparent pl-4 pr-10 py-2.5 rounded-xl text-sm font-bold focus:outline-none cursor-pointer text-[var(--apple-text)]"
-                            >
-                                <option value="asc">🔡 A-Z</option>
-                                <option value="desc">🔠 Z-A</option>
-                            </select>
-                        </div>
+                                {item.icon}
+                                <span className="hidden sm:inline">{item.label}</span>
+                            </button>
+                        ))}
                     </div>
 
-                    <div className="flex bg-[var(--apple-input-bg)] p-1 rounded-2xl border border-[var(--apple-border)]">
+                    {/* iOS-style Segmented Control - Sort Order */}
+                    <div className="relative flex items-center bg-[var(--apple-input-bg)] rounded-[14px] p-[3px] border border-[var(--apple-border)] backdrop-blur-xl shadow-sm">
+                        {([
+                            { value: 'asc', label: 'A-Z' },
+                            { value: 'desc', label: 'Z-A' },
+                        ] as { value: 'asc' | 'desc'; label: string }[]).map((item) => (
+                            <button
+                                key={item.value}
+                                onClick={() => setSortOrder(item.value)}
+                                className={`relative z-10 flex items-center gap-1.5 px-4 py-[7px] rounded-[11px] text-[12px] font-semibold transition-all duration-200 ease-in-out
+                                    ${sortOrder === item.value 
+                                        ? 'bg-[var(--apple-card-bg)] text-[var(--apple-text)] shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.3)]' 
+                                        : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'
+                                    }`}
+                            >
+                                {item.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* iOS-style Segmented Control - View Mode */}
+                    <div className="relative flex items-center bg-[var(--apple-input-bg)] rounded-[14px] p-[3px] border border-[var(--apple-border)] backdrop-blur-xl shadow-sm">
                         <button 
                             onClick={() => setViewMode('card')}
-                            className={`p-2.5 rounded-xl transition-all ${viewMode === 'card' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)]'}`}
+                            className={`relative z-10 p-[7px] rounded-[11px] transition-all duration-200 ease-in-out
+                                ${viewMode === 'card' 
+                                    ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.3)]' 
+                                    : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'
+                                }`}
                         >
-                            <LayoutGrid size={18} />
+                            <LayoutGrid size={16} strokeWidth={2} />
                         </button>
                         <button 
                             onClick={() => setViewMode('list')}
-                            className={`p-2.5 rounded-xl transition-all ${viewMode === 'list' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)]'}`}
+                            className={`relative z-10 p-[7px] rounded-[11px] transition-all duration-200 ease-in-out
+                                ${viewMode === 'list' 
+                                    ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-[0_1px_3px_rgba(0,0,0,0.08),0_1px_2px_rgba(0,0,0,0.06)] dark:shadow-[0_1px_3px_rgba(0,0,0,0.3)]' 
+                                    : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'
+                                }`}
                         >
-                            <List size={18} />
+                            <List size={16} strokeWidth={2} />
                         </button>
                     </div>
                 </div>
@@ -171,13 +193,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                             <div className="p-6 md:p-8">
                                 <div className="flex items-start justify-between mb-6 md:mb-8">
                                     <div className="flex items-center gap-4">
-                                        <div className={`p-4 rounded-2xl ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'}`}>
+                                        <div className={`p-4 rounded-2xl ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]/10 text-[#007AFF]' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'}`}>
                                             <Globe size={24} />
                                         </div>
                                         <div>
                                             <h3 className="font-black text-lg text-[var(--apple-text)] truncate max-w-[120px] sm:max-w-[140px]">{site.name || site.url}</h3>
                                             <div className="flex items-center gap-1.5 mt-0.5">
-                                                <div className={`w-1.5 h-1.5 rounded-full ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]' : 'bg-[#FF3B30]'}`}></div>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]' : 'bg-[#FF3B30]'}`}></div>
                                                 <span className="text-[9px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)]">{site.status}</span>
                                             </div>
                                         </div>
@@ -228,7 +250,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                         </div>
                                     </td>
                                     <td className="px-8 py-5">
-                                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'}`}>{site.status}</span>
+                                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]/10 text-[#007AFF]' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'}`}>{site.status}</span>
                                     </td>
                                     <td className="px-8 py-5 text-sm font-black text-[var(--apple-text)]">{site.latency ? `${site.latency}ms` : '--'}</td>
                                     <td className="px-8 py-5 text-[10px] font-bold text-[var(--apple-text-secondary)]">{site.timestamp || '--'}</td>

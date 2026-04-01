@@ -18,12 +18,7 @@ import {
     writeBatch
 } from 'firebase/firestore';
 
-interface NotificationType {
-    id: number;
-    message: string;
-    type: 'alert' | 'warning' | 'success';
-}
-
+type NotificationType = { id: number; message: string; type: 'alert' | 'warning' };
 const MAX_LOG_ENTRIES_PER_SITE = 100;
 const HIGH_LATENCY_THRESHOLD = 1500; 
 
@@ -49,12 +44,6 @@ export const useSiteMonitoring = (username: string | null) => {
     const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
     const [isAddSiteModalOpen, setIsAddSiteModalOpen] = useState(false);
     
-    // Gestão de Equipe (Membros)
-    const [isDeleteUserModalOpen, setIsDeleteUserModalOpen] = useState(false);
-    const [userToDelete, setUserToDelete] = useState<any | null>(null);
-    const [recentlyDeletedUser, setRecentlyDeletedUser] = useState<any | null>(null);
-    const userUndoTimeoutRef = useRef<number | null>(null);
-    
     // Configurações de E-mail e Segurança
     const [notificationEmail, setNotificationEmail] = useState('');
     const [emailNotifyType, setEmailNotifyType] = useState<'success' | 'error' | 'all'>('error');
@@ -79,7 +68,7 @@ export const useSiteMonitoring = (username: string | null) => {
     useEffect(() => { isMonitoringRef.current = isMonitoring; }, [isMonitoring]);
     useEffect(() => { intervalRefValue.current = monitoringInterval; }, [monitoringInterval]);
 
-    const addToastNotification = useCallback((message: string, type: 'alert' | 'warning' | 'success' = 'alert') => {
+    const addToastNotification = useCallback((message: string, type: 'alert' | 'warning' = 'alert') => {
         const id = Date.now();
         setNotifications(prev => [...prev, { id, message, type }]);
         // Auto-remove after 5 seconds
@@ -211,82 +200,29 @@ export const useSiteMonitoring = (username: string | null) => {
         setTimeout(() => saveToFirestore(), 100);
     };
 
-    const addChildUser = async (username: string, password?: string, name?: string) => {
+    const addChildUser = async (user: any) => {
         if (!effectiveOwnerId || userRole !== 'admin') return;
         try {
-            const newUser = { id: crypto.randomUUID(), username, password, name, createdAt: Date.now(), role: 'child', parentId: effectiveOwnerId };
-            const updatedChildUsers = [...childUsers, newUser];
+            const updatedChildUsers = [...childUsers, { ...user, id: crypto.randomUUID(), createdAt: Date.now() }];
             await saveToFirestore(sites, monitoringInterval, isMonitoring, updatedChildUsers);
-            const childUserRef = doc(db, 'users', username);
-            await setDoc(childUserRef, { ...newUser, sites: [], isMonitoring: false });
-            addToastNotification(`Membro ${name || username} adicionado.`, "success");
+            const childUserRef = doc(db, 'users', user.username);
+            await setDoc(childUserRef, { ...user, role: 'child', parentId: effectiveOwnerId, sites: [], isMonitoring: false });
         } catch (error) {
             console.error("Erro ao adicionar usuário filho:", error);
             addToastNotification("Falha ao salvar usuário.", "alert");
         }
     };
 
-    const handleRequestDeleteUser = (childId: string) => {
-        const user = childUsers.find(u => u.id === childId);
-        if (user) {
-            setUserToDelete(user);
-            setIsDeleteUserModalOpen(true);
-        }
-    };
-
-    const handleConfirmDeleteUser = async () => {
-        if (!userToDelete || !effectiveOwnerId) return;
+    const removeChildUser = async (childId: string) => {
+        if (!effectiveOwnerId || userRole !== 'admin') return;
         try {
-            setRecentlyDeletedUser(userToDelete);
-            const updatedChildUsers = childUsers.filter(u => u.id !== userToDelete.id);
+            const childToRemove = childUsers.find(u => u.id === childId);
+            const updatedChildUsers = childUsers.filter(u => u.id !== childId);
             await saveToFirestore(sites, monitoringInterval, isMonitoring, updatedChildUsers);
-            await deleteDoc(doc(db, 'users', userToDelete.username));
-            
-            setIsDeleteUserModalOpen(false);
-            setUserToDelete(null);
-            
-            if (userUndoTimeoutRef.current) clearTimeout(userUndoTimeoutRef.current);
-            userUndoTimeoutRef.current = window.setTimeout(() => setRecentlyDeletedUser(null), 7000);
-            
-            addToastNotification(`Membro ${userToDelete.name || userToDelete.username} removido.`, "warning");
+            if (childToRemove) await deleteDoc(doc(db, 'users', childToRemove.username));
         } catch (error) {
             console.error("Erro ao remover usuário filho:", error);
             addToastNotification("Falha ao remover usuário.", "alert");
-        }
-    };
-
-    const handleUndoDeleteUser = async () => {
-        if (!recentlyDeletedUser || !effectiveOwnerId) return;
-        if (userUndoTimeoutRef.current) clearTimeout(userUndoTimeoutRef.current);
-        
-        try {
-            const updatedChildUsers = [...childUsers, recentlyDeletedUser];
-            await saveToFirestore(sites, monitoringInterval, isMonitoring, updatedChildUsers);
-            const childUserRef = doc(db, 'users', recentlyDeletedUser.username);
-            await setDoc(childUserRef, { ...recentlyDeletedUser, sites: [], isMonitoring: false });
-            
-            setRecentlyDeletedUser(null);
-            addToastNotification("Membro restaurado.", "success");
-        } catch (error) {
-            console.error("Erro ao desfazer remoção:", error);
-        }
-    };
-
-    const handleUpdateProfile = async (name: string, password?: string, photoUrl?: string) => {
-        if (!effectiveOwnerId) return;
-        try {
-            const userRef = doc(db, 'users', effectiveOwnerId);
-            const updates: any = { name };
-            if (password) updates.password = password;
-            if (photoUrl) updates.photoUrl = photoUrl;
-            
-            await setDoc(userRef, updates, { merge: true });
-            
-            // Se for admin, atualizar também o registro na lista de childUsers para consistência (opcional dependendo do design)
-            addToastNotification("Perfil atualizado com sucesso.", "success");
-        } catch (error) {
-            console.error("Erro ao atualizar perfil:", error);
-            addToastNotification("Falha ao atualizar perfil.", "alert");
         }
     };
 
@@ -446,9 +382,7 @@ export const useSiteMonitoring = (username: string | null) => {
         selectedSiteId, setSelectedSiteId, recentlyDeleted, notifications, removeNotification, addToastNotification,
         isDeleteModalOpen, siteToDelete, isGlobalReportModalOpen, setIsGlobalReportModalOpen,
         isClearHistoryModalOpen, siteToClearHistory,
-        childUsers, addChildUser, removeChildUser: handleRequestDeleteUser, 
-        isDeleteUserModalOpen, userToDelete, recentlyDeletedUser, handleConfirmDeleteUser, handleUndoDeleteUser, handleCloseDeleteUserModal: () => { setIsDeleteUserModalOpen(false); setUserToDelete(null); },
-        userRole, userProfile, handleUpdateProfile,
+        childUsers, addChildUser, removeChildUser, userRole, userProfile,
         handleAddSite, handleRequestDelete, handleConfirmDelete,
         handleCloseDeleteModal, handleUndoDelete, handleEditSite: (id: string) => setEditingSiteId(id), handleUpdateSite, handleRefreshSite: (id: string) => { const s = sites.find(x => x.id === id); if(s) handleCheckStatus(id, s.url); }, handleRefreshAll,
         requestClearHistory: (id: string) => { const s = sites.find(x => x.id === id); if(s) { setSiteToClearHistory(s); setIsClearHistoryModalOpen(true); } }, confirmClearHistory: handleConfirmClearHistory, closeClearHistoryModal: () => { setIsClearHistoryModalOpen(false); setSiteToClearHistory(null); },
