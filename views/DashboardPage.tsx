@@ -38,7 +38,7 @@ interface DashboardPageProps {
     onOpenGlobalReportModal: () => void;
     onOpenAddSiteModal: () => void;
     handleEditSite: (id: string) => void;
-    handleUpdateSiteUrl: (id: string, url: string, name: string) => void;
+    handleUpdateSiteUrl: (id: string, url: string, name: string, keyword: string) => void;
     handleRefreshSite: (id: string) => void;
     handleRequestDelete: (id: string) => void;
     handleRefreshAll: () => void;
@@ -369,15 +369,24 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                             <RefreshCw size={14} strokeWidth={2.5} />
                                             <span className="md:hidden text-[10px] font-bold ml-2">Atualizar</span>
                                         </button>
-                                        {canDelete && (
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); handleRequestDelete(site.id); }} 
-                                                className="p-3 md:p-2 bg-[var(--apple-input-bg)] md:bg-transparent rounded-xl md:rounded-lg text-[#FF3B30]/60 hover:text-[#FF3B30] transition-all"
-                                            >
-                                                <Trash2 size={14} strokeWidth={2.5} />
-                                                <span className="md:hidden text-[10px] font-bold ml-2 text-[#FF3B30]">Remover</span>
-                                            </button>
-                                        )}
+                                            {canEdit && (
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); handleEditSite(site.id); }} 
+                                                    className="p-3 md:p-2 bg-[var(--apple-input-bg)] md:bg-transparent rounded-xl md:rounded-lg text-[var(--apple-text-secondary)] hover:text-[var(--apple-accent)] transition-all"
+                                                >
+                                                    <Edit2 size={14} strokeWidth={2.5} />
+                                                    <span className="md:hidden text-[10px] font-bold ml-2">Editar</span>
+                                                </button>
+                                            )}
+                                            {canDelete && (
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); handleRequestDelete(site.id); }} 
+                                                    className="p-3 md:p-2 bg-[var(--apple-input-bg)] md:bg-transparent rounded-xl md:rounded-lg text-[#FF3B30]/60 hover:text-[#FF3B30] transition-all"
+                                                >
+                                                    <Trash2 size={14} strokeWidth={2.5} />
+                                                    <span className="md:hidden text-[10px] font-bold ml-2 text-[#FF3B30]">Remover</span>
+                                                </button>
+                                            )}
                                     </div>
                                     <ChevronRight size={14} className="md:hidden text-[var(--apple-text-secondary)] opacity-30" />
                                 </div>

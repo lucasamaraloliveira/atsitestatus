@@ -15,6 +15,7 @@ import Sidebar from '@/components/Sidebar';
 import { FileText, Activity, BarChart3, Trash2, Menu, X, LayoutDashboard, PlusCircle, Settings, LogOut, Sun, Moon } from 'lucide-react';
 import { StatusResult, LogEntry, CheckStatus } from '@/types';
 import AddSiteModal from '@/components/AddSiteModal';
+import EditSiteModal from '@/components/EditSiteModal';
 
 interface SharedReportData {
     sites: StatusResult[];
@@ -218,7 +219,7 @@ const App: React.FC = () => {
                         setSelectedSiteId={setSelectedSiteId}
                         onOpenGlobalReportModal={() => setIsGlobalReportModalOpen(true)}
                         onOpenAddSiteModal={() => setIsAddSiteModalOpen(true)}
-                        handleEditSite={handleEditSite} handleUpdateSiteUrl={(id, u, n) => handleUpdateSite(id, u, n)}
+                        handleEditSite={handleEditSite} handleUpdateSiteUrl={(id, u, n, k) => handleUpdateSite(id, u, n, k)}
                         handleRefreshSite={handleRefreshSite} handleRequestDelete={handleRequestDelete}
                         handleRefreshAll={handleRefreshAll}
                         currentUser={currentUser!} onLogout={handleLogout}
@@ -430,7 +431,13 @@ const App: React.FC = () => {
             </ConfirmationModal>
 
             <GlobalReportModal isOpen={isGlobalReportModalOpen} onClose={() => setIsGlobalReportModalOpen(false)} sites={sites} logs={logs} />
-            <AddSiteModal isOpen={isAddSiteModalOpen} onClose={() => setIsAddSiteModalOpen(false)} onAdd={handleAddSite} />
+            <AddSiteModal isOpen={isAddSiteModalOpen} onClose={() => setIsAddSiteModalOpen(false)} onAdd={(u, n, k) => handleAddSite(u, n, k)} />
+            <EditSiteModal 
+                isOpen={!!editingSiteId} 
+                onClose={() => handleEditSite(null as any)} 
+                onUpdate={handleUpdateSite} 
+                site={sites.find(s => s.id === editingSiteId) || null} 
+            />
             
             {recentlyDeleted && (
                 <div className="fixed bottom-24 md:bottom-8 left-1/2 -translate-x-1/2 z-[100] animate-fade-in-slide-up">
