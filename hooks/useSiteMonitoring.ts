@@ -18,7 +18,7 @@ import {
     writeBatch
 } from 'firebase/firestore';
 
-type NotificationType = { id: number; message: string; type: 'alert' | 'warning' };
+type NotificationType = { id: number; message: string; type: 'alert' | 'warning' | 'success' | 'info' };
 const MAX_LOG_ENTRIES_PER_SITE = 100;
 const HIGH_LATENCY_THRESHOLD = 1500; 
 
@@ -69,7 +69,7 @@ export const useSiteMonitoring = (username: string | null) => {
     useEffect(() => { isMonitoringRef.current = isMonitoring; }, [isMonitoring]);
     useEffect(() => { intervalRefValue.current = monitoringInterval; }, [monitoringInterval]);
 
-    const addToastNotification = useCallback((message: string, type: 'alert' | 'warning' = 'alert') => {
+    const addToastNotification = useCallback((message: string, type: 'alert' | 'warning' | 'success' | 'info' = 'alert') => {
         const id = Date.now();
         setNotifications(prev => [...prev, { id, message, type }]);
         // Auto-remove after 5 seconds
@@ -395,7 +395,7 @@ export const useSiteMonitoring = (username: string | null) => {
                             sendNotification('Site Offline', { body: siteName });
                             sendEmailNotification(siteName, url, result.status, result.message, result.latency);
                         } else if (result.status === CheckStatus.ONLINE) {
-                            addToastNotification(`Sucesso: O site ${siteName} está online.`, 'warning');
+                            addToastNotification(`Sucesso: O site ${siteName} está online.`, 'success');
                             sendEmailNotification(siteName, url, result.status, result.message, result.latency);
                         }
                     } else if (result.status === CheckStatus.ONLINE && result.latency && result.latency > HIGH_LATENCY_THRESHOLD) {
@@ -448,6 +448,7 @@ export const useSiteMonitoring = (username: string | null) => {
         setNewSiteUrl('');
         setNewSiteName('');
         setIsAddSiteModalOpen(false);
+        addToastNotification(`Site "${name || url}" adicionado com sucesso.`, "success");
         setTimeout(() => handleCheckStatus(newSite.id, newSite.url), 500);
     };
 
@@ -464,6 +465,7 @@ export const useSiteMonitoring = (username: string | null) => {
         setRecentlyDeleted({ site: siteToDelete, logs: logsToDelete });
         const updatedSites = sites.filter(site => site.id !== siteToDelete.id);
         await saveToFirestore(updatedSites);
+        addToastNotification(`Site "${siteToDelete.name || siteToDelete.url}" removido.`, "alert");
         undoTimeoutRef.current = window.setTimeout(() => setRecentlyDeleted(null), 7000);
         handleCloseDeleteModal();
     };
@@ -473,6 +475,7 @@ export const useSiteMonitoring = (username: string | null) => {
         if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
         const updatedSites = [...sites, recentlyDeleted.site].sort((a, b) => a.url.localeCompare(b.url));
         await saveToFirestore(updatedSites);
+        addToastNotification(`Monitoramento de "${recentlyDeleted.site.name || recentlyDeleted.site.url}" restaurado.`, "success");
         setRecentlyDeleted(null);
     };
 
@@ -483,6 +486,7 @@ export const useSiteMonitoring = (username: string | null) => {
         const updatedSites = sites.map(s => s.id === id ? { ...s, url, name: newName.trim() || undefined, keyword: newKeyword.trim() || undefined } : s);
         setEditingSiteId(null);
         await saveToFirestore(updatedSites);
+        addToastNotification(`Site "${newName || url}" atualizado com sucesso.`, "info");
         handleCheckStatus(id, url);
     };
 
@@ -498,7 +502,7 @@ export const useSiteMonitoring = (username: string | null) => {
             // Limpa o estado local imediatamente para feedback visual
             setLogs(prev => ({ ...prev, [siteToClearHistory.id]: [] }));
             
-            addToastNotification(`Histórico de ${siteToClearHistory.name || siteToClearHistory.url} limpo com sucesso.`, "warning");
+            addToastNotification(`Histórico de ${siteToClearHistory.name || siteToClearHistory.url} limpo com sucesso.`, "alert");
             setIsClearHistoryModalOpen(false);
             setSiteToClearHistory(null);
         } catch (error) {

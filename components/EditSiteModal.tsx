@@ -99,7 +99,7 @@ const EditSiteModal: React.FC<EditSiteModalProps> = ({ isOpen, onClose, onUpdate
                     <div className="pt-4 space-y-3">
                         <button 
                             type="submit"
-                            className="w-full bg-[var(--apple-dark-text)] hover:opacity-90 text-[var(--apple-card-bg)] font-bold py-4 rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2 active:scale-[0.98]"
+                            className="w-full bg-[#007AFF] hover:bg-[#0062CC] text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-[#007AFF]/25 flex items-center justify-center gap-2 active:scale-[0.98]"
                         >
                             <Save size={20} />
                             Salvar Alterações
