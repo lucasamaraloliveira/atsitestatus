@@ -102,7 +102,7 @@ export const useSiteMonitoring = (username: string | null) => {
                     if (!isParentFetch && data.role === 'child' && data.parentId) {
                         setUserRole('child');
                         setUserProfile(data); 
-                        setEffectiveOwnerId(data.parentId); // DEFINE O DONO IMEDIATAMENTE
+                        setEffectiveOwnerId(data.parentId);
                         if (unsubRef.current) unsubRef.current();
                         unsubRef.current = fetchUserData(data.parentId, true);
                         return;
@@ -111,12 +111,12 @@ export const useSiteMonitoring = (username: string | null) => {
                     if (isParentFetch) {
                         setUserRole('child');
                         setParentName(data.name || data.username);
-                        setEffectiveOwnerId(targetUser); // targetUser aqui é o parentId
+                        setEffectiveOwnerId(targetUser); 
                     } else {
                         setUserRole(data.role || 'admin');
                         setUserProfile(data);
                         setParentName(null);
-                        setEffectiveOwnerId(targetUser); // targetUser aqui é o próprio username/id
+                        setEffectiveOwnerId(targetUser);
                     }
 
                     setSites(data.sites || []);
@@ -129,10 +129,9 @@ export const useSiteMonitoring = (username: string | null) => {
                     if (data.viewMode) setViewMode(data.viewMode);
                     if (data.inactivityTimeout) setInactivityTimeout(data.inactivityTimeout);
                 } else if (!snapshot.exists() && !isParentFetch) {
-                    setDoc(userRef, { sites: [], isMonitoring: false, monitoringInterval: 60, childUsers: [], inactivityTimeout: 1800 }, { merge: true });
+                    // SE NÃO EXISTE E NÃO É FILHO, APENAS DEFINE COMO ADMIN SEM CRIAR DOC (O App.tsx gerencia a criação inicial se necessário)
                     setEffectiveOwnerId(targetUser);
                     setUserRole('admin');
-                    setUserProfile({ username: targetUser, role: 'admin' });
                 }
             }, (error) => {
                 console.error("Erro no onSnapshot do usuário:", error);
