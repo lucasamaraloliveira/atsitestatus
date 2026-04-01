@@ -118,17 +118,20 @@ export const useSiteMonitoring = (username: string | null) => {
                         setParentName(null);
                     }
 
-                    // Carrega dados independente de ser pai ou admin direto
-                    setEffectiveOwnerId(targetUser); 
-                    setSites(data.sites || []);
-                    setIsMonitoring(!!data.isMonitoring);
-                    setMonitoringInterval(data.monitoringInterval || 60);
-                    setChildUsers(data.childUsers || []);
-                    
-                    if (data.notificationEmail) setNotificationEmail(data.notificationEmail);
-                    if (data.emailNotifyType) setEmailNotifyType(data.emailNotifyType);
-                    if (data.viewMode) setViewMode(data.viewMode);
-                    if (data.inactivityTimeout) setInactivityTimeout(data.inactivityTimeout);
+                    if (!isParentFetch) {
+                        setIsMonitoring(!!data.isMonitoring);
+                        setMonitoringInterval(data.monitoringInterval || 60);
+                        if (data.notificationEmail) setNotificationEmail(data.notificationEmail);
+                        if (data.emailNotifyType) setEmailNotifyType(data.emailNotifyType);
+                        if (data.viewMode) setViewMode(data.viewMode);
+                        if (data.inactivityTimeout) setInactivityTimeout(data.inactivityTimeout);
+                    }
+
+                    if (isParentFetch || data.role !== 'child') {
+                        setSites(data.sites || []);
+                        setChildUsers(data.childUsers || []);
+                        setEffectiveOwnerId(targetUser); 
+                    }
 
                 } else if (!snapshot.exists() && !isParentFetch) {
                     setEffectiveOwnerId(targetUser);
@@ -161,24 +164,45 @@ export const useSiteMonitoring = (username: string | null) => {
         return () => unsubscribes.forEach(unsub => unsub());
     }, [effectiveOwnerId, sites.length]); 
 
-    const saveToFirestore = useCallback(async (updatedSites?: StatusResult[], updatedInterval?: number, updatedMonitoring?: boolean, updatedChildUsers?: any[]) => {
-        if (!effectiveOwnerId) return;
+    const saveToFirestore = useCallback(async (
+        updatedSites?: StatusResult[], 
+        updatedInterval?: number, 
+        updatedMonitoring?: boolean, 
+        updatedChildUsers?: any[],
+        updatedViewMode?: 'card' | 'list'
+    ) => {
+        if (!username || !effectiveOwnerId) return;
+        
         try {
-            const userRef = doc(db, 'users', effectiveOwnerId);
-            await setDoc(userRef, { 
-                sites: updatedSites ?? sitesRef.current, 
-                monitoringInterval: updatedInterval ?? intervalRefValue.current, 
+            const batch = writeBatch(db);
+            
+            // 1. SEMPRE SALVA PREFERÊNCIAS INDIVIDUAIS NO DOC DO USUÁRIO LOGADO
+            const selfRef = doc(db, 'users', username);
+            const personalData: any = {
+                monitoringInterval: updatedInterval ?? intervalRefValue.current,
                 isMonitoring: updatedMonitoring ?? isMonitoringRef.current,
-                childUsers: updatedChildUsers ?? childUsers,
+                viewMode: updatedViewMode ?? viewMode,
                 notificationEmail,
                 emailNotifyType,
-                viewMode,
                 inactivityTimeout
-            }, { merge: true });
+            };
+            batch.set(selfRef, personalData, { merge: true });
+
+            // 2. SALVA DADOS COMPARTILHADOS NO DOC DO ADMINISTRADOR (effectiveOwnerId)
+            // Somente se for o Admin salvando mudanças na lista de sites ou na equipe
+            if (updatedSites || updatedChildUsers) {
+                const ownerRef = doc(db, 'users', effectiveOwnerId);
+                const sharedData: any = {};
+                if (updatedSites) sharedData.sites = updatedSites;
+                if (updatedChildUsers) sharedData.childUsers = updatedChildUsers;
+                batch.set(ownerRef, sharedData, { merge: true });
+            }
+
+            await batch.commit();
         } catch (error) {
             console.error("Erro ao salvar no Firestore:", error);
         }
-    }, [effectiveOwnerId, childUsers, notificationEmail, emailNotifyType, viewMode, inactivityTimeout]);
+    }, [username, effectiveOwnerId, childUsers, notificationEmail, emailNotifyType, viewMode, inactivityTimeout]);
 
     const handleSetIsMonitoring = async (val: boolean) => {
         lockRef.current = true;
@@ -195,8 +219,12 @@ export const useSiteMonitoring = (username: string | null) => {
     };
 
     const handleSetViewMode = (mode: 'card' | 'list') => {
+        lockRef.current = true;
         setViewMode(mode);
-        saveToFirestore();
+        saveToFirestore(undefined, undefined, undefined, undefined, mode)
+            .finally(() => {
+                setTimeout(() => { lockRef.current = false; }, 1000);
+            });
     };
 
     const handleSetEmailSettings = (email: string, type: 'success' | 'error' | 'all') => {
