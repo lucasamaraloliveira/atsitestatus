@@ -150,23 +150,21 @@ const App: React.FC = () => {
             const { db } = await import('@/services/firebase');
             const userRef = doc(db, 'users', username);
             const userSnap = await getDoc(userRef);
-            if (!password) {
-                if (!userSnap.exists()) {
-                    await setDoc(userRef, { username, role: 'admin', sites: [], isMonitoring: false, monitoringInterval: 60, childUsers: [], createdAt: Date.now() });
-                }
-                localStorage.setItem('currentUser', username);
-                setCurrentUser(username);
-                setShowSplash(true);
-                return true;
-            }
             if (userSnap.exists()) {
                 const userData = userSnap.data();
-                if (userData.password === password) {
+                if (!password || userData.password === password) {
                     localStorage.setItem('currentUser', username);
                     setCurrentUser(username);
                     setShowSplash(true);
                     return true;
                 }
+            } else if (!password) {
+                // Registro automático apenas para novos admins via Google (sem senha)
+                await setDoc(userRef, { username, role: 'admin', sites: [], isMonitoring: false, monitoringInterval: 60, childUsers: [], createdAt: Date.now() });
+                localStorage.setItem('currentUser', username);
+                setCurrentUser(username);
+                setShowSplash(true);
+                return true;
             }
             alert("Usuário ou senha incorretos.");
             return false;
