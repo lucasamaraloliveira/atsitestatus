@@ -1,11 +1,15 @@
-import { Resend } from 'resend';
 import { NextResponse } from 'next/server';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   try {
     const { to, subject, siteName, url, status, message, latency, timestamp } = await req.json();
+
+    const accessKey = process.env.WEB3FORMS_ACCESS_KEY;
+
+    if (!accessKey) {
+        console.error('WEB3FORMS_ACCESS_KEY não configurada no .env.local');
+        return NextResponse.json({ error: 'Configuração de e-mail pendente' }, { status: 500 });
+    }
 
     if (!to || !siteName || !status) {
         return NextResponse.json({ error: 'Faltam dados obrigatórios' }, { status: 400 });
@@ -15,11 +19,8 @@ export async function POST(req: Request) {
     const color = isOnline ? '#34C759' : '#FF3B30';
     const accentColor = '#0071E3';
 
-    const { data, error } = await resend.emails.send({
-      from: 'atsitestatus <notifications@resend.dev>', // Importante: no modo teste do Resend use este 'from'
-      to: [to],
-      subject: subject || `Alerta: O site ${siteName} está ${status}`,
-      html: `
+    // Template HTML customizado (estilo Apple)
+    const htmlContent = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #F5F5F7; padding: 40px; color: #1D1D1F;">
           <div style="max-width: 600px; margin: 0 auto; background-color: #FFFFFF; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.05);">
             <div style="background: linear-gradient(135deg, ${accentColor}, #5AC8FA); padding: 40px; text-align: center; color: #FFFFFF;">
@@ -77,15 +78,38 @@ export async function POST(req: Request) {
             </div>
           </div>
         </div>
-      `,
+    `;
+
+    // Enviar para o Web3Forms - Configurado como Alerta de Sistema
+    const response = await fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            access_key: accessKey,
+            subject: `[ALERTA STATUS] ${siteName} está ${status.toUpperCase()}`,
+            from_name: "ATSiteStatus Alertas",
+            to_email: to, // Se for Pro. Se for Free, irá para o e-email da conta.
+            replyto: "no-reply@atsitestatus.com", // Evita sugestão de resposta
+            message: `Alerta de Monitoramento: ${siteName} (${url}) está ${status}. Detalhes: ${message}`,
+            html: htmlContent,
+            botcheck: false, // Opcional, para evitar atrasos de validação
+            redirect: ""     // Evita redirecionamentos desnecessários
+        })
     });
 
-    if (error) {
-      return NextResponse.json({ error }, { status: 500 });
+    const result = await response.json();
+
+    if (result.success) {
+        return NextResponse.json({ success: true, message: 'Email enviado com sucesso via Web3Forms' });
+    } else {
+        return NextResponse.json({ error: result.message || 'Falha no Web3Forms' }, { status: 500 });
     }
 
-    return NextResponse.json(data);
   } catch (error) {
+    console.error('Erro na rota de e-mail:', error);
     return NextResponse.json({ error: 'Erro interno ao disparar e-mail' }, { status: 500 });
   }
 }
