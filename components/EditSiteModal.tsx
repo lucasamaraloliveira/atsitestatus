@@ -5,7 +5,7 @@ import { StatusResult } from '@/types';
 interface EditSiteModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onUpdate: (id: string, url: string, name: string, keyword: string, isPublic: boolean) => void;
+    onUpdate: (id: string, url: string, name: string, keyword: string) => void;
     site: StatusResult | null;
 }
 
@@ -13,14 +13,12 @@ const EditSiteModal: React.FC<EditSiteModalProps> = ({ isOpen, onClose, onUpdate
     const [url, setUrl] = useState('');
     const [name, setName] = useState('');
     const [keyword, setKeyword] = useState('');
-    const [isPublicState, setIsPublicState] = useState(false);
 
     useEffect(() => {
         if (site) {
             setUrl(site.url);
             setName(site.name || '');
             setKeyword(site.keyword || '');
-            setIsPublicState(!!site.isPublic);
         }
     }, [site, isOpen]);
 
@@ -28,7 +26,7 @@ const EditSiteModal: React.FC<EditSiteModalProps> = ({ isOpen, onClose, onUpdate
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onUpdate(site.id, url, name, keyword, isPublicState);
+        onUpdate(site.id, url, name, keyword);
         onClose();
     };
 
@@ -96,25 +94,6 @@ const EditSiteModal: React.FC<EditSiteModalProps> = ({ isOpen, onClose, onUpdate
                         <p className="text-[9px] text-[var(--apple-text-secondary)] leading-relaxed italic px-1">
                             Deixe em branco para monitorar apenas o status HTTP.
                         </p>
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 bg-[var(--apple-input-bg)] dark:bg-black/20 rounded-2xl border border-[var(--apple-border)]">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-[#FF3B30]/10 rounded-xl">
-                                <Globe size={20} className="text-[#FF3B30]" />
-                            </div>
-                            <div>
-                                <p className="text-xs font-black text-[var(--apple-text)]">Visibilidade Pública</p>
-                                <p className="text-[10px] font-medium text-[var(--apple-text-secondary)]">Exibir na página de status</p>
-                            </div>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => setIsPublicState(!isPublicState)}
-                            className={`w-11 h-6 rounded-full transition-all duration-300 relative ${isPublicState ? 'bg-[#34C759]' : 'bg-gray-300 dark:bg-gray-700'}`}
-                        >
-                            <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 ${isPublicState ? 'translate-x-5' : 'translate-x-0'}`} />
-                        </button>
                     </div>
 
                     <div className="pt-4 space-y-3">
