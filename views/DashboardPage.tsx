@@ -71,6 +71,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     handleUpdateSiteUrl,
     userProfile
 }) => {
+    const [searchQuery, setSearchQuery] = React.useState('');
     const userRole = userProfile?.role || 'admin';
     const userProfileType = userProfile?.profile || 'admin';
     
@@ -82,7 +83,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     type FilterType = CheckStatus | 'ALL';
 
     const filteredSites = sites
-        .filter(site => filter === 'ALL' || site.status === filter)
+        .filter(site => {
+            const matchesStatus = filter === 'ALL' || site.status === filter;
+            const matchesSearch = !searchQuery.trim() || 
+                (site.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                site.url.toLowerCase().includes(searchQuery.toLowerCase());
+            return matchesStatus && matchesSearch;
+        })
         .sort((a, b) => {
             const nameA = a.name || a.url;
             const nameB = b.name || b.url;
@@ -119,8 +126,23 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             </header>
 
             <div className="flex flex-col gap-6 mb-10">
-                {/* Status Filters - Mobile Grid / Desktop Segmented */}
-                <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
+                {/* Search and Filters Row */}
+                <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center">
+                    {/* Search Field */}
+                    <div className="flex-1 relative group">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] transition-colors group-focus-within:text-[var(--apple-accent)]">
+                            <Search size={18} strokeWidth={2.5} />
+                        </div>
+                        <input 
+                            type="text"
+                            placeholder="Buscar site por nome ou URL..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-[22px] md:rounded-[18px] py-3.5 pl-12 pr-6 text-sm font-medium text-[var(--apple-text)] placeholder:text-[var(--apple-text-secondary)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--apple-accent)]/20 focus:border-[var(--apple-accent)]/40 transition-all shadow-sm backdrop-blur-xl"
+                        />
+                    </div>
+
+                    {/* Status Filters */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:flex items-center bg-[var(--apple-input-bg)] rounded-[22px] md:rounded-[18px] p-1 border border-[var(--apple-border)] backdrop-blur-xl shadow-sm gap-1">
                         {([
                             { value: 'ALL', label: 'Todos', icon: <Search size={13} strokeWidth={2.5} /> },
