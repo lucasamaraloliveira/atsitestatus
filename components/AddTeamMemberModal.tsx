@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { X, User, Shield, Lock, UserPlus } from 'lucide-react';
+import { X, User, Shield, Lock, UserPlus, AlertCircle, Loader2 } from 'lucide-react';
+import { db } from '@/services/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface AddTeamMemberModalProps {
     isOpen: boolean;
@@ -12,13 +14,43 @@ const AddTeamMemberModal: React.FC<AddTeamMemberModalProps> = ({ isOpen, onClose
     const [name, setName] = useState('');
     const [password, setPassword] = useState('');
     const [profile, setProfile] = useState<'analyst' | 'viewer'>('analyst');
+    const [isChecking, setIsChecking] = useState(false);
+    const [isTaken, setIsTaken] = useState(false);
+
+    // Validação de Unicidade
+    React.useEffect(() => {
+        if (!username || username.length < 3) {
+            setIsTaken(false);
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            if (username.trim().toLowerCase() === 'root') {
+                setIsTaken(true);
+                setIsChecking(false);
+                return;
+            }
+            setIsChecking(true);
+            try {
+                const userRef = doc(db, 'users', username.trim());
+                const userSnap = await getDoc(userRef);
+                setIsTaken(userSnap.exists());
+            } catch (error) {
+                console.error("Erro ao validar username:", error);
+            } finally {
+                setIsChecking(false);
+            }
+        }, 600);
+
+        return () => clearTimeout(timer);
+    }, [username]);
 
     if (!isOpen) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!username || !password) return;
-        onAdd({ username, name: name || username, password, profile });
+        if (!username || !password || isTaken || isChecking) return;
+        onAdd({ username: username.trim(), name: name || username, password, profile });
         resetFields();
         onClose();
     };
@@ -78,16 +110,27 @@ const AddTeamMemberModal: React.FC<AddTeamMemberModalProps> = ({ isOpen, onClose
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)] ml-1">Username (ID de Login)</label>
                             <div className="relative group">
-                                <User className="absolute right-6 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] opacity-40" size={18} />
+                                <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                    {isChecking && <Loader2 size={16} className="text-[var(--apple-accent)] animate-spin" />}
+                                    {isTaken && <AlertCircle size={16} className="text-[#FF3B30]" />}
+                                    {!isChecking && !isTaken && username.length >= 3 && <div className="w-1.5 h-1.5 rounded-full bg-[#34C759]" />}
+                                    <User className={`text-[var(--apple-text-secondary)] opacity-40`} size={18} />
+                                </div>
                                 <input 
                                     type="text" 
                                     placeholder="ex: lucas_analista"
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
-                                    className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 pl-6 pr-14 text-sm font-medium focus:ring-4 focus:ring-[var(--apple-accent)]/10 focus:border-[var(--apple-accent)] transition-all outline-none"
+                                    className={`w-full bg-[var(--apple-input-bg)] border rounded-2xl py-4 pl-6 pr-20 text-sm font-medium focus:ring-4 transition-all outline-none ${isTaken ? 'border-[#FF3B30] focus:ring-[#FF3B30]/10' : 'border-[var(--apple-border)] focus:ring-[var(--apple-accent)]/10 focus:border-[var(--apple-accent)]'}`}
                                     required
                                 />
                             </div>
+                            {isTaken && (
+                                <p className="text-[10px] font-bold text-[#FF3B30] ml-2 animate-fade-in flex items-center gap-1">
+                                    <AlertCircle size={10} />
+                                    {username.trim().toLowerCase() === 'root' ? 'Este nome de usuário é reservado.' : 'Este usuário já está em uso por outra equipe.'}
+                                </p>
+                            )}
                         </div>
 
                         <div className="space-y-2">
@@ -123,10 +166,20 @@ const AddTeamMemberModal: React.FC<AddTeamMemberModalProps> = ({ isOpen, onClose
                     <div className="pt-4 flex flex-col gap-3">
                         <button 
                             type="submit"
-                            className="w-full bg-[var(--apple-accent)] hover:opacity-90 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-[var(--apple-accent)]/20 flex items-center justify-center gap-2 active:scale-[0.98] uppercase tracking-widest text-xs"
+                            className="w-full bg-[var(--apple-accent)] hover:opacity-90 text-white font-black py-4 rounded-2xl transition-all shadow-xl shadow-[var(--apple-accent)]/20 flex items-center justify-center gap-2 active:scale-[0.98] uppercase tracking-widest text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+                            disabled={!username.trim() || !password.trim() || isTaken || isChecking}
                         >
-                            <UserPlus size={18} />
-                            Criar Novo Membro
+                            {isChecking ? (
+                                <>
+                                    <Loader2 size={16} className="animate-spin" />
+                                    Validando...
+                                </>
+                            ) : (
+                                <>
+                                    <UserPlus size={18} />
+                                    Criar Novo Membro
+                                </>
+                            )}
                         </button>
                         <button 
                             type="button"

@@ -81,7 +81,8 @@ const App: React.FC = () => {
         viewMode, setViewMode, isAddSiteModalOpen, setIsAddSiteModalOpen,
         notificationEmail, emailNotifyType, setNotificationEmail, setEmailNotifyType, saveEmailSettings,
         inactivityTimeout, setInactivityTimeout,
-        clearAllLogs
+        clearAllLogs,
+        parentName
     } = useSiteMonitoring(currentUser);
 
     // Watchdog de Inatividade
@@ -152,7 +153,10 @@ const App: React.FC = () => {
     };
 
     const handleLogin = async (username: string, password?: string): Promise<boolean> => {
-        if (!username.trim()) return false;
+        if (!username.trim() || username.trim().toLowerCase() === 'root') {
+            if (username.trim().toLowerCase() === 'root') alert("Este nome de usuário é reservado e não pode ser utilizado.");
+            return false;
+        }
         try {
             const { doc, getDoc, setDoc } = await import('firebase/firestore');
             const { db } = await import('@/services/firebase');
@@ -322,6 +326,7 @@ const App: React.FC = () => {
                     onLogout={handleLogout} currentUser={currentUser!} userProfile={userProfile}
                     theme={theme} toggleTheme={toggleTheme} onAddSite={() => setIsAddSiteModalOpen(true)}
                     isCollapsed={sidebarCollapsed} setIsCollapsed={setSidebarCollapsed}
+                    parentName={parentName}
                 />
             </div>
 

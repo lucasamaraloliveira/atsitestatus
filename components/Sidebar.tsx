@@ -23,6 +23,7 @@ interface SidebarProps {
     onAddSite: () => void;
     isCollapsed: boolean;
     setIsCollapsed: (val: boolean) => void;
+    parentName: string | null;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
@@ -35,7 +36,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     setActiveView,
     onAddSite,
     isCollapsed,
-    setIsCollapsed
+    setIsCollapsed,
+    parentName
 }) => {
     const [isUserTrayOpen, setIsUserTrayOpen] = useState(false);
 
@@ -154,7 +156,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         <div className="min-w-0 flex-grow text-left">
                             <p className="text-xs font-bold text-[var(--apple-text)] truncate">{userProfile?.name || currentUser}</p>
                             <p className="text-[10px] text-[var(--apple-text-secondary)] font-medium">
-                                {userProfile?.role === 'admin' ? 'Conta Administrativa' : 'Acesso Restrito'}
+                                {userProfile?.role === 'admin' ? 'Conta Administrativa' : `Equipe de: ${parentName || '...'}`}
                             </p>
                         </div>
                     )}

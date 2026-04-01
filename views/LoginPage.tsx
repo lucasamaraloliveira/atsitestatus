@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { auth, googleProvider, db } from '@/services/firebase';
 import { signInWithPopup } from 'firebase/auth';
-import { Moon, Sun } from 'lucide-react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { Moon, Sun, AlertCircle } from 'lucide-react';
+import { doc, getDoc, setDoc, query, collection, where, getDocs } from 'firebase/firestore';
 
 const LoginPage: React.FC<{ 
     onLogin: (username: string, password?: string) => Promise<boolean>; 
@@ -15,6 +15,67 @@ const LoginPage: React.FC<{
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [detectedParent, setDetectedParent] = useState<string | null>(null);
+    const [matchingAccounts, setMatchingAccounts] = useState<any[]>([]);
+    const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+
+    // Detecção de Workspace com suporte a duplicatas
+    React.useEffect(() => {
+        if (!username || username.length < 3 || isRegister) {
+            setDetectedParent(null);
+            setMatchingAccounts([]);
+            setSelectedAccountId(null);
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            try {
+                const { collection, query, where, getDocs } = await import('firebase/firestore');
+                const q = query(collection(db, 'users'), where('username', '==', username.trim()));
+                const querySnap = await getDocs(q);
+                
+                if (!querySnap.empty) {
+                    const accounts: any[] = [];
+                    for (const userDoc of querySnap.docs) {
+                        const userData = userDoc.data();
+                        let parentName = "Conta Principal";
+                        
+                        if (userData.role === 'child' && userData.parentId) {
+                            const parentRef = doc(db, 'users', userData.parentId);
+                            const parentSnap = await getDoc(parentRef);
+                            if (parentSnap.exists()) {
+                                parentName = parentSnap.data().name || parentSnap.data().username;
+                            }
+                        }
+                        
+                        accounts.push({
+                            id: userDoc.id,
+                            parentName,
+                            ...userData
+                        });
+                    }
+
+                    setMatchingAccounts(accounts);
+                    
+                    if (accounts.length === 1) {
+                        setDetectedParent(accounts[0].parentName);
+                        setSelectedAccountId(accounts[0].id);
+                    } else {
+                        setDetectedParent(null); 
+                        setSelectedAccountId(null);
+                    }
+                } else {
+                    setDetectedParent(null);
+                    setMatchingAccounts([]);
+                    setSelectedAccountId(null);
+                }
+            } catch (error) {
+                console.error("Erro na detecção:", error);
+            }
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [username, isRegister]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -31,10 +92,19 @@ const LoginPage: React.FC<{
             }
             success = await onRegister(username.trim(), password, name.trim());
         } else {
-            success = await onLogin(username.trim(), password);
+            // Se houver múltiplas contas, usa o ID da selecionada. 
+            // Caso contrário, usa o username digitado (compatibilidade retroativa)
+            success = await onLogin(selectedAccountId || username.trim(), password);
         }
         
         setIsLoading(false);
+    };
+
+    const handleToggleRegister = () => {
+        setIsRegister(!isRegister);
+        setMatchingAccounts([]);
+        setSelectedAccountId(null);
+        setDetectedParent(null);
     };
 
     const handleGoogleLogin = async () => {
@@ -141,6 +211,44 @@ const LoginPage: React.FC<{
 
                         <div>
                             <label htmlFor="pass" className="block text-[9px] font-black text-[var(--apple-text-secondary)] uppercase tracking-widest mb-2 ml-1">Senha de Acesso</label>
+                            
+                            {matchingAccounts.length > 1 && !isRegister && (
+                                <div className="mb-4 space-y-2 animate-fade-in">
+                                    <p className="text-[10px] font-bold text-[var(--apple-accent)] mb-2 flex items-center gap-1">
+                                        <AlertCircle size={10} />
+                                        Multiple accounts found. Select your team:
+                                    </p>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {matchingAccounts.map(acc => (
+                                            <button
+                                                key={acc.id}
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedAccountId(acc.id);
+                                                    setDetectedParent(acc.parentName);
+                                                }}
+                                                className={`text-left p-3 rounded-xl border transition-all flex items-center justify-between ${selectedAccountId === acc.id ? 'bg-[var(--apple-accent)]/10 border-[var(--apple-accent)]' : 'bg-[var(--apple-input-bg)] border-[var(--apple-border)] hover:border-[var(--apple-accent)]/40'}`}
+                                            >
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-bold text-[var(--apple-text)]">{acc.parentName}</span>
+                                                    <span className="text-[8px] text-[var(--apple-text-secondary)] uppercase font-black tracking-widest">{acc.role === 'admin' ? 'Root' : acc.profile}</span>
+                                                </div>
+                                                {selectedAccountId === acc.id && <div className="w-2 h-2 rounded-full bg-[var(--apple-accent)] animate-pulse" />}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {matchingAccounts.length === 1 && detectedParent && !isRegister && (
+                                <div className="mb-2 px-3 py-1.5 rounded-lg bg-[var(--apple-accent)]/10 border border-[var(--apple-accent)]/20 animate-fade-in flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[var(--apple-accent)] animate-pulse"></div>
+                                    <span className="text-[10px] font-bold text-[var(--apple-accent)] uppercase tracking-tight">
+                                        {detectedParent === 'Conta Principal' ? 'Conta Administrador' : `Equipe de: ${detectedParent}`}
+                                    </span>
+                                </div>
+                            )}
+
                             <input
                                 id="pass"
                                 type="password"
@@ -155,7 +263,7 @@ const LoginPage: React.FC<{
                         <button
                             type="submit"
                             className="apple-button w-full h-12 text-sm font-bold shadow-xl shadow-[#0071E3]/20 disabled:opacity-50 mt-2 transition-all"
-                            disabled={!username.trim() || !password.trim() || isLoading}
+                            disabled={!username.trim() || !password.trim() || isLoading || (matchingAccounts.length > 1 && !selectedAccountId)}
                         >
                             {isLoading ? 'Aguarde...' : (isRegister ? 'Criar Minha Conta' : 'Entrar no Sistema')}
                         </button>
@@ -163,7 +271,7 @@ const LoginPage: React.FC<{
                     
                     <div className="mt-8 text-center animate-fade-in">
                         <button 
-                            onClick={() => setIsRegister(!isRegister)}
+                            onClick={handleToggleRegister}
                             className="text-xs font-bold text-[var(--apple-accent)] hover:underline"
                         >
                             {isRegister ? 'Já possui conta? Faça login' : 'Não tem conta? Registre-se agora'}

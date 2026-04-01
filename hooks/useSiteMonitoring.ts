@@ -53,6 +53,7 @@ export const useSiteMonitoring = (username: string | null) => {
     const [effectiveOwnerId, setEffectiveOwnerId] = useState<string | null>(null);
     const [userRole, setUserRole] = useState<'admin' | 'child'>('admin');
     const [userProfile, setUserProfile] = useState<any>(null);
+    const [parentName, setParentName] = useState<string | null>(null);
 
     const intervalRef = useRef<number | null>(null);
     const undoTimeoutRef = useRef<number | null>(null);
@@ -106,10 +107,13 @@ export const useSiteMonitoring = (username: string | null) => {
                         return;
                     }
 
-                    if (isParentFetch) setUserRole('child');
-                    else {
+                    if (isParentFetch) {
+                        setUserRole('child');
+                        setParentName(data.name || data.username);
+                    } else {
                         setUserRole(data.role || 'admin');
                         setUserProfile(data); // SÓ DEFINE PROFILE SE NÃO FOR UMA BUSCA DE DADOS DO PAI
+                        setParentName(null);
                     }
 
                     setSites(data.sites || []);
@@ -449,6 +453,7 @@ export const useSiteMonitoring = (username: string | null) => {
         viewMode, setViewMode: handleSetViewMode, isAddSiteModalOpen, setIsAddSiteModalOpen,
         notificationEmail, emailNotifyType, setNotificationEmail, setEmailNotifyType, saveEmailSettings: handleSetEmailSettings,
         inactivityTimeout, setInactivityTimeout: handleSetInactivityTimeout,
-        clearAllLogs: handleClearAllLogs
+        clearAllLogs: handleClearAllLogs,
+        parentName
     };
 };
