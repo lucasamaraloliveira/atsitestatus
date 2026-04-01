@@ -316,6 +316,36 @@ export const useSiteMonitoring = (username: string | null) => {
         }
     };
 
+    const sendEmailNotification = useCallback(async (siteName: string, url: string, status: string, message: string, latency?: number) => {
+        if (!notificationEmail || !emailNotifyType) return;
+        
+        // Regras de envio baseadas na configuração do usuário
+        const shouldSend = 
+            (emailNotifyType === 'all') || 
+            (emailNotifyType === 'error' && (status === 'offline' || status === 'error')) ||
+            (emailNotifyType === 'success' && status === 'online');
+
+        if (!shouldSend) return;
+
+        try {
+            await fetch('/api/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    to: notificationEmail,
+                    siteName,
+                    url,
+                    status,
+                    message,
+                    latency,
+                    timestamp: new Date().toLocaleString()
+                })
+            });
+        } catch (error) {
+            console.error("Erro ao solicitar envio de e-mail:", error);
+        }
+    }, [notificationEmail, emailNotifyType]);
+
     const handleCheckStatus = useCallback(async (siteId: string, url: string) => {
         setSites(prev => prev.map(s => s.id === siteId ? { ...s, status: CheckStatus.CHECKING, message: 'Verificando...' } : s));
         try {
@@ -324,11 +354,23 @@ export const useSiteMonitoring = (username: string | null) => {
                 const siteToCheck = prev.find(s => s.id === siteId);
                 if (siteToCheck) {
                     const siteName = siteToCheck.name || url;
-                    if (siteToCheck.status === CheckStatus.ONLINE && (result.status === CheckStatus.OFFLINE || result.status === CheckStatus.ERROR)) {
-                        addToastNotification(`Alerta: O site ${siteName} ficou offline!`, 'alert');
-                        sendNotification('Site Offline', { body: siteName });
+                    
+                    // Lógica de Notificação quando há MUDANÇA ou ERRO
+                    if (siteToCheck.status !== result.status && siteToCheck.status !== CheckStatus.CHECKING) {
+                        if (result.status === CheckStatus.OFFLINE || result.status === CheckStatus.ERROR) {
+                            addToastNotification(`Alerta: O site ${siteName} ficou offline!`, 'alert');
+                            sendNotification('Site Offline', { body: siteName });
+                            sendEmailNotification(siteName, url, result.status, result.message, result.latency);
+                        } else if (result.status === CheckStatus.ONLINE) {
+                            addToastNotification(`Sucesso: O site ${siteName} está online.`, 'warning');
+                            sendEmailNotification(siteName, url, result.status, result.message, result.latency);
+                        }
                     } else if (result.status === CheckStatus.ONLINE && result.latency && result.latency > HIGH_LATENCY_THRESHOLD) {
                         addToastNotification(`Atenção: Latência alta em ${siteName} (${result.latency}ms).`, 'warning');
+                        // Envia e-mail de latência alta apenas se configurado para 'todos'
+                        if (emailNotifyType === 'all') {
+                            sendEmailNotification(siteName, url, 'latência alta', result.message, result.latency);
+                        }
                     }
                 }
                 const updatedSites = prev.map(s => s.id === siteId ? { ...s, status: result.status, message: result.message, timestamp: new Date().toLocaleString(), latency: result.latency } : s);
@@ -344,7 +386,7 @@ export const useSiteMonitoring = (username: string | null) => {
                 return updatedSites;
             });
         }
-    }, [saveToFirestore, addLogEntry, addToastNotification]);
+    }, [saveToFirestore, addLogEntry, addToastNotification, sendEmailNotification, emailNotifyType]);
 
     const handleAddSite = async (urlParam?: string, nameParam?: string) => {
         let url = (urlParam || newSiteUrl).trim();
