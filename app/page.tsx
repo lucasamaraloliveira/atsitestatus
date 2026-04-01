@@ -339,7 +339,11 @@ const App: React.FC = () => {
                 ))}
             </nav>
 
-            {notifications.map(n => <NotificationToast key={n.id} message={n.message} type={n.type} onDismiss={() => removeNotification(n.id)} />)}
+            {notifications.length > 0 && (
+                <div className="fixed top-4 right-4 z-[200] flex flex-col gap-2">
+                    {notifications.map(n => <NotificationToast key={n.id} message={n.message} type={n.type} onDismiss={() => removeNotification(n.id)} />)}
+                </div>
+            )}
             
             <ConfirmationModal 
                 isOpen={isDeleteModalOpen} onClose={handleCloseDeleteModal} onConfirm={handleConfirmDelete}
