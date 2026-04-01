@@ -455,14 +455,24 @@ export const useSiteMonitoring = (username: string | null) => {
     };
 
     const handleConfirmClearHistory = async () => {
-        if (!siteToClearHistory || !username) return;
-        const logsRef = collection(db, 'users', username, 'sites', siteToClearHistory.id, 'logs');
-        const snapshot = await getDocs(logsRef);
-        const batch = writeBatch(db);
-        snapshot.docs.forEach((doc) => batch.delete(doc.ref));
-        await batch.commit();
-        setIsClearHistoryModalOpen(false);
-        setSiteToClearHistory(null);
+        if (!siteToClearHistory || !effectiveOwnerId) return;
+        try {
+            const logsRef = collection(db, 'users', effectiveOwnerId, 'sites', siteToClearHistory.id, 'logs');
+            const snapshot = await getDocs(logsRef);
+            const batch = writeBatch(db);
+            snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+            await batch.commit();
+            
+            // Limpa o estado local imediatamente para feedback visual
+            setLogs(prev => ({ ...prev, [siteToClearHistory.id]: [] }));
+            
+            addToastNotification(`Histórico de ${siteToClearHistory.name || siteToClearHistory.url} limpo com sucesso.`, "warning");
+            setIsClearHistoryModalOpen(false);
+            setSiteToClearHistory(null);
+        } catch (error) {
+            console.error("Erro ao limpar histórico:", error);
+            addToastNotification("Falha ao limpar histórico.", "alert");
+        }
     };
 
     const handleRefreshAll = useCallback(() => {

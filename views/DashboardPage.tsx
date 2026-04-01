@@ -207,13 +207,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                             <div className="p-6 md:p-8">
                                 <div className="flex items-start justify-between mb-6">
                                     <div className="flex items-center gap-4">
-                                        <div className={`p-4 rounded-2xl ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]/10 text-[#007AFF]' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'}`}>
-                                            <Globe size={24} />
+                                        <div className={`p-4 rounded-2xl ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]/10 text-[#007AFF]' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]/10 text-[#FF9500]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'} transition-colors duration-500`}>
+                                            <Globe size={24} className={site.status === CheckStatus.CHECKING ? 'animate-pulse' : ''} />
                                         </div>
                                         <div>
                                             <h3 className="font-black text-lg text-[var(--apple-text)] truncate max-w-[120px] sm:max-w-[140px]">{site.name || site.url}</h3>
                                             <div className="flex items-center gap-1.5 mt-0.5">
-                                                <div className={`w-1.5 h-1.5 rounded-full ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]' : 'bg-[#FF3B30]'}`}></div>
+                                                <div className={`w-1.5 h-1.5 rounded-full ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF] animate-pulse' : site.status === CheckStatus.ERROR ? 'bg-[#FF9500]' : 'bg-[#FF3B30]'}`}></div>
                                                 <span className="text-[9px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)]">{site.status}</span>
                                             </div>
                                         </div>
@@ -234,7 +234,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                     
                                     <div className="p-4 bg-[var(--apple-input-bg)] rounded-2xl">
                                         <p className="text-[9px] font-black uppercase tracking-[0.15em] text-[var(--apple-text-secondary)] mb-3">Tendência de Performance</p>
-                                        <LatencySparkline logs={logs[site.id] || []} color={site.status === CheckStatus.ONLINE ? '#34C759' : '#FF3B30'} height={50} />
+                                        <LatencySparkline logs={logs[site.id] || []} color={site.status === CheckStatus.ONLINE ? '#34C759' : site.status === CheckStatus.CHECKING ? '#007AFF' : '#FF3B30'} height={50} />
                                     </div>
 
                                     <div className="flex items-center justify-between px-4 text-[var(--apple-text-secondary)]">
@@ -271,8 +271,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                 {/* Row 1: Logo, Title and Status */}
                                 <div className="flex items-center justify-between md:justify-start gap-3 min-w-0">
                                     <div className="flex items-center gap-3 min-w-0">
-                                        <div className={`p-2.5 rounded-xl ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'} shrink-0`}>
-                                            <Globe size={18} />
+                                        <div className={`p-2.5 rounded-xl ${site.status === CheckStatus.ONLINE ? 'bg-[#34C759]/10 text-[#34C759]' : site.status === CheckStatus.CHECKING ? 'bg-[#007AFF]/10 text-[#007AFF]' : 'bg-[#FF3B30]/10 text-[#FF3B30]'} shrink-0 transition-colors duration-500`}>
+                                            <Globe size={18} className={site.status === CheckStatus.CHECKING ? 'animate-pulse' : ''} />
                                         </div>
                                         <span className="font-bold text-[15px] md:text-sm tracking-tight truncate text-[var(--apple-text)]">{site.name || site.url}</span>
                                     </div>
