@@ -93,23 +93,23 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                 <p className="text-[var(--apple-text-secondary)] font-medium mt-1">Gerencie seu ecossistema de monitoramento.</p>
             </header>
 
-            <div className="flex bg-[var(--apple-input-bg)] p-1.5 rounded-2xl border border-[var(--apple-border)] w-fit mb-4">
+            <div className="flex flex-col md:flex-row bg-[var(--apple-input-bg)] p-1.5 rounded-2xl border border-[var(--apple-border)] w-full md:w-fit mb-4 gap-1 md:gap-0">
                 <button 
                     onClick={() => { setActiveTab('preferences'); setEditingChildId(null); }}
-                    className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'preferences' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
+                    className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all text-center ${activeTab === 'preferences' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
                 >
                     Preferências
                 </button>
                 <button 
                     onClick={() => { setActiveTab('notifications'); setEditingChildId(null); }}
-                    className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'notifications' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
+                    className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all text-center ${activeTab === 'notifications' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
                 >
                     Notificações
                 </button>
                 {userRole === 'admin' && (
                     <button 
                         onClick={() => { setActiveTab('team'); setEditingChildId(null); }}
-                        className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'team' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
+                        className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all text-center ${activeTab === 'team' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
                     >
                         Equipe
                     </button>

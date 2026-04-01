@@ -101,7 +101,8 @@ export const useSiteMonitoring = (username: string | null) => {
                     
                     if (!isParentFetch && data.role === 'child' && data.parentId) {
                         setUserRole('child');
-                        setUserProfile(data); // SALVA O PERFIL REAL DO USUÁRIO LOGADO AQUI
+                        setUserProfile(data); 
+                        setEffectiveOwnerId(data.parentId); // DEFINE O DONO IMEDIATAMENTE
                         if (unsubRef.current) unsubRef.current();
                         unsubRef.current = fetchUserData(data.parentId, true);
                         return;
@@ -110,17 +111,18 @@ export const useSiteMonitoring = (username: string | null) => {
                     if (isParentFetch) {
                         setUserRole('child');
                         setParentName(data.name || data.username);
+                        setEffectiveOwnerId(targetUser); // targetUser aqui é o parentId
                     } else {
                         setUserRole(data.role || 'admin');
-                        setUserProfile(data); // SÓ DEFINE PROFILE SE NÃO FOR UMA BUSCA DE DADOS DO PAI
+                        setUserProfile(data);
                         setParentName(null);
+                        setEffectiveOwnerId(targetUser); // targetUser aqui é o próprio username/id
                     }
 
                     setSites(data.sites || []);
                     setIsMonitoring(!!data.isMonitoring);
                     setMonitoringInterval(data.monitoringInterval || 60);
                     setChildUsers(data.childUsers || []);
-                    setEffectiveOwnerId(targetUser);
                     
                     if (data.notificationEmail) setNotificationEmail(data.notificationEmail);
                     if (data.emailNotifyType) setEmailNotifyType(data.emailNotifyType);

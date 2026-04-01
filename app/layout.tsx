@@ -23,6 +23,14 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "ATSiteStatus - Monitoramento de Sites",
   description: "Monitoramento inteligente e disponibilidade em tempo real para sua infraestrutura digital.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon.png", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/favicon.png",
+  },
 };
 
 export default function RootLayout({
