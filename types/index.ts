@@ -24,3 +24,9 @@ export interface LogEntry {
   message: string;
   latency?: number;
 }
+
+export interface AudioSettings {
+  enabled: boolean;
+  triggers: ('offline' | 'online' | 'error' | 'latency')[];
+  selectedSound: string;
+}

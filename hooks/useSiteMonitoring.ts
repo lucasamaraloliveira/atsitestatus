@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { checkWebsiteStatus } from '@/services/geminiService';
 import { requestNotificationPermission, sendNotification } from '@/services/notificationService';
 import { CheckStatus } from '@/types';
-import type { StatusResult, LogEntry } from '@/types';
+import type { StatusResult, LogEntry, AudioSettings } from '@/types';
 import { db } from '@/services/firebase';
 import { 
     doc, 
@@ -54,6 +54,11 @@ export const useSiteMonitoring = (username: string | null) => {
     const [userRole, setUserRole] = useState<'admin' | 'child'>('admin');
     const [userProfile, setUserProfile] = useState<any>(null);
     const [parentName, setParentName] = useState<string | null>(null);
+    const [audioSettings, setAudioSettings] = useState<AudioSettings>({
+        enabled: true,
+        triggers: ['offline', 'error'],
+        selectedSound: 'https://actions.google.com/sounds/v1/alarms/beep_short.ogg'
+    });
 
     const intervalRef = useRef<number | null>(null);
     const undoTimeoutRef = useRef<number | null>(null);
@@ -77,6 +82,15 @@ export const useSiteMonitoring = (username: string | null) => {
             setNotifications(prev => prev.filter(n => n.id !== id));
         }, 5000);
     }, []);
+
+    const playNotificationSound = useCallback(() => {
+        if (!audioSettings.enabled || typeof window === 'undefined') return;
+        const audio = new Audio(audioSettings.selectedSound);
+        audio.volume = 0.5;
+        audio.play().catch(err => {
+            console.warn("Aviso: Alerta sonoro impedido pelo navegador ou fonte inválida.", err.message);
+        });
+    }, [audioSettings]);
 
     const removeNotification = useCallback((id: number) => {
         setNotifications(prev => prev.filter(n => n.id !== id));
@@ -125,6 +139,7 @@ export const useSiteMonitoring = (username: string | null) => {
                         if (data.emailNotifyType) setEmailNotifyType(data.emailNotifyType);
                         if (data.viewMode) setViewMode(data.viewMode);
                         if (data.inactivityTimeout) setInactivityTimeout(data.inactivityTimeout);
+                        if (data.audioSettings) setAudioSettings(data.audioSettings);
                     }
 
                     if (isParentFetch || data.role !== 'child') {
@@ -392,10 +407,12 @@ export const useSiteMonitoring = (username: string | null) => {
                     if (siteToCheck.status !== result.status && siteToCheck.status !== CheckStatus.CHECKING) {
                         if (result.status === CheckStatus.OFFLINE || result.status === CheckStatus.ERROR) {
                             addToastNotification(`Alerta: O site ${siteName} ficou offline!`, 'alert');
+                            if (audioSettings.triggers.includes('offline') || audioSettings.triggers.includes('error')) playNotificationSound();
                             sendNotification('Site Offline', { body: siteName });
                             sendEmailNotification(siteName, url, result.status, result.message, result.latency);
                         } else if (result.status === CheckStatus.ONLINE) {
                             addToastNotification(`Sucesso: O site ${siteName} está online.`, 'success');
+                            if (audioSettings.triggers.includes('online')) playNotificationSound();
                             sendEmailNotification(siteName, url, result.status, result.message, result.latency);
                         }
                     } else if (result.status === CheckStatus.ONLINE && result.latency && result.latency > HIGH_LATENCY_THRESHOLD) {
@@ -511,6 +528,13 @@ export const useSiteMonitoring = (username: string | null) => {
         }
     };
 
+    const handleSaveAudioSettings = async (settings: AudioSettings) => {
+        if (!username) return;
+        setAudioSettings(settings);
+        const userRef = doc(db, 'users', username);
+        await setDoc(userRef, { audioSettings: settings }, { merge: true });
+    };
+
     const handleRefreshAll = useCallback(() => {
         sites.forEach(site => handleCheckStatus(site.id, site.url));
     }, [sites, handleCheckStatus]);
@@ -545,6 +569,8 @@ export const useSiteMonitoring = (username: string | null) => {
         notificationEmail, emailNotifyType, setNotificationEmail, setEmailNotifyType, saveEmailSettings: handleSetEmailSettings,
         inactivityTimeout, setInactivityTimeout: handleSetInactivityTimeout,
         clearAllLogs: handleClearAllLogs,
-        parentName
+        parentName,
+        audioSettings,
+        saveAudioSettings: handleSaveAudioSettings
     };
 };

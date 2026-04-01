@@ -83,7 +83,9 @@ const App: React.FC = () => {
         notificationEmail, emailNotifyType, setNotificationEmail, setEmailNotifyType, saveEmailSettings,
         inactivityTimeout, setInactivityTimeout,
         clearAllLogs,
-        parentName
+        parentName,
+        audioSettings,
+        saveAudioSettings
     } = useSiteMonitoring(currentUser);
 
     // Watchdog de Inatividade
@@ -240,6 +242,8 @@ const App: React.FC = () => {
                         onLogout={handleLogout}
                         isDeleteChildModalOpen={isDeleteChildModalOpen}
                         setIsDeleteChildModalOpen={setIsDeleteChildModalOpen}
+                        audioSettings={audioSettings}
+                        saveAudioSettings={saveAudioSettings}
                     />
                 );
             case 'reports':

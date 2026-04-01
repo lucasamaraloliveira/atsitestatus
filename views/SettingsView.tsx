@@ -14,9 +14,15 @@ import {
     Edit2,
     Check,
     X,
-    Search
+    Search,
+    Volume2,
+    VolumeX,
+    Play,
+    Zap,
+    ChevronDown
 } from 'lucide-react';
 import AddTeamMemberModal from '@/components/AddTeamMemberModal';
+import { AudioSettings } from '@/types';
 
 interface SettingsViewProps {
     isMonitoring: boolean;
@@ -36,6 +42,8 @@ interface SettingsViewProps {
     onLogout?: () => void;
     isDeleteChildModalOpen: boolean;
     setIsDeleteChildModalOpen: (val: boolean) => void;
+    audioSettings: AudioSettings;
+    saveAudioSettings: (settings: AudioSettings) => void;
 }
 
 const SettingsView: React.FC<SettingsViewProps> = ({
@@ -55,7 +63,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     userRole,
     onLogout,
     isDeleteChildModalOpen,
-    setIsDeleteChildModalOpen
+    setIsDeleteChildModalOpen,
+    audioSettings,
+    saveAudioSettings
 }) => {
     const [localEmail, setLocalEmail] = useState(notificationEmail);
     const [localType, setLocalType] = useState(emailNotifyType);
@@ -64,6 +74,14 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     const [editName, setEditName] = useState('');
     const [editPass, setEditPass] = useState('');
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
+    const [isSoundSelectorOpen, setIsSoundSelectorOpen] = useState(false);
+
+    const soundOptions = [
+        { id: 'https://actions.google.com/sounds/v1/alarms/beep_short.ogg', label: 'Sino Curto (Padrão)' },
+        { id: 'https://actions.google.com/sounds/v1/alarms/mechanical_clock_ringing_upclose.ogg', label: 'Ding Mecânico' },
+        { id: 'https://actions.google.com/sounds/v1/alarms/alarm_clock_ringing_near.ogg', label: 'Alerta Forte' },
+        { id: 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg', label: 'Digital Tech' }
+    ];
 
     useEffect(() => {
         setLocalEmail(notificationEmail);
@@ -118,49 +136,155 @@ const SettingsView: React.FC<SettingsViewProps> = ({
 
             <div className="grid grid-cols-1 gap-8">
                 {activeTab === 'preferences' && (
-                    <section className="glass apple-card p-10 border-none space-y-10 animate-fade-in">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-2xl bg-[var(--apple-accent)]/10 text-[var(--apple-accent)]">
-                                <Activity size={24} />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-bold">Motor de Monitoramento</h3>
-                                <p className="text-sm text-[var(--apple-text-secondary)]">Ajuste como o sistema analisa seus alvos.</p>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <div className="flex items-center justify-between p-6 bg-[var(--apple-input-bg)] rounded-3xl group transition-all hover:bg-white/5">
+                    <div className="space-y-8 animate-fade-in">
+                        <section className="glass apple-card p-10 border-none space-y-10 group">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 rounded-2xl bg-[var(--apple-accent)]/10 text-[var(--apple-accent)] transition-transform group-hover:scale-110">
+                                    <Activity size={24} strokeWidth={2.5} />
+                                </div>
                                 <div>
-                                    <p className="font-bold">Status do Monitoramento</p>
-                                    <p className="text-[10px] text-[var(--apple-text-secondary)] uppercase font-black tracking-widest mt-1">{isMonitoring ? 'Ativo e processando' : 'Globalmente pausado'}</p>
+                                    <h3 className="text-xl font-black">Motor de Monitoramento</h3>
+                                    <p className="text-sm text-[var(--apple-text-secondary)] font-medium">Ajuste como o sistema analisa seus alvos.</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="flex items-center justify-between p-6 bg-[var(--apple-input-bg)] rounded-3xl group transition-all hover:bg-white/5 border border-[var(--apple-border)]">
+                                    <div>
+                                        <p className="font-bold">Status do Monitoramento</p>
+                                        <p className="text-[10px] text-[var(--apple-text-secondary)] uppercase font-black tracking-widest mt-1">{isMonitoring ? 'Ativo e processando' : 'Globalmente pausado'}</p>
+                                    </div>
+                                    <button 
+                                        onClick={() => setIsMonitoring(!isMonitoring)}
+                                        className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-500 focus:outline-none ${isMonitoring ? 'bg-[#34C759] shadow-[0_0_20px_#34C759]/30' : 'bg-gray-300 dark:bg-gray-700 shadow-inner'}`}
+                                    >
+                                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${isMonitoring ? 'translate-x-6 shadow-md' : 'translate-x-1'}`} />
+                                    </button>
+                                </div>
+
+                                <div className="p-6 bg-[var(--apple-input-bg)] rounded-3xl space-y-4 border border-[var(--apple-border)]">
+                                    <div className="flex items-center justify-between">
+                                        <p className="font-bold">Intervalo de Verificação</p>
+                                        <span className="text-xs font-black text-[var(--apple-accent)] bg-[var(--apple-accent)]/10 px-3 py-1 rounded-full">{monitoringInterval}s</span>
+                                    </div>
+                                    <input 
+                                        type="range"
+                                        min="10"
+                                        max="1800"
+                                        step="10"
+                                        value={monitoringInterval}
+                                        onChange={(e) => setMonitoringInterval(parseInt(e.target.value))}
+                                        className="w-full h-1.5 bg-[var(--apple-border)] rounded-full appearance-none cursor-pointer accent-[var(--apple-accent)]"
+                                    />
+                                    <p className="text-[9px] text-[var(--apple-text-secondary)] font-bold uppercase tracking-widest text-center">Recomendado: 60s para estabilidade</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        {/* Alertas Sonoros Section */}
+                        <section className="glass apple-card p-10 border-none space-y-10 relative group">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--apple-accent)]/5 rounded-full blur-3xl -mr-32 -mt-32 transition-colors group-hover:bg-[var(--apple-accent)]/10 pointer-events-none"></div>
+                            
+                            <div className="flex items-center justify-between relative z-10">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3.5 bg-[var(--apple-accent)]/10 text-[var(--apple-accent)] rounded-2xl transition-transform group-hover:scale-110">
+                                        <Volume2 size={24} strokeWidth={2.5} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-black text-[var(--apple-text)]">Alertas Sonoros</h3>
+                                        <p className="text-[var(--apple-text-secondary)] text-sm font-medium">Receba avisos auditivos em tempo real.</p>
+                                    </div>
                                 </div>
                                 <button 
-                                    onClick={() => setIsMonitoring(!isMonitoring)}
-                                    className={`w-14 h-7 rounded-full flex items-center transition-all px-1 ${isMonitoring ? 'bg-[#34C759]' : 'bg-gray-300 dark:bg-gray-700'}`}
+                                    onClick={() => saveAudioSettings({ ...audioSettings, enabled: !audioSettings.enabled })}
+                                    className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-500 focus:outline-none ${audioSettings.enabled ? 'bg-[var(--apple-accent)] shadow-[0_0_20px_var(--apple-accent)]/30' : 'bg-gray-300 dark:bg-gray-700 shadow-inner'}`}
                                 >
-                                    <div className={`w-5 h-5 bg-white rounded-full shadow-lg transition-all ${isMonitoring ? 'translate-x-[26px]' : 'translate-x-0'}`} />
+                                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${audioSettings.enabled ? 'translate-x-6 shadow-md' : 'translate-x-1'}`} />
                                 </button>
                             </div>
 
-                            <div className="p-6 bg-[var(--apple-input-bg)] rounded-3xl space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <p className="font-bold">Intervalo de Verificação</p>
-                                    <span className="text-xs font-black text-[var(--apple-accent)] bg-[var(--apple-accent)]/10 px-3 py-1 rounded-full">{monitoringInterval}s</span>
+                            <div className={`grid grid-cols-1 md:grid-cols-2 gap-10 transition-all duration-500 ${audioSettings.enabled ? 'opacity-100' : 'opacity-40 grayscale pointer-events-none'}`}>
+                                <div className="space-y-6">
+                                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--apple-text-secondary)] ml-1 flex items-center gap-2">
+                                        <Zap size={12} className="text-[var(--apple-accent)]" /> GATILHOS DE SOM
+                                    </h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {[
+                                            { id: 'offline', label: 'Site Offline', icon: <X size={12} /> },
+                                            { id: 'online', label: 'Site Online', icon: <Check size={12} /> },
+                                            { id: 'error', label: 'Erro Crítico', icon: <AlertTriangle size={12} /> },
+                                        ].map((trigger) => (
+                                            <button
+                                                key={trigger.id}
+                                                onClick={() => {
+                                                    const currentTriggers = Array.isArray(audioSettings.triggers) ? audioSettings.triggers : [];
+                                                    const newTriggers = currentTriggers.includes(trigger.id as any)
+                                                        ? currentTriggers.filter(t => t !== trigger.id)
+                                                        : [...currentTriggers, trigger.id as any];
+                                                    saveAudioSettings({ ...audioSettings, triggers: newTriggers as any[] });
+                                                }}
+                                                className={`px-4 py-3 rounded-2xl text-[11px] font-black uppercase tracking-wider flex items-center gap-2.5 transition-all border ${audioSettings.triggers?.includes(trigger.id as any) ? 'bg-[var(--apple-accent)]/10 border-[var(--apple-accent)] text-[var(--apple-accent)] shadow-sm' : 'bg-transparent border-[var(--apple-border)] text-[var(--apple-text-secondary)] opacity-50 hover:opacity-100'}`}
+                                            >
+                                                {trigger.icon}
+                                                {trigger.label}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                                <input 
-                                    type="range"
-                                    min="10"
-                                    max="1800"
-                                    step="10"
-                                    value={monitoringInterval}
-                                    onChange={(e) => setMonitoringInterval(parseInt(e.target.value))}
-                                    className="w-full h-1.5 bg-[var(--apple-border)] rounded-full appearance-none cursor-pointer accent-[var(--apple-accent)]"
-                                />
-                                <p className="text-[9px] text-[var(--apple-text-secondary)] font-bold uppercase tracking-widest text-center">Recomendado: 60s para estabilidade</p>
+
+                                <div className="space-y-6">
+                                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--apple-text-secondary)] ml-1">TOM DE NOTIFICAÇÃO</h4>
+                                    <div className="flex items-center gap-3 relative">
+                                        <div className="relative flex-1 group">
+                                            {/* Custom Dropdown Trigger */}
+                                            <button 
+                                                onClick={() => setIsSoundSelectorOpen(!isSoundSelectorOpen)}
+                                                className="w-full bg-[var(--apple-input-bg)] dark:bg-white/5 backdrop-blur-xl border border-[var(--apple-border)] rounded-2xl py-4 pl-6 pr-12 text-sm font-extrabold text-left transition-all duration-300 outline-none text-[var(--apple-text)] cursor-pointer hover:bg-white/10 shadow-sm flex items-center justify-between"
+                                            >
+                                                <span>{soundOptions.find(o => o.id === audioSettings.selectedSound)?.label || 'Selecionar Som'}</span>
+                                                <ChevronDown size={16} strokeWidth={3} className={`text-[var(--apple-text-secondary)] transition-transform duration-500 ${isSoundSelectorOpen ? 'rotate-180 text-[var(--apple-accent)]' : ''}`} />
+                                            </button>
+
+                                            {/* Custom Dropdown Menu */}
+                                            {isSoundSelectorOpen && (
+                                                <>
+                                                    <div className="fixed inset-0 z-[1000]" onClick={() => setIsSoundSelectorOpen(false)}></div>
+                                                    <div className="absolute top-full left-0 right-0 mt-3 glass border border-[var(--apple-border)] rounded-[2rem] p-3 shadow-2xl z-[1010] animate-in fade-in zoom-in duration-300 origin-top overflow-hidden">
+                                                        <div className="flex flex-col gap-1 max-h-60 overflow-y-auto custom-scrollbar">
+                                                            {soundOptions.map((opt) => (
+                                                                <button
+                                                                    key={opt.id}
+                                                                    onClick={() => {
+                                                                        saveAudioSettings({ ...audioSettings, selectedSound: opt.id });
+                                                                        setIsSoundSelectorOpen(false);
+                                                                    }}
+                                                                    className={`flex items-center justify-between px-5 py-3.5 rounded-2xl text-xs font-bold transition-all ${audioSettings.selectedSound === opt.id ? 'bg-[var(--apple-accent)] text-white shadow-lg' : 'text-[var(--apple-text)] hover:bg-white/10'}`}
+                                                                >
+                                                                    {opt.label}
+                                                                    {audioSettings.selectedSound === opt.id && <Check size={14} strokeWidth={4} />}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                        <button 
+                                            onClick={() => {
+                                                const audio = new Audio(audioSettings.selectedSound);
+                                                audio.volume = 0.5;
+                                                audio.play().catch(e => console.warn("Interação necessária para tocar som."));
+                                            }}
+                                            className="p-4 bg-[var(--apple-accent)] text-white rounded-2xl shadow-lg shadow-[var(--apple-accent)]/20 hover:shadow-[var(--apple-accent)]/40 active:scale-90 transition-all duration-300 group/play"
+                                            title="Testar Som"
+                                        >
+                                            <Play size={20} fill="currentColor" className="group-hover/play:scale-110 transition-transform" />
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </section>
+                        </section>
+                    </div>
                 )}
 
                 {activeTab === 'notifications' && (
@@ -270,7 +394,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                                 <div className="p-3 rounded-2xl bg-[#5856D6]/10 text-[#5856D6]">
                                     <Users size={24} />
                                 </div>
-                                <div>
+                                <div className="">
                                     <h3 className="text-xl font-bold">Gestão de Equipe</h3>
                                     <p className="text-sm text-[var(--apple-text-secondary)]">Gerencie acessos e permissões de monitoramento.</p>
                                 </div>
@@ -388,6 +512,5 @@ const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
     );
 };
-
 
 export default SettingsView;
