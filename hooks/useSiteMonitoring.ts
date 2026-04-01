@@ -283,9 +283,9 @@ export const useSiteMonitoring = (username: string | null) => {
         }
     }, [saveToFirestore, addLogEntry, addToastNotification]);
 
-    const handleAddSite = async () => {
-        let url = newSiteUrl.trim();
-        const name = newSiteName.trim();
+    const handleAddSite = async (urlParam?: string, nameParam?: string) => {
+        let url = (urlParam || newSiteUrl).trim();
+        const name = (nameParam || newSiteName).trim();
         if (!url) return;
         if (!url.startsWith('http://') && !url.startsWith('https://')) url = `https://${url}`;
         try { new URL(url); } catch (_) { alert("URL inválida."); return; }
