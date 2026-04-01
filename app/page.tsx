@@ -224,6 +224,7 @@ const App: React.FC = () => {
                         saveEmailSettings={saveEmailSettings} inactivityTimeout={inactivityTimeout}
                         setInactivityTimeout={setInactivityTimeout} childUsers={childUsers}
                         addChildUser={addChildUser} removeChildUser={removeChildUser} userRole={userRole}
+                        onLogout={handleLogout}
                     />
                 );
             case 'reports':
@@ -321,9 +322,14 @@ const App: React.FC = () => {
                         <Activity className="text-[var(--apple-accent)]" size={24} />
                         <h1 className="text-2xl font-black tracking-tighter text-[var(--apple-text)]">Status</h1>
                     </div>
-                    <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${isMonitoring ? 'bg-[#34C759]/10 text-[#34C759]' : 'bg-gray-400/10 text-gray-500'}`}>
-                        <div className={`w-1.5 h-1.5 rounded-full ${isMonitoring ? 'bg-[#34C759] animate-pulse' : 'bg-gray-400'}`}></div>
-                        {isMonitoring ? 'Ativo' : 'Offline'}
+                    <div className="flex items-center gap-3">
+                        <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${isMonitoring ? 'bg-[#34C759]/10 text-[#34C759]' : 'bg-gray-400/10 text-gray-500'}`}>
+                            <div className={`w-1.5 h-1.5 rounded-full ${isMonitoring ? 'bg-[#34C759] animate-pulse' : 'bg-gray-400'}`}></div>
+                            {isMonitoring ? 'Ativo' : 'Offline'}
+                        </div>
+                        <button onClick={handleLogout} className="p-2.5 bg-[#FF3B30]/10 text-[#FF3B30] rounded-2xl active:scale-90 transition-all">
+                            <LogOut size={18} />
+                        </button>
                     </div>
                 </header>
 

@@ -9,7 +9,8 @@ import {
     Shield,
     Bell,
     CheckCircle2,
-    AlertTriangle
+    AlertTriangle,
+    LogOut
 } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -26,6 +27,7 @@ interface SettingsViewProps {
     addChildUser: (user: any) => void;
     removeChildUser: (id: string) => void;
     userRole: 'admin' | 'child';
+    onLogout?: () => void;
 }
 
 const SettingsView: React.FC<SettingsViewProps> = ({
@@ -41,7 +43,8 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     childUsers,
     addChildUser,
     removeChildUser,
-    userRole
+    userRole,
+    onLogout
 }) => {
     const [localEmail, setLocalEmail] = useState(notificationEmail);
     const [localType, setLocalType] = useState(emailNotifyType);
@@ -283,6 +286,24 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                         </div>
                     </section>
                 )}
+                <section className="glass apple-card p-10 border-none space-y-6 animate-fade-in bg-[#FF3B30]/5">
+                    <div className="flex items-center gap-4">
+                        <div className="p-3 rounded-2xl bg-[#FF3B30]/10 text-[#FF3B30]">
+                            <LogOut size={24} />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold text-[#FF3B30]">Sessão do Usuário</h3>
+                            <p className="text-sm text-[var(--apple-text-secondary)]">Encerre sua conexão com segurança.</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={onLogout}
+                        className="flex items-center gap-2 bg-[#FF3B30] text-white py-4 px-8 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-[#FF3B30]/90 transition-all active:scale-95 shadow-xl shadow-[#FF3B30]/20 w-fit"
+                    >
+                        <LogOut size={16} />
+                        Sair do Sistema
+                    </button>
+                </section>
             </div>
         </div>
     );
