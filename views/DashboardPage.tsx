@@ -44,6 +44,7 @@ interface DashboardPageProps {
     handleRefreshAll: () => void;
     currentUser: string;
     onLogout: () => void;
+    userProfile: any;
     theme: 'light' | 'dark';
     toggleTheme: () => void;
 }
@@ -68,7 +69,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     editingSiteId,
     handleEditSite,
     handleUpdateSiteUrl,
+    userProfile
 }) => {
+    const userRole = userProfile?.role || 'admin';
+    const userProfileType = userProfile?.profile || 'admin';
+    
+    // Regras de acesso
+    const canAdd = userRole === 'admin' || userProfileType === 'analyst';
+    const canEdit = userRole === 'admin' || userProfileType === 'analyst';
+    const canDelete = userRole === 'admin'; 
+
     type FilterType = CheckStatus | 'ALL';
 
     const filteredSites = sites
@@ -94,13 +104,17 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                             {isMonitoring ? 'Ativo' : 'Pausado'}
                         </span>
                     </div>
-                    <div className="w-px h-6 bg-[var(--apple-border)]"></div>
-                    <button 
-                        onClick={() => setIsMonitoring(!isMonitoring)}
-                        className={`px-6 py-2 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${isMonitoring ? 'bg-[#FF3B30] text-white' : 'bg-[#34C759] text-white'}`}
-                    >
-                        {isMonitoring ? 'Pausar' : 'Iniciar'}
-                    </button>
+                    {userRole === 'admin' && (
+                        <>
+                            <div className="w-px h-6 bg-[var(--apple-border)]"></div>
+                            <button 
+                                onClick={() => setIsMonitoring(!isMonitoring)}
+                                className={`px-6 py-2 rounded-2xl text-xs font-black uppercase tracking-widest transition-all ${isMonitoring ? 'bg-[#FF3B30] text-white' : 'bg-[#34C759] text-white'}`}
+                            >
+                                {isMonitoring ? 'Pausar' : 'Iniciar'}
+                            </button>
+                        </>
+                    )}
                 </div>
             </header>
 
@@ -180,10 +194,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                         <RefreshCw size={14} className={isMonitoring ? 'animate-spin' : ''} />
                         Atualizar
                     </button>
-                    <button onClick={onOpenGlobalReportModal} className="bg-[#007AFF] hover:bg-[#0062CC] text-white font-bold py-3 px-6 rounded-2xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-[#007AFF]/20">
-                        <FileSpreadsheet size={16} />
-                        Exportar Tudo
-                    </button>
+                    {canAdd && (
+                        <button onClick={onOpenAddSiteModal} className="bg-[#007AFF] hover:bg-[#0062CC] text-white font-bold py-3 px-6 rounded-2xl transition-all text-sm flex items-center gap-2 shadow-lg shadow-[#007AFF]/20">
+                            <Activity size={16} />
+                            Novo Site
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -205,10 +221,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex gap-1 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => handleEditSite(site.id)} className="p-2 rounded-lg hover:bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)]"><Edit2 size={14} /></button>
-                                        <button onClick={() => handleRequestDelete(site.id)} className="p-2 rounded-lg hover:bg-[#FF3B30]/10 text-[#FF3B30]"><Trash2 size={14} /></button>
-                                    </div>
+                                    {(canEdit || canDelete) && (
+                                        <div className="flex gap-1 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                                            {canEdit && <button onClick={() => handleEditSite(site.id)} className="p-2 rounded-lg hover:bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)]"><Edit2 size={14} /></button>}
+                                            {canDelete && <button onClick={() => handleRequestDelete(site.id)} className="p-2 rounded-lg hover:bg-[#FF3B30]/10 text-[#FF3B30]"><Trash2 size={14} /></button>}
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="space-y-3 mb-6">
@@ -283,7 +301,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     <AlertCircle size={40} className="mx-auto mb-4 text-[var(--apple-text-secondary)] opacity-50" />
                     <h3 className="text-xl font-black text-[var(--apple-text)]">Nenhum monitoramento para exibir</h3>
                     <p className="text-[var(--apple-text-secondary)] text-sm mt-1">Tente ajustar seus filtros ou adicione um novo site.</p>
-                    <button onClick={onOpenAddSiteModal} className="apple-button mt-6 h-11 px-8">Adicionar Novo Site</button>
+                    {canAdd && <button onClick={onOpenAddSiteModal} className="apple-button mt-6 h-11 px-8">Adicionar Novo Site</button>}
                 </div>
             )}
         </div>

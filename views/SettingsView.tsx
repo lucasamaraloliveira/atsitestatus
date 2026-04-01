@@ -13,7 +13,8 @@ import {
     LogOut,
     Edit2,
     Check,
-    X
+    X,
+    Search
 } from 'lucide-react';
 import AddTeamMemberModal from '@/components/AddTeamMemberModal';
 
@@ -33,6 +34,8 @@ interface SettingsViewProps {
     updateChildUser: (id: string, data: any) => void;
     userRole: 'admin' | 'child';
     onLogout?: () => void;
+    isDeleteChildModalOpen: boolean;
+    setIsDeleteChildModalOpen: (val: boolean) => void;
 }
 
 const SettingsView: React.FC<SettingsViewProps> = ({
@@ -50,7 +53,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     removeChildUser,
     updateChildUser,
     userRole,
-    onLogout
+    onLogout,
+    isDeleteChildModalOpen,
+    setIsDeleteChildModalOpen
 }) => {
     const [localEmail, setLocalEmail] = useState(notificationEmail);
     const [localType, setLocalType] = useState(emailNotifyType);
@@ -321,8 +326,17 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                                                 <div>
                                                     <p className="font-extrabold text-sm tracking-tight text-[var(--apple-text)]">{user.name || user.username}</p>
                                                     <div className="flex items-center gap-1.5 mt-0.5">
-                                                        <Shield size={10} className="text-[#34C759]" />
-                                                        <span className="text-[9px] font-black uppercase text-[var(--apple-text-secondary)] opacity-50 tracking-tighter">Operador Ativo</span>
+                                                        {user.profile === 'viewer' ? (
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Search size={10} className="text-[var(--apple-text-secondary)] opacity-50" />
+                                                                <span className="text-[9px] font-black uppercase text-[var(--apple-text-secondary)] opacity-50 tracking-tighter">Visualização</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Shield size={10} className="text-[#34C759]" />
+                                                                <span className="text-[9px] font-black uppercase text-[var(--apple-text-secondary)] opacity-50 tracking-tighter">Analista de Monit.</span>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>

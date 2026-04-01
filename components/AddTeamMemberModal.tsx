@@ -4,20 +4,21 @@ import { X, User, Shield, Lock, UserPlus } from 'lucide-react';
 interface AddTeamMemberModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAdd: (member: { username: string, name: string, password: string }) => void;
+    onAdd: (member: { username: string, name: string, password: string, profile: 'analyst' | 'viewer' }) => void;
 }
 
 const AddTeamMemberModal: React.FC<AddTeamMemberModalProps> = ({ isOpen, onClose, onAdd }) => {
     const [username, setUsername] = useState('');
     const [name, setName] = useState('');
     const [password, setPassword] = useState('');
+    const [profile, setProfile] = useState<'analyst' | 'viewer'>('analyst');
 
     if (!isOpen) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!username || !password) return;
-        onAdd({ username, name: name || username, password });
+        onAdd({ username, name: name || username, password, profile });
         resetFields();
         onClose();
     };
@@ -26,6 +27,7 @@ const AddTeamMemberModal: React.FC<AddTeamMemberModalProps> = ({ isOpen, onClose
         setUsername('');
         setName('');
         setPassword('');
+        setProfile('analyst');
     };
 
     return (
@@ -38,7 +40,7 @@ const AddTeamMemberModal: React.FC<AddTeamMemberModalProps> = ({ isOpen, onClose
                         </div>
                         <div>
                             <h3 className="text-xl font-bold text-[var(--apple-text)]">Novo Membro</h3>
-                            <p className="text-[10px] text-[var(--apple-text-secondary)] font-black uppercase tracking-widest mt-0.5">Acesso de Operador</p>
+                            <p className="text-[10px] text-[var(--apple-text-secondary)] font-black uppercase tracking-widest mt-0.5">Definir Perfil de Acesso</p>
                         </div>
                     </div>
                     <button 
@@ -52,17 +54,38 @@ const AddTeamMemberModal: React.FC<AddTeamMemberModalProps> = ({ isOpen, onClose
                 <form onSubmit={handleSubmit} className="p-8 space-y-6">
                     <div className="space-y-4">
                         <div className="space-y-2">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)] ml-1">Perfil de Acesso</label>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button 
+                                    type="button" 
+                                    onClick={() => setProfile('analyst')}
+                                    className={`p-4 rounded-2xl border transition-all text-left flex flex-col gap-1 ${profile === 'analyst' ? 'bg-[var(--apple-accent)]/10 border-[var(--apple-accent)]' : 'bg-[var(--apple-input-bg)] border-[var(--apple-border)] opacity-60'}`}
+                                >
+                                    <span className={`text-[10px] font-black uppercase tracking-tight ${profile === 'analyst' ? 'text-[var(--apple-accent)]' : ''}`}>Analista</span>
+                                    <span className="text-[9px] font-bold opacity-70">Pode adicionar e editar sites</span>
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => setProfile('viewer')}
+                                    className={`p-4 rounded-2xl border transition-all text-left flex flex-col gap-1 ${profile === 'viewer' ? 'bg-[var(--apple-accent)]/10 border-[var(--apple-accent)]' : 'bg-[var(--apple-input-bg)] border-[var(--apple-border)] opacity-60'}`}
+                                >
+                                    <span className={`text-[10px] font-black uppercase tracking-tight ${profile === 'viewer' ? 'text-[var(--apple-accent)]' : ''}`}>Visualização</span>
+                                    <span className="text-[9px] font-bold opacity-70">Apenas leitura dos dados</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)] ml-1">Username (ID de Login)</label>
                             <div className="relative group">
                                 <User className="absolute right-6 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] opacity-40" size={18} />
                                 <input 
                                     type="text" 
-                                    placeholder="ex: lucas_amaral"
+                                    placeholder="ex: lucas_analista"
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
                                     className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 pl-6 pr-14 text-sm font-medium focus:ring-4 focus:ring-[var(--apple-accent)]/10 focus:border-[var(--apple-accent)] transition-all outline-none"
                                     required
-                                    autoFocus
                                 />
                             </div>
                         </div>

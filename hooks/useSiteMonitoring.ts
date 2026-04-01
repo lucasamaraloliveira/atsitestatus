@@ -100,15 +100,18 @@ export const useSiteMonitoring = (username: string | null) => {
                     
                     if (!isParentFetch && data.role === 'child' && data.parentId) {
                         setUserRole('child');
+                        setUserProfile(data); // SALVA O PERFIL REAL DO USUÁRIO LOGADO AQUI
                         if (unsubRef.current) unsubRef.current();
                         unsubRef.current = fetchUserData(data.parentId, true);
                         return;
                     }
 
                     if (isParentFetch) setUserRole('child');
-                    else setUserRole(data.role || 'admin');
+                    else {
+                        setUserRole(data.role || 'admin');
+                        setUserProfile(data); // SÓ DEFINE PROFILE SE NÃO FOR UMA BUSCA DE DADOS DO PAI
+                    }
 
-                    setUserProfile(data);
                     setSites(data.sites || []);
                     setIsMonitoring(!!data.isMonitoring);
                     setMonitoringInterval(data.monitoringInterval || 60);
@@ -200,13 +203,18 @@ export const useSiteMonitoring = (username: string | null) => {
         setTimeout(() => saveToFirestore(), 100);
     };
 
+    const [recentlyDeletedChild, setRecentlyDeletedChild] = useState<any | null>(null);
+    const [isDeleteChildModalOpen, setIsDeleteChildModalOpen] = useState(false);
+    const [childToDelete, setChildToDelete] = useState<any | null>(null);
+
     const addChildUser = async (user: any) => {
         if (!effectiveOwnerId || userRole !== 'admin') return;
         try {
             const updatedChildUsers = [...childUsers, { ...user, id: crypto.randomUUID(), createdAt: Date.now() }];
             await saveToFirestore(sites, monitoringInterval, isMonitoring, updatedChildUsers);
             const childUserRef = doc(db, 'users', user.username);
-            await setDoc(childUserRef, { ...user, role: 'child', parentId: effectiveOwnerId, sites: [], isMonitoring: false });
+            await setDoc(childUserRef, { ...user, role: 'child', parentId: effectiveOwnerId }, { merge: true });
+            addToastNotification(`Operador ${user.name || user.username} adicionado.`, "warning");
         } catch (error) {
             console.error("Erro ao adicionar usuário filho:", error);
             addToastNotification("Falha ao salvar usuário.", "alert");
@@ -229,17 +237,52 @@ export const useSiteMonitoring = (username: string | null) => {
         }
     };
 
-    const removeChildUser = async (childId: string) => {
-        if (!effectiveOwnerId || userRole !== 'admin') return;
-        try {
-            const childToRemove = childUsers.find(u => u.id === childId);
-            const updatedChildUsers = childUsers.filter(u => u.id !== childId);
-            await saveToFirestore(sites, monitoringInterval, isMonitoring, updatedChildUsers);
-            if (childToRemove) await deleteDoc(doc(db, 'users', childToRemove.username));
-        } catch (error) {
-            console.error("Erro ao remover usuário filho:", error);
-            addToastNotification("Falha ao remover usuário.", "alert");
+    const handleRequestDeleteChild = (childId: string) => {
+        const child = childUsers.find(u => u.id === childId);
+        if (child) {
+            setChildToDelete(child);
+            setIsDeleteChildModalOpen(true);
         }
+    };
+
+    const handleConfirmDeleteChild = async () => {
+        if (!childToDelete || !effectiveOwnerId) return;
+        try {
+            const updatedChildUsers = childUsers.filter(u => u.id !== childToDelete.id);
+            setRecentlyDeletedChild(childToDelete);
+            await saveToFirestore(sites, monitoringInterval, isMonitoring, updatedChildUsers);
+            
+            // Opcional: deletar o documento individual do usuário filho (pode ser mantido ou deletado)
+            // Se deletar, o undo fica mais complexo, mas por padrão vamos deletar para manter a integridade.
+            await deleteDoc(doc(db, 'users', childToDelete.username));
+            
+            setIsDeleteChildModalOpen(false);
+            setChildToDelete(null);
+            addToastNotification(`O operador removido. Clique aqui para desfazer`, "warning");
+        } catch (error) {
+            console.error("Erro ao remover membro:", error);
+            addToastNotification("Erro ao remover membro.", "alert");
+        }
+    };
+
+    const handleUndoDeleteChild = async () => {
+        if (!recentlyDeletedChild || !effectiveOwnerId) return;
+        try {
+            const updatedChildUsers = [...childUsers, recentlyDeletedChild];
+            await saveToFirestore(sites, monitoringInterval, isMonitoring, updatedChildUsers);
+            const childUserRef = doc(db, 'users', recentlyDeletedChild.username);
+            await setDoc(childUserRef, { ...recentlyDeletedChild, role: 'child', parentId: effectiveOwnerId }, { merge: true });
+            
+            setRecentlyDeletedChild(null);
+            addToastNotification("Membro restaurado com sucesso.", "warning");
+        } catch (error) {
+            console.error("Erro ao desfazer remoção:", error);
+            addToastNotification("Falha ao restaurar membro.", "alert");
+        }
+    };
+
+    const removeChildUser = async (childId: string) => {
+        handleRequestDeleteChild(childId);
     };
 
     const addLogEntry = useCallback(async (siteId: string, status: CheckStatus, message: string, latency?: number) => {
@@ -399,6 +442,7 @@ export const useSiteMonitoring = (username: string | null) => {
         isDeleteModalOpen, siteToDelete, isGlobalReportModalOpen, setIsGlobalReportModalOpen,
         isClearHistoryModalOpen, siteToClearHistory,
         childUsers, addChildUser, removeChildUser, updateChildUser, userRole, userProfile,
+        isDeleteChildModalOpen, childToDelete, confirmDeleteChild: handleConfirmDeleteChild, undoDeleteChild: handleUndoDeleteChild, setIsDeleteChildModalOpen,
         handleAddSite, handleRequestDelete, handleConfirmDelete,
         handleCloseDeleteModal, handleUndoDelete, handleEditSite: (id: string) => setEditingSiteId(id), handleUpdateSite, handleRefreshSite: (id: string) => { const s = sites.find(x => x.id === id); if(s) handleCheckStatus(id, s.url); }, handleRefreshAll,
         requestClearHistory: (id: string) => { const s = sites.find(x => x.id === id); if(s) { setSiteToClearHistory(s); setIsClearHistoryModalOpen(true); } }, confirmClearHistory: handleConfirmClearHistory, closeClearHistoryModal: () => { setIsClearHistoryModalOpen(false); setSiteToClearHistory(null); },

@@ -4,6 +4,7 @@ import { AlertTriangle, AlertCircle, X, CheckCircle, Info } from 'lucide-react';
 interface NotificationToastProps {
     message: string;
     onDismiss: () => void;
+    onClick?: () => void;
     type?: 'alert' | 'warning' | 'success' | 'info';
 }
 
@@ -26,7 +27,7 @@ const typeConfig = {
     },
 };
 
-const NotificationToast: React.FC<NotificationToastProps> = ({ message, onDismiss, type = 'alert' }) => {
+const NotificationToast: React.FC<NotificationToastProps> = ({ message, onDismiss, onClick, type = 'alert' }) => {
     const [isVisible, setIsVisible] = useState(false);
     const [isLeaving, setIsLeaving] = useState(false);
     const [isDark, setIsDark] = useState(false);
@@ -51,16 +52,25 @@ const NotificationToast: React.FC<NotificationToastProps> = ({ message, onDismis
         setTimeout(onDismiss, 300);
     };
 
+    const handleActionClick = () => {
+        if (onClick) {
+            onClick();
+            handleDismiss();
+        }
+    };
+
     const cfg = typeConfig[type];
     const Icon = cfg.icon;
     const color = cfg.color;
 
     return (
         <div
+            onClick={onClick ? handleActionClick : undefined}
             className={`
                 max-w-[340px] min-w-[260px]
                 rounded-2xl overflow-hidden
                 transition-all duration-300 ease-[cubic-bezier(0.23,1,0.32,1)]
+                ${onClick ? 'cursor-pointer hover:brightness-110 active:scale-95' : ''}
                 ${isVisible && !isLeaving
                     ? 'opacity-100 translate-y-0 scale-100'
                     : 'opacity-0 -translate-y-3 scale-95'
@@ -94,7 +104,7 @@ const NotificationToast: React.FC<NotificationToastProps> = ({ message, onDismis
 
                 {/* Close */}
                 <button
-                    onClick={handleDismiss}
+                    onClick={(e) => { e.stopPropagation(); handleDismiss(); }}
                     className="shrink-0 p-1 -m-1 rounded-lg transition-colors"
                     style={{ color: isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)' }}
                     aria-label="Fechar"

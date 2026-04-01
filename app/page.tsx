@@ -67,6 +67,7 @@ const App: React.FC = () => {
         isDeleteModalOpen, siteToDelete, isGlobalReportModalOpen, setIsGlobalReportModalOpen,
         isClearHistoryModalOpen, siteToClearHistory,
         childUsers, addChildUser, removeChildUser, updateChildUser, userRole, userProfile,
+        isDeleteChildModalOpen, childToDelete, confirmDeleteChild, undoDeleteChild, setIsDeleteChildModalOpen,
         handleAddSite, handleRequestDelete, handleConfirmDelete,
         handleCloseDeleteModal, handleUndoDelete, handleEditSite, handleUpdateSite, handleRefreshSite, handleRefreshAll,
         requestClearHistory, confirmClearHistory, closeClearHistoryModal,
@@ -210,6 +211,7 @@ const App: React.FC = () => {
                         handleRefreshSite={handleRefreshSite} handleRequestDelete={handleRequestDelete}
                         handleRefreshAll={handleRefreshAll}
                         currentUser={currentUser!} onLogout={handleLogout}
+                        userProfile={userProfile}
                         theme={theme} toggleTheme={toggleTheme}
                     />
                 );
@@ -224,6 +226,8 @@ const App: React.FC = () => {
                         addChildUser={addChildUser} removeChildUser={removeChildUser} 
                         updateChildUser={updateChildUser} userRole={userRole}
                         onLogout={handleLogout}
+                        isDeleteChildModalOpen={isDeleteChildModalOpen}
+                        setIsDeleteChildModalOpen={setIsDeleteChildModalOpen}
                     />
                 );
             case 'reports':
@@ -342,7 +346,7 @@ const App: React.FC = () => {
                     { id: 'add', icon: PlusCircle, label: 'Novo', action: () => setIsAddSiteModalOpen(true) },
                     { id: 'activity', icon: Activity, label: 'Atividade' },
                     { id: 'settings', icon: Settings, label: 'Ajustes' }
-                ].map((item) => (
+                ].filter(item => !(item.id === 'add' && userProfile?.profile === 'viewer')).map((item) => (
                     <button 
                         key={item.id}
                         onClick={() => {
@@ -358,8 +362,16 @@ const App: React.FC = () => {
             </nav>
 
             {notifications.length > 0 && (
-                <div className="fixed top-4 right-4 z-[200] flex flex-col gap-2">
-                    {notifications.map(n => <NotificationToast key={n.id} message={n.message} type={n.type} onDismiss={() => removeNotification(n.id)} />)}
+                <div className="fixed top-4 right-4 z-[10000] flex flex-col gap-2">
+                    {notifications.map(n => (
+                        <NotificationToast 
+                            key={n.id} 
+                            message={n.message} 
+                            type={n.type} 
+                            onDismiss={() => removeNotification(n.id)} 
+                            onClick={n.message.includes('desfazer') ? (n.message.includes('operador') ? undoDeleteChild : handleUndoDelete) : undefined}
+                        />
+                    ))}
                 </div>
             )}
             
@@ -368,6 +380,17 @@ const App: React.FC = () => {
                 title="Excluir Site" confirmText="Excluir" confirmVariant="danger"
             >
                 Tem certeza que deseja remover {siteToDelete?.name || siteToDelete?.url}? Todos os dados serão perdidos.
+            </ConfirmationModal>
+
+            <ConfirmationModal
+                isOpen={isDeleteChildModalOpen}
+                onClose={() => setIsDeleteChildModalOpen(false)}
+                onConfirm={confirmDeleteChild}
+                title="Remover Membro"
+                confirmText="Remover"
+                confirmVariant="danger"
+            >
+                Tem certeza que deseja remover o operador <strong>{childToDelete?.name || childToDelete?.username}</strong>? O acesso será revogado imediatamente.
             </ConfirmationModal>
 
             <ConfirmationModal 
