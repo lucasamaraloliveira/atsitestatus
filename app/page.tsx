@@ -85,7 +85,8 @@ const App: React.FC = () => {
         clearAllLogs,
         parentName,
         audioSettings,
-        saveAudioSettings
+        saveAudioSettings,
+        effectiveOwnerId
     } = useSiteMonitoring(currentUser);
 
     // Watchdog de Inatividade
@@ -224,9 +225,11 @@ const App: React.FC = () => {
                         handleEditSite={handleEditSite} handleUpdateSiteUrl={(id, u, n, k) => handleUpdateSite(id, u, n, k)}
                         handleRefreshSite={handleRefreshSite} handleRequestDelete={handleRequestDelete}
                         handleRefreshAll={handleRefreshAll}
-                        currentUser={currentUser!} onLogout={handleLogout}
+                        currentUser={effectiveOwnerId || currentUser!}
+                        onLogout={handleLogout}
                         userProfile={userProfile}
                         theme={theme} toggleTheme={toggleTheme}
+                        addToastNotification={addToastNotification}
                     />
                 );
             case 'settings':

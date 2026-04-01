@@ -21,8 +21,11 @@ export default function PublicStatusPage() {
             if (snapshot.exists()) {
                 const data = snapshot.data();
                 const allSites = data.sites || [];
-                // Apenas sites públicos
-                setSites(allSites.filter((s: StatusResult) => s.isPublic));
+                console.log("Sites carregados (Públicos e Privados):", allSites);
+                // Filtro robusto para garantir que 'true' (booleano ou string por engano) seja capturado
+                const publicSites = allSites.filter((s: any) => s.isPublic === true || s.isPublic === 'true');
+                console.log("Sites filtrados (Apenas Públicos):", publicSites);
+                setSites(publicSites);
                 setOwnerName(data.name || data.username || 'Sistema');
             }
             setLoading(false);
@@ -63,7 +66,9 @@ export default function PublicStatusPage() {
 
                 {/* Main Status Banner */}
                 <div className={`mb-12 p-8 rounded-[2.5rem] border-2 transition-all duration-500 animate-fade-in-slide-up shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6 ${
-                    downCount > 0 
+                    sites.length === 0
+                    ? 'bg-gray-100 dark:bg-white/5 border-gray-200 dark:border-white/10 text-[var(--apple-text-secondary)]'
+                    : downCount > 0 
                     ? 'bg-[#FF3B30]/5 border-[#FF3B30]/20 text-[#FF3B30]' 
                     : someChecking 
                     ? 'bg-[#007AFF]/5 border-[#007AFF]/20 text-[#007AFF]'
@@ -71,13 +76,27 @@ export default function PublicStatusPage() {
                 }`}>
                     <div className="flex items-center gap-6">
                         <div className={`w-4 h-4 rounded-full animate-pulse shadow-[0_0_15px_rgba(currentcolor)] ${
-                            downCount > 0 ? 'bg-[#FF3B30]' : someChecking ? 'bg-[#007AFF]' : 'bg-[#34C759]'
+                            sites.length === 0 ? 'bg-gray-400' : downCount > 0 ? 'bg-[#FF3B30]' : someChecking ? 'bg-[#007AFF]' : 'bg-[#34C759]'
                         }`} />
                         <div>
                             <h2 className="text-2xl font-black">
-                                {downCount > 0 ? `${downCount} Interrupções Detectadas` : someChecking ? 'Verificando Sistemas...' : 'Todos os serviços operando'}
+                                {sites.length === 0 
+                                    ? 'Aguardando Configuração'
+                                    : downCount > 0 
+                                    ? `${downCount} ${downCount === 1 ? 'Interrupção Detectada' : 'Interrupções Detectadas'}` 
+                                    : someChecking 
+                                    ? 'Verificando Sistemas...' 
+                                    : sites.length === 1 
+                                    ? `O serviço ${sites[0].name || sites[0].url} está operando`
+                                    : `Todos os ${sites.length} serviços operando`
+                                }
                             </h2>
-                            <p className="opacity-70 font-medium">Informações em tempo real sobre a nossa infraestrutura.</p>
+                            <p className="opacity-70 font-medium">
+                                {sites.length === 0 
+                                    ? 'Este Painel de Status ainda não possui serviços liberados para visualização pública.' 
+                                    : 'Informações em tempo real sobre a nossa infraestrutura.'
+                                }
+                            </p>
                         </div>
                     </div>
                 </div>

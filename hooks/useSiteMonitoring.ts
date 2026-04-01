@@ -644,6 +644,7 @@ export const useSiteMonitoring = (username: string | null) => {
         parentName,
         audioSettings,
         saveAudioSettings: handleSaveAudioSettings,
-        isPublic, setIsPublic
+        isPublic, setIsPublic,
+        effectiveOwnerId
     };
 };

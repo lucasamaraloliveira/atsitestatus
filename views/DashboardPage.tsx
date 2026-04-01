@@ -48,6 +48,7 @@ interface DashboardPageProps {
     userProfile: any;
     theme: 'light' | 'dark';
     toggleTheme: () => void;
+    addToastNotification: (message: string, type: 'alert' | 'warning' | 'success' | 'info') => void;
 }
 
 const DashboardPage: React.FC<DashboardPageProps> = ({
@@ -71,7 +72,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     handleEditSite,
     handleUpdateSiteUrl,
     userProfile,
-    currentUser
+    currentUser,
+    addToastNotification
 }) => {
     const [searchQuery, setSearchQuery] = React.useState('');
     const userRole = userProfile?.role || 'admin';
@@ -215,7 +217,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                             onClick={() => {
                                 const url = `${window.location.origin}/status/${currentUser}`;
                                 navigator.clipboard.writeText(url);
-                                alert("Link da Página Pública copiado: " + url);
+                                addToastNotification("Link da Página Pública copiado com sucesso! 🔗", "success");
                             }}
                             className="p-3.5 bg-[var(--apple-input-bg)] text-[#007AFF] rounded-2xl border border-[var(--apple-border)] hover:bg-[#007AFF]/5 active:scale-95 transition-all shadow-sm flex items-center gap-2"
                             title="Copiar Link da Página Pública"
