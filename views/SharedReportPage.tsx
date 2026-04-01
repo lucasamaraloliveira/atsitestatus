@@ -6,6 +6,9 @@ import { ChevronRight, ArrowLeft } from 'lucide-react';
 
 interface SharedReportData {
     sites: StatusResult[];
+    logs: Record<string, LogEntry[]>;
+    startDate: string;
+    endDate: string;
 }
 
 const getStatusColor = (status: CheckStatus) => {
@@ -16,7 +19,7 @@ const getStatusColor = (status: CheckStatus) => {
 };
 
 const SharedReportPage: React.FC<{ data: SharedReportData }> = ({ data }) => {
-    const { sites, logs, startDate, endDate } = data as any;
+    const { sites, logs, startDate, endDate } = data;
     const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
 
     const stats: GlobalStats = useMemo(() => {
@@ -29,7 +32,7 @@ const SharedReportPage: React.FC<{ data: SharedReportData }> = ({ data }) => {
 
     const selectedSiteData = useMemo(() => {
         if (!selectedSiteId) return null;
-        const site = sites.find(s => s.id === selectedSiteId);
+        const site = sites.find((s: StatusResult) => s.id === selectedSiteId);
         if (!site) return null;
         return { site, logs: logs[selectedSiteId] || [] };
     }, [selectedSiteId, sites, logs]);
