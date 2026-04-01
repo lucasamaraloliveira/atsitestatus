@@ -380,7 +380,9 @@ export const useSiteMonitoring = (username: string | null) => {
     const handleCheckStatus = useCallback(async (siteId: string, url: string) => {
         setSites(prev => prev.map(s => s.id === siteId ? { ...s, status: CheckStatus.CHECKING, message: 'Verificando...' } : s));
         try {
-            const result = await checkWebsiteStatus(url);
+            const siteToProbe = sitesRef.current.find(s => s.id === siteId);
+            const result = await checkWebsiteStatus(url, siteToProbe?.keyword);
+            
             setSites(prev => {
                 const siteToCheck = prev.find(s => s.id === siteId);
                 if (siteToCheck) {
@@ -398,7 +400,6 @@ export const useSiteMonitoring = (username: string | null) => {
                         }
                     } else if (result.status === CheckStatus.ONLINE && result.latency && result.latency > HIGH_LATENCY_THRESHOLD) {
                         addToastNotification(`Atenção: Latência alta em ${siteName} (${result.latency}ms).`, 'warning');
-                        // Envia e-mail de latência alta apenas se configurado para 'todos'
                         if (emailNotifyType === 'all') {
                             sendEmailNotification(siteName, url, 'latência alta', result.message, result.latency);
                         }
@@ -419,9 +420,11 @@ export const useSiteMonitoring = (username: string | null) => {
         }
     }, [saveToFirestore, addLogEntry, addToastNotification, sendEmailNotification, emailNotifyType]);
 
-    const handleAddSite = async (urlParam?: string, nameParam?: string) => {
+    const handleAddSite = async (urlParam?: string, nameParam?: string, keywordParam?: string) => {
         let url = (urlParam || newSiteUrl).trim();
         const name = (nameParam || newSiteName).trim();
+        const keyword = (keywordParam || "").trim();
+        
         if (!url) return;
         if (!url.startsWith('http://') && !url.startsWith('https://')) url = `https://${url}`;
         try { new URL(url); } catch (_) { alert("URL inválida."); return; }
@@ -430,6 +433,7 @@ export const useSiteMonitoring = (username: string | null) => {
             id: crypto.randomUUID(),
             url,
             name: name || undefined,
+            keyword: keyword || undefined,
             status: CheckStatus.CHECKING,
             message: 'Aguardando verificação...',
             timestamp: new Date().toLocaleString()
@@ -472,11 +476,11 @@ export const useSiteMonitoring = (username: string | null) => {
         setRecentlyDeleted(null);
     };
 
-    const handleUpdateSite = async (id: string, newUrl: string, newName: string) => {
+    const handleUpdateSite = async (id: string, newUrl: string, newName: string, newKeyword: string) => {
         let url = newUrl.trim();
         if (!url) return;
         if (!url.startsWith('http://') && !url.startsWith('https://')) url = `https://${url}`;
-        const updatedSites = sites.map(s => s.id === id ? { ...s, url, name: newName.trim() || undefined } : s);
+        const updatedSites = sites.map(s => s.id === id ? { ...s, url, name: newName.trim() || undefined, keyword: newKeyword.trim() || undefined } : s);
         setEditingSiteId(null);
         await saveToFirestore(updatedSites);
         handleCheckStatus(id, url);

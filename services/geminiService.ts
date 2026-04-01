@@ -11,20 +11,18 @@ interface CheckResult {
   latency: number;
 }
 
-export const checkWebsiteStatus = async (url: string): Promise<CheckResult> => {
+export const checkWebsiteStatus = async (url: string, keyword?: string): Promise<CheckResult> => {
   const cleanUrl = url.trim();
   let latency = 0;
   let status = CheckStatus.ONLINE;
   let message = "Site estável e respondendo normalmente.";
 
   // ESTRATÉGIA: Medição de Latência Real (Ping Direto)
-  // Usamos um AbortController curto para medir apenas o RTT (Round Trip Time) inicial
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 5000);
   const pingStart = performance.now();
 
   try {
-    // Tenta uma conexão direta (no-cors) para pegar a latência REAL da rede do usuário
     await fetch(cleanUrl, { 
       method: 'GET', 
       mode: 'no-cors', 
@@ -34,12 +32,10 @@ export const checkWebsiteStatus = async (url: string): Promise<CheckResult> => {
     latency = Math.round(performance.now() - pingStart);
     clearTimeout(timeoutId);
   } catch (e: any) {
-    // Se falhar o direto, pode ser CORS (comum) ou Down total
-    // Vamos usar o tempo até aqui como base inicial
     latency = Math.round(performance.now() - pingStart);
   }
 
-  // VERIFICAÇÃO DE INTEGRIDADE (Via Proxy p/ Status Codes Reais)
+  // VERIFICAÇÃO DE INTEGRIDADE (Via Proxy p/ Status Codes e Conteúdo)
   try {
     const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(cleanUrl)}&timestamp=${Date.now()}`;
     const proxyResponse = await fetch(proxyUrl);
@@ -47,29 +43,34 @@ export const checkWebsiteStatus = async (url: string): Promise<CheckResult> => {
 
     if (data.status && data.status.http_code) {
       const code = data.status.http_code;
+      const htmlContent = data.contents || "";
+      
       if (code >= 200 && code < 400) {
-        status = CheckStatus.ONLINE;
-        message = `Online (HTTP ${code}).`;
+        // Se houver palavra-chave, validamos o conteúdo
+        if (keyword && !htmlContent.toLowerCase().includes(keyword.toLowerCase())) {
+          status = CheckStatus.ERROR;
+          message = `Erro: Palavra-chave "${keyword}" não encontrada no conteúdo.`;
+        } else {
+          status = CheckStatus.ONLINE;
+          message = `Online (HTTP ${code}).`;
+        }
       } else {
         status = CheckStatus.OFFLINE;
         message = `Offline: Servidor respondeu com erro ${code}.`;
       }
     } else {
-      // Se o proxy não retornou código (erro de rede do proxy)
-      // Mas o ping direto funcionou, mantemos Online
       if (latency < 4500) {
         status = CheckStatus.ONLINE;
-        message = "Online (Verificado via conexão direta).";
+        message = "Online (Direto).";
       } else {
         status = CheckStatus.OFFLINE;
-        message = "O site não respondeu no tempo limite (Timeout).";
+        message = "O site não respondeu (Timeout).";
       }
     }
   } catch (proxyError) {
-    // Fallback final: Se até o proxy falhar, confiamos na latência do ping direto
     if (latency > 0 && latency < 5000) {
         status = CheckStatus.ONLINE;
-        message = "Online (Acesso direto confirmado).";
+        message = "Online (Direto).";
     } else {
         status = CheckStatus.OFFLINE;
         message = "Falha crítica de comunicação.";

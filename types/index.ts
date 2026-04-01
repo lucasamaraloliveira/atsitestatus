@@ -9,6 +9,7 @@ export interface StatusResult {
   id: string;
   url: string;
   name?: string;
+  keyword?: string;
   status: CheckStatus;
   message: string;
   timestamp: string;
