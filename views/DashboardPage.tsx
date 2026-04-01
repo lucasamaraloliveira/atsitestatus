@@ -263,7 +263,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                     
                                     <div className="p-4 bg-[var(--apple-input-bg)] rounded-2xl">
                                         <p className="text-[9px] font-black uppercase tracking-[0.15em] text-[var(--apple-text-secondary)] mb-3">Tendência de Performance</p>
-                                        <LatencySparkline logs={logs[site.id] || []} color={site.status === CheckStatus.ONLINE ? '#34C759' : site.status === CheckStatus.CHECKING ? '#007AFF' : '#FF3B30'} height={50} />
+                                        <LatencySparkline logs={logs[site.id] || []} color={site.status === CheckStatus.ONLINE ? '#34C759' : site.status === CheckStatus.CHECKING ? '#007AFF' : site.status === CheckStatus.ERROR ? '#FF9500' : '#FF3B30'} height={50} />
                                     </div>
 
                                     <div className="flex items-center justify-between px-4 text-[var(--apple-text-secondary)]">
@@ -331,7 +331,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
                                 {/* Trend - Desktop Cell */}
                                 <div className="hidden md:block w-[120px]">
-                                    <LatencySparkline logs={logs[site.id] || []} color={site.status === CheckStatus.ONLINE ? '#34C759' : '#FF3B30'} height={20} />
+                                    <LatencySparkline logs={logs[site.id] || []} color={site.status === CheckStatus.ONLINE ? '#34C759' : site.status === CheckStatus.CHECKING ? '#007AFF' : site.status === CheckStatus.ERROR ? '#FF9500' : '#FF3B30'} height={20} />
                                 </div>
 
                                 {/* Last Check - Desktop Cell */}
@@ -348,7 +348,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                                     <div className="flex flex-col">
                                         <span className="text-[9px] font-black text-[var(--apple-text-secondary)] uppercase tracking-wider mb-1">Tendência</span>
                                         <div className="w-full">
-                                            <LatencySparkline logs={logs[site.id] || []} color={site.status === CheckStatus.ONLINE ? '#34C759' : '#FF3B30'} height={20} />
+                                            <LatencySparkline logs={logs[site.id] || []} color={site.status === CheckStatus.ONLINE ? '#34C759' : site.status === CheckStatus.CHECKING ? '#007AFF' : site.status === CheckStatus.ERROR ? '#FF9500' : '#FF3B30'} height={20} />
                                         </div>
                                     </div>
                                     <div className="flex flex-col text-right">

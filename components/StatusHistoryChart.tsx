@@ -17,10 +17,10 @@ const StatusHistoryChart: React.FC<{ history: HistoryPoint[]; instanceRef?: Reac
 
         if (chartInstanceRef.current) chartInstanceRef.current.destroy();
 
-        const gridColor = 'rgba(255, 255, 255, 0.1)';
-        const textColor = 'rgba(209, 213, 219, 1)';
-        const statusColor = 'rgba(96, 165, 250, 0.8)';
-        const latencyColor = 'rgba(251, 191, 36, 0.8)';
+        const gridColor = 'rgba(255, 255, 255, 0.05)';
+        const textColor = 'rgba(255, 255, 255, 0.5)';
+        const statusColor = '#007AFF'; // Azul Apple vibrante para consistência
+        const latencyColor = 'rgba(251, 191, 36, 0.7)';
 
         chartInstanceRef.current = new Chart(ctx, {
             type: 'line',
@@ -30,7 +30,7 @@ const StatusHistoryChart: React.FC<{ history: HistoryPoint[]; instanceRef?: Reac
                     label: 'Status',
                     data: history.map(h => h.status === CheckStatus.ONLINE ? 1 : (h.status === CheckStatus.OFFLINE || h.status === CheckStatus.ERROR ? 0 : 0.5)),
                     borderColor: statusColor,
-                    backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                    backgroundColor: 'rgba(0, 122, 255, 0.15)',
                     fill: true,
                     stepped: true,
                     pointRadius: 2,
