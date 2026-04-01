@@ -70,7 +70,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     editingSiteId,
     handleEditSite,
     handleUpdateSiteUrl,
-    userProfile
+    userProfile,
+    currentUser
 }) => {
     const [searchQuery, setSearchQuery] = React.useState('');
     const userRole = userProfile?.role || 'admin';
@@ -209,6 +210,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                             title="Atualizar Tudo"
                         >
                             <RefreshCw size={18} strokeWidth={2.5} className={isMonitoring ? 'animate-spin opacity-50' : ''} />
+                        </button>
+                        <button
+                            onClick={() => {
+                                const url = `${window.location.origin}/status/${currentUser}`;
+                                navigator.clipboard.writeText(url);
+                                alert("Link da Página Pública copiado: " + url);
+                            }}
+                            className="p-3.5 bg-[var(--apple-input-bg)] text-[#007AFF] rounded-2xl border border-[var(--apple-border)] hover:bg-[#007AFF]/5 active:scale-95 transition-all shadow-sm flex items-center gap-2"
+                            title="Copiar Link da Página Pública"
+                        >
+                            <ArrowUpRight size={18} strokeWidth={2.5} />
+                            <span className="hidden lg:inline text-[10px] font-black uppercase tracking-widest">Página Pública</span>
                         </button>
                         {canAdd && (
                             <button

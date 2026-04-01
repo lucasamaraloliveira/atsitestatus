@@ -4,22 +4,24 @@ import { X, Globe, Edit2, Plus } from 'lucide-react';
 interface AddSiteModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onAdd: (url: string, name: string, keyword: string) => void;
+    onAdd: (url: string, name: string, keyword: string, isPublic: boolean) => void;
 }
 
 const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onAdd }) => {
     const [url, setUrl] = useState('');
     const [name, setName] = useState('');
     const [keyword, setKeyword] = useState('');
+    const [isPublicState, setIsPublicState] = useState(false);
 
     if (!isOpen) return null;
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onAdd(url, name, keyword);
+        onAdd(url, name, keyword, isPublicState);
         setUrl('');
         setName('');
         setKeyword('');
+        setIsPublicState(false);
     };
 
     return (
@@ -87,6 +89,25 @@ const AddSiteModal: React.FC<AddSiteModalProps> = ({ isOpen, onClose, onAdd }) =
                         <p className="text-[9px] text-[var(--apple-text-secondary)] leading-relaxed italic px-1">
                             Garante que o site está exibindo o conteúdo real e não uma página de erro 200 OK.
                         </p>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-[var(--apple-input-bg)] dark:bg-black/20 rounded-2xl border border-[var(--apple-border)]">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-[#007AFF]/10 rounded-xl">
+                                <Globe size={20} className="text-[#007AFF]" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-black text-[var(--apple-text)]">Visibilidade Pública</p>
+                                <p className="text-[10px] font-medium text-[var(--apple-text-secondary)]">Exibir na página de status</p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setIsPublicState(!isPublicState)}
+                            className={`w-11 h-6 rounded-full transition-all duration-300 relative ${isPublicState ? 'bg-[#34C759]' : 'bg-gray-300 dark:bg-gray-700'}`}
+                        >
+                            <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 ${isPublicState ? 'translate-x-5' : 'translate-x-0'}`} />
+                        </button>
                     </div>
 
                     <div className="pt-4 space-y-3">

@@ -59,6 +59,7 @@ export const useSiteMonitoring = (username: string | null) => {
         triggers: ['offline', 'error'],
         selectedSound: 'https://actions.google.com/sounds/v1/alarms/beep_short.ogg'
     });
+    const [isPublic, setIsPublic] = useState(false);
 
     const intervalRef = useRef<number | null>(null);
     const undoTimeoutRef = useRef<number | null>(null);
@@ -477,10 +478,11 @@ export const useSiteMonitoring = (username: string | null) => {
         }
     }, [saveToFirestore, addLogEntry, addToastNotification, sendEmailNotification, emailNotifyType, audioSettings, playNotificationSound, sendNotification]);
 
-    const handleAddSite = async (urlParam?: string, nameParam?: string, keywordParam?: string) => {
+    const handleAddSite = async (urlParam?: string, nameParam?: string, keywordParam?: string, isPublicParam?: boolean) => {
         let url = (urlParam || newSiteUrl).trim();
         const name = (nameParam || newSiteName).trim();
         const keyword = (keywordParam || "").trim();
+        const finalIsPublic = isPublicParam !== undefined ? isPublicParam : isPublic;
 
         if (!url) return;
         if (!url.startsWith('http://') && !url.startsWith('https://')) url = `https://${url}`;
@@ -493,7 +495,8 @@ export const useSiteMonitoring = (username: string | null) => {
             keyword: keyword || undefined,
             status: CheckStatus.CHECKING,
             message: 'Aguardando verificação...',
-            timestamp: new Date().toLocaleString()
+            timestamp: new Date().toLocaleString(),
+            isPublic: finalIsPublic
         };
 
         setSites(prev => {
@@ -504,6 +507,7 @@ export const useSiteMonitoring = (username: string | null) => {
 
         setNewSiteUrl('');
         setNewSiteName('');
+        setIsPublic(false);
         setIsAddSiteModalOpen(false);
         addToastNotification(`Site "${name || url}" adicionado com sucesso.`, "success");
         setTimeout(() => handleCheckStatus(newSite.id, newSite.url), 500);
@@ -536,11 +540,17 @@ export const useSiteMonitoring = (username: string | null) => {
         setRecentlyDeleted(null);
     };
 
-    const handleUpdateSite = async (id: string, newUrl: string, newName: string, newKeyword: string) => {
+    const handleUpdateSite = async (id: string, newUrl: string, newName: string, newKeyword: string, isPublicParam?: boolean) => {
         let url = newUrl.trim();
         if (!url) return;
         if (!url.startsWith('http://') && !url.startsWith('https://')) url = `https://${url}`;
-        const updatedSites = sites.map(s => s.id === id ? { ...s, url, name: newName.trim() || undefined, keyword: newKeyword.trim() || undefined } : s);
+        const updatedSites = sites.map(s => s.id === id ? { 
+            ...s, 
+            url, 
+            name: newName.trim() || undefined, 
+            keyword: newKeyword.trim() || undefined, 
+            isPublic: isPublicParam !== undefined ? isPublicParam : s.isPublic 
+        } : s);
         setEditingSiteId(null);
         await saveToFirestore(updatedSites);
         addToastNotification(`Site "${newName || url}" atualizado com sucesso.`, "info");
@@ -633,6 +643,7 @@ export const useSiteMonitoring = (username: string | null) => {
         clearAllLogs: handleClearAllLogs,
         parentName,
         audioSettings,
-        saveAudioSettings: handleSaveAudioSettings
+        saveAudioSettings: handleSaveAudioSettings,
+        isPublic, setIsPublic
     };
 };

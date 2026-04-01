@@ -16,6 +16,7 @@ export interface StatusResult {
   latency?: number;
   sslExpiryDate?: number;
   sslDaysRemaining?: number;
+  isPublic?: boolean;
 }
 
 export type FilterType = CheckStatus | 'ALL';
