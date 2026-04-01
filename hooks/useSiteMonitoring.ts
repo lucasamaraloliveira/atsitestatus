@@ -213,6 +213,22 @@ export const useSiteMonitoring = (username: string | null) => {
         }
     };
 
+    const updateChildUser = async (childId: string, updatedData: any) => {
+        if (!effectiveOwnerId || userRole !== 'admin') return;
+        try {
+            const childToUpdate = childUsers.find(u => u.id === childId);
+            if (!childToUpdate) return;
+            const updatedChildUsers = childUsers.map(u => u.id === childId ? { ...u, ...updatedData } : u);
+            await saveToFirestore(sites, monitoringInterval, isMonitoring, updatedChildUsers);
+            const childUserRef = doc(db, 'users', childToUpdate.username);
+            await setDoc(childUserRef, { ...updatedData, role: 'child', parentId: effectiveOwnerId }, { merge: true });
+            addToastNotification("Dados do membro atualizados.", "warning");
+        } catch (error) {
+            console.error("Erro ao atualizar usuário filho:", error);
+            addToastNotification("Falha ao atualizar membro.", "alert");
+        }
+    };
+
     const removeChildUser = async (childId: string) => {
         if (!effectiveOwnerId || userRole !== 'admin') return;
         try {
@@ -382,7 +398,7 @@ export const useSiteMonitoring = (username: string | null) => {
         selectedSiteId, setSelectedSiteId, recentlyDeleted, notifications, removeNotification, addToastNotification,
         isDeleteModalOpen, siteToDelete, isGlobalReportModalOpen, setIsGlobalReportModalOpen,
         isClearHistoryModalOpen, siteToClearHistory,
-        childUsers, addChildUser, removeChildUser, userRole, userProfile,
+        childUsers, addChildUser, removeChildUser, updateChildUser, userRole, userProfile,
         handleAddSite, handleRequestDelete, handleConfirmDelete,
         handleCloseDeleteModal, handleUndoDelete, handleEditSite: (id: string) => setEditingSiteId(id), handleUpdateSite, handleRefreshSite: (id: string) => { const s = sites.find(x => x.id === id); if(s) handleCheckStatus(id, s.url); }, handleRefreshAll,
         requestClearHistory: (id: string) => { const s = sites.find(x => x.id === id); if(s) { setSiteToClearHistory(s); setIsClearHistoryModalOpen(true); } }, confirmClearHistory: handleConfirmClearHistory, closeClearHistoryModal: () => { setIsClearHistoryModalOpen(false); setSiteToClearHistory(null); },

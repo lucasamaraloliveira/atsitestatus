@@ -10,8 +10,12 @@ import {
     Bell,
     CheckCircle2,
     AlertTriangle,
-    LogOut
+    LogOut,
+    Edit2,
+    Check,
+    X
 } from 'lucide-react';
+import AddTeamMemberModal from '@/components/AddTeamMemberModal';
 
 interface SettingsViewProps {
     isMonitoring: boolean;
@@ -26,6 +30,7 @@ interface SettingsViewProps {
     childUsers: any[];
     addChildUser: (user: any) => void;
     removeChildUser: (id: string) => void;
+    updateChildUser: (id: string, data: any) => void;
     userRole: 'admin' | 'child';
     onLogout?: () => void;
 }
@@ -43,12 +48,17 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     childUsers,
     addChildUser,
     removeChildUser,
+    updateChildUser,
     userRole,
     onLogout
 }) => {
     const [localEmail, setLocalEmail] = useState(notificationEmail);
     const [localType, setLocalType] = useState(emailNotifyType);
     const [activeTab, setActiveTab] = useState<'preferences' | 'notifications' | 'team'>('preferences');
+    const [editingChildId, setEditingChildId] = useState<string | null>(null);
+    const [editName, setEditName] = useState('');
+    const [editPass, setEditPass] = useState('');
+    const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
 
     useEffect(() => {
         setLocalEmail(notificationEmail);
@@ -57,6 +67,18 @@ const SettingsView: React.FC<SettingsViewProps> = ({
 
     const handleSaveEmail = () => {
         saveEmailSettings(localEmail, localType);
+    };
+
+    const handleStartEdit = (user: any) => {
+        setEditingChildId(user.id);
+        setEditName(user.name || user.username);
+        setEditPass(user.password || '123');
+    };
+
+    const handleSaveEdit = () => {
+        if (!editingChildId) return;
+        updateChildUser(editingChildId, { name: editName, password: editPass });
+        setEditingChildId(null);
     };
 
     return (
@@ -68,20 +90,20 @@ const SettingsView: React.FC<SettingsViewProps> = ({
 
             <div className="flex bg-[var(--apple-input-bg)] p-1.5 rounded-2xl border border-[var(--apple-border)] w-fit mb-4">
                 <button 
-                    onClick={() => setActiveTab('preferences')}
+                    onClick={() => { setActiveTab('preferences'); setEditingChildId(null); }}
                     className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'preferences' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
                 >
                     Preferências
                 </button>
                 <button 
-                    onClick={() => setActiveTab('notifications')}
+                    onClick={() => { setActiveTab('notifications'); setEditingChildId(null); }}
                     className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'notifications' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
                 >
                     Notificações
                 </button>
                 {userRole === 'admin' && (
                     <button 
-                        onClick={() => setActiveTab('team')}
+                        onClick={() => { setActiveTab('team'); setEditingChildId(null); }}
                         className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'team' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
                     >
                         Equipe
@@ -148,7 +170,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                             </div>
                         </div>
 
-            <div className="max-w-2xl space-y-8">
+                        <div className="max-w-2xl space-y-8">
                             <div className="space-y-3">
                                 <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">E-mail para Alertas</label>
                                     <div className="relative group">
@@ -249,38 +271,77 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                                 </div>
                             </div>
                             <button 
-                                onClick={() => {
-                                    const user = prompt("Username do novo membro:");
-                                    if(user) addChildUser({ username: user, name: user, password: '123' });
-                                }}
-                                className="bg-[var(--apple-accent)] text-white px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 hover:opacity-90 transition-all active:scale-95"
+                                onClick={() => setIsAddMemberModalOpen(true)}
+                                className="bg-[var(--apple-accent)] text-white px-6 py-3 rounded-xl text-xs font-bold flex items-center gap-2 hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-[var(--apple-accent)]/20"
                             >
                                 <UserPlus size={16} />
                                 Novo Membro
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {childUsers.map(user => (
-                                <div key={user.id} className="p-6 bg-[var(--apple-input-bg)] rounded-3xl border border-[var(--apple-border)] flex items-center justify-between group hover:shadow-lg transition-all">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#5856D6] to-[#AF52DE] flex items-center justify-center text-white font-black text-sm shadow-lg shadow-[#5856D6]/20">
-                                            {user.name?.charAt(0) || user.username.charAt(0)}
-                                        </div>
-                                        <div>
-                                            <p className="font-bold text-sm">{user.name || user.username}</p>
-                                            <div className="flex items-center gap-1.5">
-                                                <Shield size={10} className="text-[#34C759]" />
-                                                <span className="text-[9px] font-black uppercase text-[var(--apple-text-secondary)] opacity-60">Acesso Operador</span>
+                                <div key={user.id} className={`p-6 rounded-[2rem] border transition-all duration-300 ${editingChildId === user.id ? 'bg-[var(--apple-card-bg)] border-[var(--apple-accent)] shadow-2xl scale-[1.02]' : 'bg-[var(--apple-input-bg)] border-[var(--apple-border)] group'}`}>
+                                    {editingChildId === user.id ? (
+                                        <div className="space-y-4 animate-fade-in">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <Edit2 size={12} className="text-[var(--apple-accent)]" />
+                                                <span className="text-[10px] font-black uppercase text-[var(--apple-accent)] tracking-widest">Editando Membro</span>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <input 
+                                                    type="text" 
+                                                    value={editName}
+                                                    onChange={e => setEditName(e.target.value)}
+                                                    placeholder="Nome do operador"
+                                                    className="w-full bg-[var(--apple-bg)] border border-[var(--apple-border)] rounded-xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-[var(--apple-accent)]"
+                                                />
+                                                <input 
+                                                    type="text" 
+                                                    value={editPass}
+                                                    onChange={e => setEditPass(e.target.value)}
+                                                    placeholder="Nova senha"
+                                                    className="w-full bg-[var(--apple-bg)] border border-[var(--apple-border)] rounded-xl py-3 px-4 text-xs font-bold outline-none focus:ring-2 focus:ring-[var(--apple-accent)]"
+                                                />
+                                            </div>
+                                            <div className="flex gap-2 pt-2">
+                                                <button onClick={handleSaveEdit} className="bg-[var(--apple-accent)] text-white flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2"><Check size={14} /> Salvar</button>
+                                                <button onClick={() => setEditingChildId(null)} className="bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)] px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest"><X size={14} /></button>
                                             </div>
                                         </div>
-                                    </div>
-                                    <button 
-                                        onClick={() => removeChildUser(user.id)}
-                                        className="p-2.5 rounded-xl hover:bg-[#FF3B30]/10 text-[#FF3B30] opacity-0 group-hover:opacity-100 transition-all shadow-sm"
-                                    >
-                                        <UserMinus size={18} />
-                                    </button>
+                                    ) : (
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div className="relative">
+                                                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#5856D6] to-[#AF52DE] flex items-center justify-center text-white font-black text-lg shadow-lg shadow-[#5856D6]/20">
+                                                        {user.name?.charAt(0) || user.username.charAt(0)}
+                                                    </div>
+                                                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-[#34C759] border-2 border-[var(--apple-input-bg)] rounded-full"></div>
+                                                </div>
+                                                <div>
+                                                    <p className="font-extrabold text-sm tracking-tight text-[var(--apple-text)]">{user.name || user.username}</p>
+                                                    <div className="flex items-center gap-1.5 mt-0.5">
+                                                        <Shield size={10} className="text-[#34C759]" />
+                                                        <span className="text-[9px] font-black uppercase text-[var(--apple-text-secondary)] opacity-50 tracking-tighter">Operador Ativo</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                                                <button 
+                                                    onClick={() => handleStartEdit(user)}
+                                                    className="p-2.5 rounded-xl bg-white/5 hover:bg-[var(--apple-accent)]/10 text-[var(--apple-accent)] transition-all"
+                                                >
+                                                    <Edit2 size={16} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => removeChildUser(user.id)}
+                                                    className="p-2.5 rounded-xl bg-white/5 hover:bg-[#FF3B30]/10 text-[#FF3B30] transition-all"
+                                                >
+                                                    <UserMinus size={16} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -305,8 +366,14 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                     </button>
                 </section>
             </div>
+            <AddTeamMemberModal 
+                isOpen={isAddMemberModalOpen} 
+                onClose={() => setIsAddMemberModalOpen(false)} 
+                onAdd={addChildUser} 
+            />
         </div>
     );
 };
+
 
 export default SettingsView;

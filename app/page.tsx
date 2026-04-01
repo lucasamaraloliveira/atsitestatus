@@ -66,7 +66,7 @@ const App: React.FC = () => {
         selectedSiteId, setSelectedSiteId, recentlyDeleted, notifications, removeNotification, addToastNotification,
         isDeleteModalOpen, siteToDelete, isGlobalReportModalOpen, setIsGlobalReportModalOpen,
         isClearHistoryModalOpen, siteToClearHistory,
-        childUsers, addChildUser, removeChildUser, userRole, userProfile,
+        childUsers, addChildUser, removeChildUser, updateChildUser, userRole, userProfile,
         handleAddSite, handleRequestDelete, handleConfirmDelete,
         handleCloseDeleteModal, handleUndoDelete, handleEditSite, handleUpdateSite, handleRefreshSite, handleRefreshAll,
         requestClearHistory, confirmClearHistory, closeClearHistoryModal,
@@ -223,7 +223,8 @@ const App: React.FC = () => {
                         notificationEmail={notificationEmail} emailNotifyType={emailNotifyType}
                         saveEmailSettings={saveEmailSettings} inactivityTimeout={inactivityTimeout}
                         setInactivityTimeout={setInactivityTimeout} childUsers={childUsers}
-                        addChildUser={addChildUser} removeChildUser={removeChildUser} userRole={userRole}
+                        addChildUser={addChildUser} removeChildUser={removeChildUser} 
+                        updateChildUser={updateChildUser} userRole={userRole}
                         onLogout={handleLogout}
                     />
                 );
