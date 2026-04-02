@@ -52,7 +52,7 @@ const GlobalReportModal: React.FC<GlobalReportModalProps> = ({ isOpen, onClose, 
         setSharedLink(link);
         setCopyButtonText('Copiar');
     };
-    
+
     const handleCopyToClipboard = () => {
         navigator.clipboard.writeText(sharedLink).then(() => {
             setCopyButtonText('Copiado!');
@@ -76,7 +76,7 @@ const GlobalReportModal: React.FC<GlobalReportModalProps> = ({ isOpen, onClose, 
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Close Button UI */}
-                <button 
+                <button
                     onClick={onClose}
                     className="absolute top-6 right-6 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[var(--apple-text-secondary)] transition-all hover:rotate-90"
                     aria-label="Fechar modal"
@@ -88,7 +88,7 @@ const GlobalReportModal: React.FC<GlobalReportModalProps> = ({ isOpen, onClose, 
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0071E3] to-[#5AC8FA] flex items-center justify-center text-white font-black text-xl shadow-lg shadow-[#0071E3]/20">AT</div>
                     <h2 id="modal-title" className="text-2xl font-extrabold text-[var(--apple-text)] tracking-tight">Gerar Relatório Global</h2>
                 </div>
-                
+
                 <div className="text-[var(--apple-text-secondary)] mb-10">
                     <p className="text-sm font-medium leading-relaxed mb-8">Selecione um período para gerar o relatório consolidado de todos os sites monitorados. Se nenhum período for selecionado, o relatório incluirá todos os dados históricos.</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -119,7 +119,7 @@ const GlobalReportModal: React.FC<GlobalReportModalProps> = ({ isOpen, onClose, 
                     <div className="mb-10 p-6 bg-[var(--apple-accent)]/5 rounded-3xl border border-[var(--apple-accent)]/10 animate-fade-in">
                         <label className="block text-[11px] font-bold text-[var(--apple-accent)] uppercase tracking-widest mb-3 ml-1">Link compartilhável gerado</label>
                         <div className="flex gap-3">
-                             <input
+                            <input
                                 type="text"
                                 readOnly
                                 value={sharedLink}
@@ -141,7 +141,7 @@ const GlobalReportModal: React.FC<GlobalReportModalProps> = ({ isOpen, onClose, 
                         <FileSpreadsheet size={18} />
                         Exportar Relatório em PDF
                     </button>
-                    
+
                     <div className="grid grid-cols-2 gap-3">
                         <button
                             onClick={handleShare}
