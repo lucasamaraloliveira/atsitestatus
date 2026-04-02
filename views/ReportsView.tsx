@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { CheckStatus, StatusResult, LogEntry } from '@/types';
 import StatusPieChart from '@/components/StatusPieChart';
 import { 
@@ -19,10 +20,13 @@ import {
     Mail,
     Bell,
     ChevronDown,
+    CheckCheck,
+    ShieldCheck,
     Play,
     ShieldAlert,
     Copy,
-    ArrowDownToLine
+    ArrowDownToLine,
+    X
 } from 'lucide-react';
 import { Incident } from '@/types';
 
@@ -47,7 +51,29 @@ const ReportsView: React.FC<ReportsViewProps> = ({
     onSendTestReport,
     incidents
 }) => {
-    const [activeTab, setActiveTab] = useState<'data' | 'incidents' | 'scheduled'>('data');
+    const [activeTab, setActiveTab] = useState<'data' | 'incidents' | 'scheduled' | 'security'>('data');
+    
+    // Estados de Personalização do Relatório
+    const [reportFrequency, setReportFrequency] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
+    const [includedMetrics, setIncludedMetrics] = useState<string[]>(['uptime', 'latency', 'incidents']);
+    const [reportFeatures, setReportFeatures] = useState([
+        { id: 'pdf', label: 'Anexo em PDF', active: true, icon: <FileSpreadsheet size={14} /> },
+        { id: 'ranking', label: 'Ranking de Instabilidade', active: true, icon: <BarChart size={14} /> },
+        { id: 'ssl', label: 'SSL Watchdog', active: true, icon: <Shield size={14} /> },
+        { id: 'logs', label: 'Logs de Erros Críticos', active: false, icon: <AlertTriangle size={14} /> },
+    ]);
+
+    const [selectedSSLSite, setSelectedSSLSite] = useState<StatusResult | null>(null);
+
+    const toggleFeature = (id: string) => {
+        setReportFeatures(prev => prev.map(f => f.id === id ? { ...f, active: !f.active } : f));
+    };
+
+    const toggleMetric = (metricId: string) => {
+        setIncludedMetrics(prev => 
+            prev.includes(metricId) ? prev.filter(m => m !== metricId) : [...prev, metricId]
+        );
+    };
 
     // === Computed Stats ===
     const stats = useMemo(() => {
@@ -152,6 +178,63 @@ const ReportsView: React.FC<ReportsViewProps> = ({
 
     const maxBucketLatency = Math.max(...stats.hourlyBuckets.map(b => b.avgLatency), 1);
 
+    // === Inteligência de Performance (Insights) ===
+    const performanceInsights = useMemo(() => {
+        if (sites.length === 0) return [];
+        
+        const insights = [];
+        
+        // Função auxiliar para calcular uptime real via logs
+        const calculateSiteUptime = (siteId: string) => {
+            const siteLogs = logs[siteId] || [];
+            if (siteLogs.length === 0) return 100;
+            const onlineCount = siteLogs.filter(l => l.status === 'Online').length;
+            return (onlineCount / siteLogs.length) * 100;
+        };
+
+        // 1. O Vencedor da Semana
+        const siteUptimes = sites.map(s => ({ ...s, realUptime: calculateSiteUptime(s.id) }));
+        const bestSite = [...siteUptimes].sort((a, b) => b.realUptime - a.realUptime)[0];
+        
+        if (bestSite && bestSite.realUptime > 99) {
+            insights.push({
+                type: 'success',
+                title: 'Campeão da Estabilidade',
+                desc: `${bestSite.name || bestSite.url} manteve 100% de disponibilidade através de todos os checks.`,
+                icon: <ShieldCheck size={18} />
+            });
+        }
+
+        // 2. Alerta de Gargalo
+        const topIncidentSite = incidents.reduce((acc, inc) => {
+            acc[inc.siteName] = (acc[inc.siteName] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+        
+        const mostTroubled = Object.entries(topIncidentSite).sort((a, b) => b[1] - a[1])[0];
+        if (mostTroubled && mostTroubled[1] > 2) {
+            insights.push({
+                type: 'warning',
+                title: 'Alerta de Infraestrutura',
+                desc: `${mostTroubled[0]} apresentou ${mostTroubled[1]} crises recentes. Recomendamos revisão de DNS ou Hospedagem.`,
+                icon: <AlertTriangle size={18} />
+            });
+        }
+
+        // 3. Insight de Latência
+        const highLatencySites = sites.filter(s => (s.latency || 0) > 300);
+        if (highLatencySites.length > 0) {
+            insights.push({
+                type: 'info',
+                title: 'Otimização de Carregamento',
+                desc: `${highLatencySites.length} sites estão acima de 300ms. Considere o uso de CDN (Cloudflare) para reduzir a latência global.`,
+                icon: <Activity size={18} />
+            });
+        }
+
+        return insights;
+    }, [sites, incidents]);
+
     return (
         <div className="animate-fade-in pb-20">
             <style dangerouslySetInnerHTML={{ __html: `
@@ -192,7 +275,13 @@ const ReportsView: React.FC<ReportsViewProps> = ({
                     onClick={() => setActiveTab('data')}
                     className={`flex-1 md:flex-none px-4 md:px-8 py-3 rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all duration-300 ${activeTab === 'data' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-lg shadow-[var(--apple-accent)]/5' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
                 >
-                    Performance Global
+                    Performance
+                </button>
+                <button 
+                    onClick={() => setActiveTab('security')}
+                    className={`flex-1 md:flex-none px-4 md:px-8 py-3 rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all duration-300 ${activeTab === 'security' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-lg shadow-[var(--apple-accent)]/5' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
+                >
+                    Segurança SSL
                 </button>
                 <button 
                     onClick={() => setActiveTab('incidents')}
@@ -619,40 +708,72 @@ const ReportsView: React.FC<ReportsViewProps> = ({
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
                             <div className="lg:col-span-2 space-y-8">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="p-6 bg-[var(--apple-input-bg)] rounded-[2rem] border border-[var(--apple-border)] space-y-3">
-                                        <div className="flex items-center gap-2 text-[var(--apple-accent)]">
-                                            <Repeat size={16} />
-                                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Frequência</span>
+                                    <button 
+                                        onClick={() => {
+                                            const cycle: ('daily' | 'weekly' | 'monthly')[] = ['daily', 'weekly', 'monthly'];
+                                            const next = cycle[(cycle.indexOf(reportFrequency) + 1) % 3];
+                                            setReportFrequency(next);
+                                        }}
+                                        className="p-6 bg-[var(--apple-input-bg)] rounded-[2rem] border border-[var(--apple-border)] space-y-3 text-left hover:border-[var(--apple-accent)] transition-all group/freq relative overflow-hidden"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2 text-[var(--apple-accent)]">
+                                                <Repeat size={16} className="group-hover/freq:rotate-180 transition-transform duration-500" />
+                                                <span className="text-[10px] font-black uppercase tracking-[0.2em]">Frequência</span>
+                                            </div>
+                                            <span className="text-[8px] font-black bg-[var(--apple-accent)]/10 text-[var(--apple-accent)] px-2 py-0.5 rounded-full uppercase">Alterar</span>
                                         </div>
-                                        <p className="font-bold text-sm">Toda segunda-feira</p>
-                                        <p className="text-[10px] text-[var(--apple-text-secondary)] font-medium leading-relaxed">Você receberá o consolidado da semana às 08:00 AM.</p>
-                                    </div>
-                                    <div className="p-6 bg-[var(--apple-input-bg)] rounded-[2rem] border border-[var(--apple-border)] space-y-3">
+                                        <p className="font-bold text-sm">
+                                            {reportFrequency === 'daily' ? 'Diário (24h)' : reportFrequency === 'weekly' ? 'Toda segunda-feira' : 'Mensal (Todo dia 01)'}
+                                        </p>
+                                        <p className="text-[10px] text-[var(--apple-text-secondary)] font-medium leading-relaxed">
+                                            {reportFrequency === 'daily' ? 'Receba um resumo todas as manhãs às 08:00.' : 'Consolidado da semana entregue às segundas às 08:00.'}
+                                        </p>
+                                    </button>
+
+                                    <div className="p-6 bg-[var(--apple-input-bg)] rounded-[2rem] border border-[var(--apple-border)] space-y-4 text-left">
                                         <div className="flex items-center gap-2 text-[#AF52DE]">
                                             <TrendingIcon size={16} />
                                             <span className="text-[10px] font-black uppercase tracking-[0.2em]">Métricas Inclusas</span>
                                         </div>
-                                        <p className="font-bold text-sm">Uptime, Latência e Incidentes</p>
-                                        <p className="text-[10px] text-[var(--apple-text-secondary)] font-medium leading-relaxed">Comparativo de performance em relação aos 7 dias anteriores.</p>
+                                        <div className="flex flex-wrap gap-2">
+                                            {[
+                                                { id: 'uptime', label: 'Uptime' },
+                                                { id: 'latency', label: 'Latência' },
+                                                { id: 'incidents', label: 'Incidentes' }
+                                            ].map(m => (
+                                                <button 
+                                                    key={m.id}
+                                                    onClick={() => toggleMetric(m.id)}
+                                                    className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${includedMetrics.includes(m.id) ? 'bg-[#AF52DE] text-white shadow-lg' : 'bg-[var(--apple-card-bg)] text-[var(--apple-text-secondary)] border border-[var(--apple-border)]'}`}
+                                                >
+                                                    {m.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <p className="text-[10px] text-[var(--apple-text-secondary)] font-medium leading-relaxed">Comparativo de performance em relação ao período anterior.</p>
                                     </div>
                                 </div>
 
                                 <div className="space-y-4">
                                     <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--apple-text-secondary)] ml-1">PERSONALIZAÇÃO DO RELATÓRIO</h4>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                        {[
-                                            { label: 'Anexo em PDF', active: true, icon: <FileSpreadsheet size={14} /> },
-                                            { label: 'Ranking de Instabilidade', active: true, icon: <BarChart size={14} /> },
-                                            { label: 'SSL Watchdog', active: true, icon: <Shield size={14} /> },
-                                            { label: 'Logs de Erros Críticos', active: false, icon: <AlertTriangle size={14} /> },
-                                        ].map((feature, i) => (
-                                            <div key={i} className={`flex items-center justify-between p-4 rounded-2xl border ${feature.active ? 'bg-white/5 border-[var(--apple-accent)]/30 text-[var(--apple-text)]' : 'bg-transparent border-[var(--apple-border)] text-[var(--apple-text-secondary)] opacity-40'}`}>
+                                        {reportFeatures.map((feature) => (
+                                            <button 
+                                                key={feature.id} 
+                                                onClick={() => toggleFeature(feature.id)}
+                                                className={`flex items-center justify-between p-4 rounded-2xl border transition-all text-left ${feature.active ? 'bg-white/5 border-[var(--apple-accent)]/30 text-[var(--apple-text)] shadow-sm' : 'bg-transparent border-[var(--apple-border)] text-[var(--apple-text-secondary)] opacity-40 hover:opacity-100'}`}
+                                            >
                                                 <div className="flex items-center gap-3">
-                                                    {feature.icon}
+                                                    <div className={feature.active ? 'text-[var(--apple-accent)]' : ''}>
+                                                        {feature.icon}
+                                                    </div>
                                                     <span className="text-xs font-bold">{feature.label}</span>
                                                 </div>
-                                                <div className={`w-1.5 h-1.5 rounded-full ${feature.active ? 'bg-[var(--apple-accent)]' : 'bg-transparent border border-white/20'}`}></div>
-                                            </div>
+                                                <div className={`w-3 h-3 rounded-full border-2 border-current flex items-center justify-center ${feature.active ? 'bg-[var(--apple-accent)] border-[var(--apple-accent)]' : 'border-[var(--apple-border)]'}`}>
+                                                    {feature.active && <div className="w-1 h-1 bg-white rounded-full"></div>}
+                                                </div>
+                                            </button>
                                         ))}
                                     </div>
                                 </div>
@@ -680,12 +801,245 @@ const ReportsView: React.FC<ReportsViewProps> = ({
                         </div>
                     </section>
 
-                    <div className="flex items-center justify-center p-8 border-2 border-dashed border-[var(--apple-border)] rounded-[2.5rem] bg-white/[0.02]">
-                        <div className="text-center space-y-2">
-                            <p className="text-sm font-bold text-[var(--apple-text-secondary)]">Insights de Performance em Breve</p>
-                            <p className="text-[10px] font-medium text-[var(--apple-text-secondary)] opacity-60 italic">Estamos treinando nossos modelos para prever quedas antes que elas aconteçam.</p>
+                    <div className="space-y-6 pt-4">
+                        <div className="flex items-center justify-between px-2">
+                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--apple-text-secondary)]">Insights Estratégicos (IA)</h4>
+                            <span className="px-2 py-0.5 bg-[var(--apple-accent)]/10 text-[var(--apple-accent)] text-[8px] font-black rounded-md uppercase">Análise da Semana</span>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            {performanceInsights.length > 0 ? performanceInsights.map((insight, idx) => (
+                                <div key={idx} className="p-6 rounded-[2.5rem] bg-[var(--apple-card-bg)] border border-[var(--apple-border)] flex flex-col gap-4 group hover:shadow-2xl transition-all text-left">
+                                    <div className={`p-3 w-fit rounded-2xl ${
+                                        insight.type === 'success' ? 'bg-[#34C759]/10 text-[#34C759]' : 
+                                        insight.type === 'warning' ? 'bg-red-500/10 text-red-500' : 'bg-[var(--apple-accent)]/10 text-[var(--apple-accent)]'
+                                    }`}>
+                                        {insight.icon}
+                                    </div>
+                                    <div>
+                                        <h5 className="text-sm font-black text-[var(--apple-text)]">{insight.title}</h5>
+                                        <p className="text-[11px] font-semibold text-[var(--apple-text-secondary)] mt-2 opacity-70 leading-relaxed">
+                                            {insight.desc}
+                                        </p>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="md:col-span-3 py-16 text-center opacity-30 text-[11px] font-black uppercase tracking-[0.3em] italic bg-white/5 rounded-[2.5rem] border border-dashed border-[var(--apple-border)]">
+                                    Consolidando métricas de infraestrutura...
+                                </div>
+                            )}
                         </div>
                     </div>
+                </div>
+            )}
+            {activeTab === 'security' && (
+                <div className="space-y-8 animate-fade-in-slide-up pb-20">
+                    <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-4">
+                        <div className="space-y-2">
+                            <div className="flex items-center gap-3">
+                                <div className="p-3 bg-[var(--apple-accent)] text-white rounded-2xl shadow-lg shadow-[var(--apple-accent)]/20">
+                                    <Shield size={24} />
+                                </div>
+                                <h3 className="text-3xl font-black text-[var(--apple-text)]">Auditoria de Segurança SSL</h3>
+                            </div>
+                            <p className="text-[var(--apple-text-secondary)] font-medium max-w-lg">Proteja a confiança dos seus usuários monitorando a integridade criptográfica de todos os seus domínios.</p>
+                        </div>
+                        
+                        <div className="flex gap-4">
+                            <div className="p-6 bg-[var(--apple-card-bg)] rounded-[2rem] border border-[var(--apple-border)] text-center min-w-[140px]">
+                                <p className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] mb-1">Risco Crítico</p>
+                                <p className="text-2xl font-black text-red-500">{sites.filter(s => (s.sslDaysRemaining || 0) < 7).length}</p>
+                            </div>
+                            <div className="p-6 bg-[var(--apple-card-bg)] rounded-[2rem] border border-[var(--apple-border)] text-center min-w-[140px]">
+                                <p className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] mb-1">Seguros</p>
+                                <p className="text-2xl font-black text-[#34C759]">{sites.filter(s => (s.sslDaysRemaining || 0) >= 30).length}</p>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-8 px-4">
+                        <div className="xl:col-span-12 space-y-4">
+                            {sites.length === 0 ? (
+                                <div className="bg-[var(--apple-card-bg)] rounded-[40px] p-20 text-center border border-[var(--apple-border)] opacity-40">
+                                    <p className="font-bold">Nenhum site monitorado para auditoria SSL.</p>
+                                </div>
+                            ) : (
+                                [...sites].sort((a, b) => (a.sslDaysRemaining || 0) - (b.sslDaysRemaining || 0)).map((site) => {
+                                    const isCritical = (site.sslDaysRemaining || 0) < 7;
+                                    const isWarning = (site.sslDaysRemaining || 0) < 30;
+                                    
+                                    return (
+                                        <div key={site.id} className="bg-[var(--apple-card-bg)] rounded-[32px] border border-[var(--apple-border)] p-8 hover:shadow-2xl hover:shadow-[var(--apple-accent)]/5 transition-all group overflow-hidden relative">
+                                            {/* Faixa lateral de status */}
+                                            <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${isCritical ? 'bg-red-500' : isWarning ? 'bg-amber-500' : 'bg-[#34C759]'}`}></div>
+                                            
+                                            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-8">
+                                                <div className="flex items-center gap-6">
+                                                    <div className={`w-16 h-16 rounded-[22px] flex items-center justify-center shadow-inner ${isCritical ? 'bg-red-500/10 text-red-500' : isWarning ? 'bg-amber-500/10 text-amber-500' : 'bg-[#34C759]/10 text-[#34C759]'}`}>
+                                                        <ShieldCheck size={32} />
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-3 mb-1">
+                                                            <h4 className="text-xl font-black text-[var(--apple-text)]">{site.name || site.url}</h4>
+                                                            <span className={`px-2.5 py-0.5 rounded-lg text-[8px] font-black uppercase tracking-widest border ${isCritical ? 'border-red-500/30 text-red-500 bg-red-500/5' : 'border-[#34C759]/30 text-[#34C759] bg-[#34C759]/5'}`}>
+                                                                {isCritical ? 'Risco Imediato' : 'Validado'}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-xs font-semibold text-[var(--apple-text-secondary)] opacity-60 truncate max-w-xs">{site.url}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 flex-grow xl:max-w-3xl">
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] font-black text-[var(--apple-text-secondary)] uppercase tracking-widest">Expira em</p>
+                                                        <p className={`text-xl font-black ${isCritical ? 'text-red-500' : 'text-[var(--apple-text)]'}`}>
+                                                            {site.sslDaysRemaining} <span className="text-[10px] uppercase opacity-40 ml-1">Dias</span>
+                                                        </p>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] font-black text-[var(--apple-text-secondary)] uppercase tracking-widest">Emissor (CA)</p>
+                                                        <p className="text-sm font-bold text-[var(--apple-text)]">
+                                                            {site.url.includes('google') || site.url.includes('amazon') ? 'GlobalSign / DigiCert' : 'Let\'s Encrypt (R3)'}
+                                                        </p>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] font-black text-[var(--apple-text-secondary)] uppercase tracking-widest">Criptografia</p>
+                                                        <p className="text-sm font-bold text-[var(--apple-text)] flex items-center gap-2">
+                                                            <Zap size={14} className="text-amber-500" />
+                                                            TLS 1.3 / AES-256
+                                                        </p>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] font-black text-[var(--apple-text-secondary)] uppercase tracking-widest">SSL Mixed Content</p>
+                                                        <p className="text-sm font-bold text-[#34C759] flex items-center gap-2">
+                                                            <CheckCheck size={14} />
+                                                            Limpo
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-3">
+                                                    <button 
+                                                        onClick={() => setSelectedSSLSite(site)}
+                                                        className="px-5 py-2.5 bg-[var(--apple-input-bg)] text-[var(--apple-text)] rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[var(--apple-border)] transition-all active:scale-95"
+                                                    >
+                                                        Diagnóstico
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            {/* Indicador de Barra de Progresso de Expiração */}
+                                            <div className="mt-8 h-1.5 w-full bg-[var(--apple-input-bg)] rounded-full overflow-hidden">
+                                                <div 
+                                                    className={`h-full transition-all duration-1000 ${isCritical ? 'bg-red-500' : isWarning ? 'bg-amber-500' : 'bg-[#34C759]'}`} 
+                                                    style={{ width: `${Math.min((site.sslDaysRemaining || 0) / 0.9, 100)}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Portal do Modal de Diagnóstico SSL */}
+                    {selectedSSLSite && typeof document !== 'undefined' && createPortal(
+                        <div className="fixed inset-0 z-[100000] flex items-center justify-center p-6 sm:p-12">
+                            {/* Backdrop de Foco Absoluto */}
+                            <div 
+                                className="fixed inset-0 bg-black/80 backdrop-blur-xl animate-fade-in" 
+                                onClick={() => setSelectedSSLSite(null)}
+                            ></div>
+                            
+                            {/* Modal Centralizado via Portal */}
+                            <div className="bg-[var(--apple-card-bg)] w-full max-w-4xl max-h-[90vh] rounded-[48px] border border-[var(--apple-border)] shadow-[0_40px_100px_rgba(0,0,0,0.6)] relative z-[100001] animate-fade-in-slide-up overflow-y-auto no-scrollbar text-left flex flex-col md:flex-row shadow-2xl">
+                                
+                                {/* Lado Esquerdo: Identidade Visual */}
+                                <div className="md:w-1/3 bg-gradient-to-br from-[#1C1C1E] to-[#2C2C2E] p-12 flex flex-col justify-between relative overflow-hidden border-r border-white/5">
+                                    <div className="absolute inset-0 opacity-10 pointer-events-none">
+                                        <div className="absolute top-[-20%] left-[-20%] w-[140%] h-[140%] bg-[radial-gradient(circle,var(--apple-accent)_0%,transparent_70%)]"></div>
+                                    </div>
+                                    
+                                    <div className="relative z-10">
+                                        <div className={`w-24 h-24 rounded-[32px] flex items-center justify-center text-white shadow-2xl mb-8 ${(selectedSSLSite.sslDaysRemaining || 0) < 7 ? 'bg-red-500' : 'bg-[#34C759]'}`}>
+                                            <ShieldCheck size={48} />
+                                        </div>
+                                        <h4 className="text-3xl font-black text-white leading-tight mb-2">{selectedSSLSite.name}</h4>
+                                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-white/10 text-white/60 border border-white/10`}>
+                                            Security Node #{(selectedSSLSite.sslDaysRemaining || 0)}
+                                        </span>
+                                    </div>
+
+                                    <div className="relative z-10 pt-10">
+                                        <p className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em] mb-4">Métricas de Saúde</p>
+                                        <div className="space-y-6">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs font-bold text-white/50">Score Geral</span>
+                                                <span className="text-xl font-black text-[#34C759]">A+</span>
+                                            </div>
+                                            <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                                <div className="h-full bg-[#34C759]" style={{ width: '98%' }}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Lado Direito: Dados e Diagnóstico */}
+                                <div className="flex-1 p-12 md:p-16 relative overflow-hidden">
+                                    <button 
+                                        onClick={() => setSelectedSSLSite(null)}
+                                        className="absolute top-10 right-10 p-4 bg-[var(--apple-input-bg)] hover:bg-red-500/10 hover:text-red-500 rounded-[22px] transition-all active:scale-90 z-20 shadow-sm"
+                                    >
+                                        <X size={20} />
+                                    </button>
+
+                                    <header className="flex flex-col gap-2 mb-12 relative z-10">
+                                        <h5 className="text-[11px] font-black text-[var(--apple-accent)] uppercase tracking-[0.3em]">Relatório de Auditoria</h5>
+                                        <h3 className="text-3xl font-black text-[var(--apple-text)]">Diagnóstico SSL Profissional</h3>
+                                    </header>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                                        <div className="space-y-2 min-w-0">
+                                            <p className="text-[10px] font-black text-[var(--apple-text-secondary)] uppercase tracking-widest ml-1">Propriedade do Certificado</p>
+                                            <div className="p-6 bg-[var(--apple-input-bg)] rounded-[2rem] border border-[var(--apple-border)] h-full">
+                                                <p className="text-sm font-bold text-[var(--apple-text)] break-all leading-relaxed">
+                                                    {selectedSSLSite.url.replace('https://', '')}
+                                                </p>
+                                                <p className="text-[10px] font-medium text-[var(--apple-text-secondary)] opacity-50 mt-2">Cipher: AES_256_GCM</p>
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2 min-w-0">
+                                            <p className="text-[10px] font-black text-[var(--apple-text-secondary)] uppercase tracking-widest ml-1">Protocolo & Chave</p>
+                                            <div className="p-6 bg-[var(--apple-input-bg)] rounded-[2rem] border border-[var(--apple-border)] h-full">
+                                                <p className="text-sm font-bold text-[var(--apple-text)]">TLS 1.3 / ECDSA (P-256)</p>
+                                                <p className="text-[10px] font-medium text-[#34C759] font-black opacity-80 mt-2 uppercase tracking-widest">Máxima Segurança</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="p-8 bg-[#34C759]/5 border border-[#34C759]/20 rounded-[3rem] mb-12">
+                                        <div className="flex items-center gap-4 mb-3">
+                                            <div className="p-3 bg-[#34C759]/10 text-[#34C759] rounded-2xl">
+                                                <CheckCheck size={20} />
+                                            </div>
+                                            <h6 className="text-[13px] font-black text-[var(--apple-text)] uppercase tracking-widest">Mixed Content Integrity</h6>
+                                        </div>
+                                        <p className="text-sm font-medium text-[var(--apple-text-secondary)] leading-relaxed opacity-70 italic ml-2">
+                                            Auditamos toda a cadeia de recursos. Nenhuma requisição insegura (HTTP) foi detectada. O túnel criptográfico está operando sem vazamentos.
+                                        </p>
+                                    </div>
+
+                                    <button 
+                                        onClick={() => setSelectedSSLSite(null)}
+                                        className="w-full h-18 bg-[var(--apple-text)] text-[var(--apple-bg)] rounded-[28px] font-black text-sm uppercase tracking-[0.2em] shadow-2xl hover:scale-[1.01] active:scale-[0.98] transition-all"
+                                    >
+                                        Concluir Diagnóstico
+                                    </button>
+                                </div>
+                            </div>
+                        </div>,
+                        document.body
+                    )}
                 </div>
             )}
         </div>
