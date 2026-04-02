@@ -19,8 +19,12 @@ import {
     Mail,
     Bell,
     ChevronDown,
-    Play
+    Play,
+    ShieldAlert,
+    Copy,
+    ArrowDownToLine
 } from 'lucide-react';
+import { Incident } from '@/types';
 
 interface ReportsViewProps {
     sites: StatusResult[];
@@ -30,6 +34,7 @@ interface ReportsViewProps {
     weeklyReportsEnabled: boolean;
     setWeeklyReportsEnabled: (val: boolean) => void;
     onSendTestReport: () => void;
+    incidents: Incident[];
 }
 
 const ReportsView: React.FC<ReportsViewProps> = ({ 
@@ -39,9 +44,10 @@ const ReportsView: React.FC<ReportsViewProps> = ({
     notificationEmail,
     weeklyReportsEnabled,
     setWeeklyReportsEnabled,
-    onSendTestReport
+    onSendTestReport,
+    incidents
 }) => {
-    const [activeTab, setActiveTab] = useState<'data' | 'scheduled'>('data');
+    const [activeTab, setActiveTab] = useState<'data' | 'incidents' | 'scheduled'>('data');
 
     // === Computed Stats ===
     const stats = useMemo(() => {
@@ -148,6 +154,15 @@ const ReportsView: React.FC<ReportsViewProps> = ({
 
     return (
         <div className="animate-fade-in pb-20">
+            <style dangerouslySetInnerHTML={{ __html: `
+                @media print {
+                    aside, nav, .sidebar, button, .no-print, header .flex { display: none !important; }
+                    main { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+                    .apple-card { border: 1px solid #eee !important; box-shadow: none !important; break-inside: avoid; margin-bottom: 20px; }
+                    body { background: white !important; padding: 20px !important; }
+                    .glass { backdrop-filter: none !important; background: white !important; }
+                }
+            `}} />
             {/* Header */}
             <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6">
                 <div>
@@ -155,10 +170,19 @@ const ReportsView: React.FC<ReportsViewProps> = ({
                     <p className="text-[var(--apple-text-secondary)] font-medium mt-1">Visão consolidada da sua infraestrutura em tempo real.</p>
                 </div>
                 {activeTab === 'data' && (
-                    <button onClick={onExportReport} className="apple-button h-11 px-6 shadow-lg shadow-[var(--apple-accent)]/20 flex items-center gap-2">
-                        <FileSpreadsheet size={16} />
-                        Exportar Relatório
-                    </button>
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={() => window.print()} 
+                            className="apple-button h-11 px-6 bg-white dark:bg-white/10 text-[var(--apple-text)] border border-[var(--apple-border)] flex items-center gap-2"
+                        >
+                            <ArrowDownToLine size={16} />
+                            Exportar PDF
+                        </button>
+                        <button onClick={onExportReport} className="apple-button h-11 px-6 shadow-lg shadow-[var(--apple-accent)]/20 flex items-center gap-2">
+                            <FileSpreadsheet size={16} />
+                            Relatório CSV
+                        </button>
+                    </div>
                 )}
             </header>
 
@@ -169,6 +193,12 @@ const ReportsView: React.FC<ReportsViewProps> = ({
                     className={`flex-1 md:flex-none px-4 md:px-8 py-3 rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all duration-300 ${activeTab === 'data' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-lg shadow-[var(--apple-accent)]/5' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
                 >
                     Performance Global
+                </button>
+                <button 
+                    onClick={() => setActiveTab('incidents')}
+                    className={`flex-1 md:flex-none px-4 md:px-8 py-3 rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all duration-300 ${activeTab === 'incidents' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-lg shadow-[var(--apple-accent)]/5' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
+                >
+                    Histórico de Crises
                 </button>
                 <button 
                     onClick={() => setActiveTab('scheduled')}
@@ -487,6 +517,76 @@ const ReportsView: React.FC<ReportsViewProps> = ({
                             </p>
                         </div>
                     )}
+                </div>
+            )}
+
+            {activeTab === 'incidents' && (
+                <div className="space-y-8 animate-fade-in">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3.5 bg-red-500/10 text-red-500 rounded-2xl">
+                                <ShieldAlert size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-[var(--apple-text)] tracking-tight">Registro de Incidentes</h3>
+                                <p className="text-xs font-semibold text-[var(--apple-text-secondary)] uppercase tracking-widest opacity-60">Total: {incidents.length} ocorrências</p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => {
+                                const list = incidents.map(inc => 
+                                    `*${inc.siteName}* | ${new Date(inc.startTime).toLocaleString()}\nStatus: ${inc.status}\nCausa: ${inc.rootCause || 'N/A'}\n`
+                                ).join('\n---\n');
+                                navigator.clipboard.writeText(`RELATÓRIO DE INCIDENTES - ATSitestatus\n\n${list}`);
+                                alert("Lista copiada para a área de transferência!");
+                            }}
+                            className="bg-[var(--apple-text)] text-[var(--apple-bg)] px-6 py-3 rounded-2xl flex items-center gap-2 font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-xl"
+                        >
+                            <Copy size={16} />
+                            Gerar Lista de Texto
+                        </button>
+                    </div>
+
+                    <div className="glass apple-card border-none overflow-hidden">
+                        {incidents.length > 0 ? (
+                            <table className="w-full text-left order-collapse">
+                                <thead className="bg-[var(--apple-input-bg)] text-[9px] font-black uppercase tracking-[0.2em] text-[var(--apple-text-secondary)]">
+                                    <tr>
+                                        <th className="px-8 py-4">Site</th>
+                                        <th className="px-6 py-4">Status</th>
+                                        <th className="px-6 py-4">Duração</th>
+                                        <th className="px-6 py-4">Diagnóstico</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[var(--apple-border)]">
+                                    {incidents.map(inc => (
+                                        <tr key={inc.id} className="hover:bg-white/5 transition-colors">
+                                            <td className="px-8 py-5">
+                                                <p className="font-bold text-sm">{inc.siteName}</p>
+                                                <p className="text-[10px] opacity-40 font-medium">{new Date(inc.startTime).toLocaleDateString()}</p>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase w-fit ${inc.status === 'active' ? 'bg-red-500/10 text-red-500 border border-red-500/20' : 'bg-[#34C759]/10 text-[#34C759] border border-[#34C759]/20'}`}>
+                                                    {inc.status === 'active' ? 'INCIDENTE ATIVO' : 'CASO ENCERRADO'}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <span className="text-xs font-black opacity-70">{inc.duration || '--'}</span>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <p className="text-xs font-medium italic opacity-60 line-clamp-1 truncate max-w-[200px]">{inc.rootCause || 'Sem diagnóstico'}</p>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        ) : (
+                            <div className="py-20 text-center opacity-40">
+                                <ShieldAlert size={40} className="mx-auto mb-4" />
+                                <p className="font-bold">Nenhum incidente para listar.</p>
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 

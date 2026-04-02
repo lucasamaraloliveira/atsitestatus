@@ -18,6 +18,20 @@ export interface StatusResult {
   sslDaysRemaining?: number;
 }
 
+export interface Incident {
+    id: string;
+    siteId: string;
+    siteName: string;
+    status: 'active' | 'resolved'; // resolved = post-mortem disponível
+    startTime: number;
+    endTime?: number;
+    duration?: string; 
+    rootCause?: string; 
+    resolution?: string;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    logs?: LogEntry[]; // Logs vinculados a este incidente
+}
+
 export type FilterType = CheckStatus | 'ALL';
 
 export interface LogEntry {
@@ -25,6 +39,7 @@ export interface LogEntry {
   status: CheckStatus;
   message: string;
   latency?: number;
+  incidentId?: string; // Vínculo com incidente se houver
 }
 
 export interface AudioSettings {

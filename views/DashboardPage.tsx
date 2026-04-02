@@ -141,12 +141,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                             placeholder="Buscar site por nome ou URL..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-[22px] md:rounded-[18px] py-3.5 pl-12 pr-6 text-sm font-medium text-[var(--apple-text)] placeholder:text-[var(--apple-text-secondary)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--apple-accent)]/20 focus:border-[var(--apple-accent)]/40 transition-all shadow-sm backdrop-blur-xl"
+                            className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-[22px] md:rounded-[18px] py-3.5 pl-12 pr-6 text-sm font-medium text-[var(--apple-text)] placeholder:text-[var(--apple-text-secondary)]/50 focus:outline-none focus:ring-2 focus:ring-[var(--apple-accent)]/20 focus:border-[var(--apple-accent)]/40 transition-all shadow-sm"
                         />
                     </div>
 
                     {/* Status Filters */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:flex items-center bg-[var(--apple-input-bg)] rounded-[22px] md:rounded-[18px] p-1 border border-[var(--apple-border)] backdrop-blur-xl shadow-sm gap-1">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:flex items-center bg-[var(--apple-input-bg)] rounded-[22px] md:rounded-[18px] p-1 border border-[var(--apple-border)] shadow-sm gap-1">
                         {([
                             { value: 'ALL', label: 'Todos', icon: <Search size={13} strokeWidth={2.5} /> },
                             { value: 'Online', label: 'Online', icon: <div className="w-[7px] h-[7px] rounded-full bg-[#34C759]" /> },

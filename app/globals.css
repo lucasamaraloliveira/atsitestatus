@@ -6,7 +6,7 @@
 
 :root {
   --apple-bg: #F5F5F7;
-  --apple-card-bg: rgba(255, 255, 255, 0.75);
+  --apple-card-bg: #FFFFFF;
   --apple-text: #1D1D1F;
   --apple-text-secondary: #86868B;
   --apple-accent: #007AFF;
@@ -20,7 +20,7 @@
 
 .dark {
   --apple-bg: #000000;
-  --apple-card-bg: rgba(28, 28, 30, 0.65);
+  --apple-card-bg: #1C1C1E;
   --apple-text: #F5F5F7;
   --apple-text-secondary: #86868B;
   --apple-accent: #0A84FF;

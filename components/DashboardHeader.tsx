@@ -5,7 +5,7 @@ import StatusPieChart from '@/components/StatusPieChart';
 import { requestNotificationPermission, getNotificationPermission } from '@/services/notificationService';
 
 const StatCard: React.FC<{ title: string; value: string | number; description: string; }> = ({ title, value, description }) => (
-    <div className="glass apple-card p-6 flex-1 min-w-[180px] text-left">
+    <div className="bg-[var(--apple-card-bg)] apple-card p-6 flex-1 min-w-[180px] text-left border border-[var(--apple-border)]">
         <div className="text-xs font-semibold text-[var(--apple-text-secondary)] uppercase tracking-wider mb-1">{title}</div>
         <div className="text-3xl font-bold text-[var(--apple-text)] tracking-tight">{value}</div>
         <div className="text-xs text-[var(--apple-text-secondary)] mt-2 font-medium">{description}</div>
@@ -54,7 +54,7 @@ const DashboardHeader: React.FC<{ sites: StatusResult[], logs: Record<string, Lo
     };
 
     return (
-        <div className="mb-10 p-8 glass apple-card flex flex-col lg:flex-row gap-8 items-center border-none">
+        <div className="mb-10 p-8 bg-[var(--apple-card-bg)] apple-card flex flex-col lg:flex-row gap-8 items-center border border-[var(--apple-border)]">
             <div className="flex flex-wrap gap-6 justify-start flex-grow w-full">
                 <StatCard title="Uptime Geral" value={stats.uptime} description="Saúde da rede" />
                 <StatCard title="Sites Offline" value={stats.offlineCount} description="Incidentes ativos" />

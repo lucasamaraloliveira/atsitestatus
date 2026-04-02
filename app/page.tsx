@@ -11,6 +11,7 @@ import LoginPage from '@/views/LoginPage';
 import SharedReportPage from '@/views/SharedReportPage';
 import SettingsView from '@/views/SettingsView';
 import ReportsView from '@/views/ReportsView';
+import { IncidentsView } from '@/views/IncidentsView';
 import Sidebar from '@/components/Sidebar';
 import { FileText, Activity, BarChart3, Trash2, Menu, X, LayoutDashboard, PlusCircle, Settings, LogOut, Sun, Moon } from 'lucide-react';
 import { StatusResult, LogEntry, CheckStatus } from '@/types';
@@ -88,7 +89,11 @@ const App: React.FC = () => {
         saveAudioSettings,
         weeklyReportsEnabled,
         setWeeklyReportsEnabled,
-        sendWeeklyReportSimulation
+        sendWeeklyReportSimulation,
+        incidents,
+        updateIncident,
+        deleteIncident,
+        clearAllIncidents
     } = useSiteMonitoring(currentUser);
 
     // Watchdog de Inatividade
@@ -255,11 +260,22 @@ const App: React.FC = () => {
                     <ReportsView
                         sites={sites}
                         logs={logs}
+                        incidents={incidents}
                         onExportReport={() => setIsGlobalReportModalOpen(true)}
                         notificationEmail={notificationEmail}
                         weeklyReportsEnabled={weeklyReportsEnabled}
                         setWeeklyReportsEnabled={setWeeklyReportsEnabled}
                         onSendTestReport={sendWeeklyReportSimulation}
+                    />
+                );
+            case 'incidents':
+                return (
+                    <IncidentsView 
+                        incidents={incidents}
+                        updateIncident={updateIncident}
+                        deleteIncident={deleteIncident}
+                        clearAllIncidents={clearAllIncidents}
+                        addToastNotification={addToastNotification}
                     />
                 );
             default: return null;
@@ -321,7 +337,7 @@ const App: React.FC = () => {
             {/* Floating Theme Toggle - Mobile Only */}
             <button 
                 onClick={toggleTheme}
-                className="fixed bottom-24 right-5 w-12 h-12 md:hidden z-[100] flex items-center justify-center glass rounded-2xl border border-[var(--apple-border)] shadow-2xl active:scale-95 transition-all duration-300 group"
+                className="fixed bottom-24 right-5 w-12 h-12 md:hidden z-[100] flex items-center justify-center bg-[var(--apple-card-bg)] rounded-2xl border border-[var(--apple-border)] shadow-2xl active:scale-95 transition-all duration-300 group"
                 aria-label="Alternar Tema"
             >
                 <div className="relative w-6 h-6 flex items-center justify-center">
@@ -335,11 +351,12 @@ const App: React.FC = () => {
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-tr from-white/5 to-transparent opacity-0 group-active:opacity-100 transition-opacity"></div>
             </button>
 
-            <nav className="fixed bottom-0 left-0 right-0 h-20 md:hidden z-[90] flex items-center justify-around px-2 glass border-t border-[var(--apple-border)] pb-6 pt-2">
+            <nav className="fixed bottom-0 left-0 right-0 h-20 md:hidden z-[90] flex items-center justify-around px-2 bg-[var(--apple-card-bg)] border-t border-[var(--apple-border)] pb-6 pt-2 shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
                 {[
                     { id: 'dashboard', icon: LayoutDashboard, label: 'Painel' },
+                    { id: 'incidents', icon: Activity, label: 'Crises' },
+                    { id: 'add', icon: PlusCircle, label: 'Novo Site', action: () => setIsAddSiteModalOpen(true) },
                     { id: 'reports', icon: BarChart3, label: 'Relatórios' },
-                    { id: 'add', icon: PlusCircle, label: 'Novo', action: () => setIsAddSiteModalOpen(true) },
                     { id: 'settings', icon: Settings, label: 'Ajustes' }
                 ].filter(item => !(item.id === 'add' && userProfile?.profile === 'viewer')).map((item) => (
                     <button 

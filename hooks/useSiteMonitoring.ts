@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { checkWebsiteStatus } from '@/services/geminiService';
 import { requestNotificationPermission, sendNotification } from '@/services/notificationService';
-import { CheckStatus } from '@/types';
+import { CheckStatus, type Incident } from '@/types';
 import type { StatusResult, LogEntry, AudioSettings } from '@/types';
 import { db } from '@/services/firebase';
 import {
@@ -60,6 +60,8 @@ export const useSiteMonitoring = (username: string | null) => {
         selectedSound: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'
     });
     const [weeklyReportsEnabled, setWeeklyReportsEnabled] = useState(true);
+    const [incidents, setIncidents] = useState<Incident[]>([]);
+    const activeIncidentsRef = useRef<Record<string, Incident>>({});
 
     const intervalRef = useRef<number | null>(null);
     const undoTimeoutRef = useRef<number | null>(null);
@@ -71,6 +73,7 @@ export const useSiteMonitoring = (username: string | null) => {
     const intervalRefValue = useRef<number>(60);
     const lockRef = useRef<boolean>(false);
     const isCheckingRef = useRef<boolean>(false); // Trava para evitar múltiplos ciclos simultâneos
+    const lastProcessedStatusRef = useRef<Record<string, CheckStatus | 'CHECKING'>>({});
 
     useEffect(() => { sitesRef.current = sites; }, [sites]);
     useEffect(() => { isMonitoringRef.current = isMonitoring; }, [isMonitoring]);
@@ -175,10 +178,28 @@ export const useSiteMonitoring = (username: string | null) => {
         };
     }, [username]);
 
-    // Carregar logs separadamente
+    // Carregar logs e incidentes separadamente
     useEffect(() => {
-        if (!effectiveOwnerId || !sites.length) return;
-        const unsubscribes = sites.map(site => {
+        if (!effectiveOwnerId) return;
+
+        // Sincronizar Incidentes
+        const incidentsRef = collection(db, 'users', effectiveOwnerId, 'incidents');
+        const qIncidents = query(incidentsRef, orderBy('startTime', 'desc'), limit(50));
+        const unsubIncidents = onSnapshot(qIncidents, (snapshot) => {
+            const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Incident));
+            setIncidents(list);
+            
+            // Mapear incidentes ainda ativos para a Ref de controle
+            const activeMap: Record<string, Incident> = {};
+            list.filter(inc => inc.status === 'active').forEach(inc => {
+                activeMap[inc.siteId] = inc;
+            });
+            activeIncidentsRef.current = activeMap;
+        });
+
+        if (!sites.length) return () => unsubIncidents();
+
+        const unsubscribesLogs = sites.map(site => {
             const logsRef = collection(db, 'users', effectiveOwnerId, 'sites', site.id, 'logs');
             const q = query(logsRef, orderBy('timestamp', 'desc'), limit(MAX_LOG_ENTRIES_PER_SITE));
             return onSnapshot(q, (snapshot) => {
@@ -186,7 +207,11 @@ export const useSiteMonitoring = (username: string | null) => {
                 setLogs(prev => ({ ...prev, [site.id]: siteLogs }));
             });
         });
-        return () => unsubscribes.forEach(unsub => unsub());
+
+        return () => {
+            unsubIncidents();
+            unsubscribesLogs.forEach(unsub => unsub());
+        };
     }, [effectiveOwnerId, sites.length]);
 
     const cleanData = (obj: any): any => {
@@ -431,17 +456,26 @@ export const useSiteMonitoring = (username: string | null) => {
         try {
             addToastNotification("Gerando relatório legível...", "info");
             
+            const recentIncidents = incidents.slice(0, 5);
+            const incidentsListText = recentIncidents.length > 0 
+                ? recentIncidents.map(inc => 
+                    `📍 ${inc.siteName}\n   Status: ${inc.status === 'active' ? '🔴 EM QUEDA' : '🟢 RESOLVIDO'}\n   Duração: ${inc.duration || 'N/A'}\n   Causa: ${inc.rootCause || 'Não documentada'}`
+                  ).join('\n\n')
+                : "✨ Estabilidade Total: Nenhum incidente nesta semana.";
+
             const textReport = `
-📊 RELATÓRIO SEMANAL EXECUTIVO - ATSiteStatus
+📊 RELATÓRIO EXECUTIVO - ATSiteStatus
 -------------------------------------------
 Olá! Aqui está o resumo de performance da sua rede.
 
-✅ UPTIME GLOBAL: 99.8%
-⏱️ LATÊNCIA MÉDIA: 42ms
-🛡️ INCIDENTES: 2 (Resolvidos)
+✅ UPTIME GLOBAL: 99.8% (Média Estimada)
+🛡️ RESUMO DE INCIDENTES RECENTES:
 
-DETALHES: Sistema estável, sem falhas pendentes.
-Acesse o painel para o relatório detalhado.
+${incidentsListText}
+
+-------------------------------------------
+Para ver o histórico completo e gráficos,
+acesse seu painel administrativo.
 -------------------------------------------
 `.trim();
 
@@ -495,17 +529,53 @@ Acesse o painel para o relatório detalhado.
                 if (siteToCheck) {
                     const siteName = siteToCheck.name || url;
 
-                    if (siteToCheck.status !== result.status && siteToCheck.status !== CheckStatus.CHECKING) {
-                        if (result.status === CheckStatus.OFFLINE || result.status === CheckStatus.ERROR) {
+                    const prevStatus = lastProcessedStatusRef.current[siteId] || siteToCheck.status;
+
+                    if (prevStatus !== result.status) {
+                        const isCurrentlyDown = result.status === CheckStatus.OFFLINE || result.status === CheckStatus.ERROR;
+                        const wasDown = prevStatus === CheckStatus.OFFLINE || prevStatus === CheckStatus.ERROR;
+
+                        if (isCurrentlyDown && !wasDown) {
                             addToastNotification(`Alerta: O site ${siteName} ficou offline!`, 'alert');
                             if (audioSettings.triggers.includes('offline') || audioSettings.triggers.includes('error')) playNotificationSound();
                             sendNotification('Site Offline', { body: siteName });
                             sendEmailNotification(siteName, url, result.status, result.message, result.latency);
-                        } else if (result.status === CheckStatus.ONLINE) {
-                            addToastNotification(`Sucesso: O site ${siteName} está online.`, 'success');
+
+                            const activeIncident = activeIncidentsRef.current[siteId];
+                            if (!activeIncident && effectiveOwnerId) {
+                                const newIncidentData: Partial<Incident> = {
+                                    siteId,
+                                    siteName,
+                                    status: 'active',
+                                    startTime: Date.now(),
+                                    severity: result.status === CheckStatus.ERROR ? 'medium' : 'high',
+                                    rootCause: 'Aguardando diagnóstico...'
+                                };
+                                addDoc(collection(db, 'users', effectiveOwnerId, 'incidents'), newIncidentData);
+                            }
+                        } else if (!isCurrentlyDown && wasDown && result.status === CheckStatus.ONLINE) {
+                            const activeIncident = activeIncidentsRef.current[siteId];
+                            if (activeIncident && effectiveOwnerId) {
+                                const endTime = Date.now();
+                                const durationMs = endTime - activeIncident.startTime;
+                                const minutes = Math.floor(durationMs / 60000);
+                                const seconds = Math.floor((durationMs % 60000) / 1000);
+                                const duration = `${minutes}m ${seconds}s`;
+
+                                const incidentRef = doc(db, 'users', effectiveOwnerId, 'incidents', activeIncident.id);
+                                setDoc(incidentRef, { 
+                                    status: 'resolved', 
+                                    endTime, 
+                                    duration 
+                                }, { merge: true });
+                            }
                             if (audioSettings.triggers.includes('online')) playNotificationSound();
                             sendEmailNotification(siteName, url, result.status, result.message, result.latency);
                         }
+                        
+                        // Atualizar IMEDIATAMENTE na Ref para evitar duplicidade em verificações rápidas
+                        lastProcessedStatusRef.current[siteId] = result.status;
+
                     } else if (result.status === CheckStatus.ONLINE && result.latency && result.latency > HIGH_LATENCY_THRESHOLD) {
                         addToastNotification(`Atenção: Latência alta em ${siteName} (${result.latency}ms).`, 'warning');
                         if (emailNotifyType === 'all') {
@@ -683,6 +753,44 @@ Acesse o painel para o relatório detalhado.
         };
     }, [isMonitoring, monitoringInterval]);
 
+    const updateIncident = async (id: string, updatedData: Partial<Incident>) => {
+        if (!effectiveOwnerId) return;
+        try {
+            const incidentRef = doc(db, 'users', effectiveOwnerId, 'incidents', id);
+            await setDoc(incidentRef, updatedData, { merge: true });
+            addToastNotification("Incidente atualizado.", "success");
+        } catch (error) {
+            console.error("Erro ao atualizar incidente:", error);
+            addToastNotification("Falha ao salvar Post-Mortem.", "alert");
+        }
+    };
+
+    const deleteIncident = async (id: string) => {
+        if (!effectiveOwnerId) return;
+        try {
+            const incidentRef = doc(db, 'users', effectiveOwnerId, 'incidents', id);
+            await deleteDoc(incidentRef);
+        } catch (error) {
+            console.error("Erro ao deletar incidente:", error);
+            addToastNotification("Falha ao remover incidente.", "alert");
+        }
+    };
+
+    const clearAllIncidents = async () => {
+        if (!effectiveOwnerId) return;
+        try {
+            const incidentsRef = collection(db, 'users', effectiveOwnerId, 'incidents');
+            const snapshot = await getDocs(incidentsRef);
+            const batch = writeBatch(db);
+            snapshot.docs.forEach(doc => batch.delete(doc.ref));
+            await batch.commit();
+            addToastNotification("Central de incidentes limpa.", "warning");
+        } catch (error) {
+            console.error("Erro ao limpar incidentes:", error);
+            addToastNotification("Falha ao limpar histórico.", "alert");
+        }
+    };
+
     return {
         sites, logs, newSiteUrl, setNewSiteUrl, newSiteName, setNewSiteName, filter, setFilter, sortOrder, setSortOrder,
         editingSiteId, isMonitoring, setIsMonitoring: handleSetIsMonitoring, monitoringInterval, setMonitoringInterval: handleSetMonitoringInterval,
@@ -708,6 +816,10 @@ Acesse o painel para o relatório detalhado.
                 setDoc(doc(db, 'users', username), { weeklyReportsEnabled: val }, { merge: true });
             }
         },
-        sendWeeklyReportSimulation
+        sendWeeklyReportSimulation,
+        incidents,
+        updateIncident,
+        deleteIncident,
+        clearAllIncidents
     };
 };
