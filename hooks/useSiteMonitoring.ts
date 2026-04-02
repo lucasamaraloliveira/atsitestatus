@@ -440,7 +440,8 @@ export const useSiteMonitoring = (username: string | null) => {
                     status: "online",
                     message: "Seu relatório de teste chegou. Uptime global: 99.9%, Latência: 45ms.",
                     latency: 45,
-                    timestamp: new Date().toLocaleString()
+                    timestamp: new Date().toLocaleString(),
+                    reportType: 'weekly'
                 })
             });
 
