@@ -247,21 +247,24 @@ const ReportsView: React.FC<ReportsViewProps> = ({
                 }
             `}} />
             {/* Header */}
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6">
+            <header className="flex flex-col md:flex-row justify-between items-center md:items-end mb-10 gap-6 text-center md:text-left">
                 <div>
                     <h2 className="text-4xl font-extrabold tracking-tight text-[var(--apple-text)]">Relatórios</h2>
                     <p className="text-[var(--apple-text-secondary)] font-medium mt-1">Visão consolidada da sua infraestrutura em tempo real.</p>
                 </div>
                 {activeTab === 'data' && (
-                    <div className="flex gap-3">
+                    <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 w-full md:w-auto">
                         <button 
                             onClick={() => window.print()} 
-                            className="apple-button h-11 px-6 bg-white dark:bg-white/10 text-[var(--apple-text)] border border-[var(--apple-border)] flex items-center gap-2"
+                            className="apple-button h-11 px-6 bg-white dark:bg-white/10 text-[var(--apple-text)] border border-[var(--apple-border)] flex items-center justify-center gap-2 min-w-[150px]"
                         >
                             <ArrowDownToLine size={16} />
                             Exportar PDF
                         </button>
-                        <button onClick={onExportReport} className="apple-button h-11 px-6 shadow-lg shadow-[var(--apple-accent)]/20 flex items-center gap-2">
+                        <button 
+                            onClick={onExportReport} 
+                            className="apple-button h-11 px-6 shadow-lg shadow-[var(--apple-accent)]/20 flex items-center justify-center gap-2 min-w-[150px]"
+                        >
                             <FileSpreadsheet size={16} />
                             Relatório CSV
                         </button>
@@ -269,32 +272,26 @@ const ReportsView: React.FC<ReportsViewProps> = ({
                 )}
             </header>
 
-            {/* Tabs Selector */}
-            <div className="flex bg-[var(--apple-input-bg)] p-1 rounded-2xl border border-[var(--apple-border)] w-full md:w-fit mb-10 gap-1 overflow-hidden backdrop-blur-xl">
-                <button 
-                    onClick={() => setActiveTab('data')}
-                    className={`flex-1 md:flex-none px-4 md:px-8 py-3 rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all duration-300 ${activeTab === 'data' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-lg shadow-[var(--apple-accent)]/5' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
-                >
-                    Performance
-                </button>
-                <button 
-                    onClick={() => setActiveTab('security')}
-                    className={`flex-1 md:flex-none px-4 md:px-8 py-3 rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all duration-300 ${activeTab === 'security' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-lg shadow-[var(--apple-accent)]/5' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
-                >
-                    Segurança SSL
-                </button>
-                <button 
-                    onClick={() => setActiveTab('incidents')}
-                    className={`flex-1 md:flex-none px-4 md:px-8 py-3 rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all duration-300 ${activeTab === 'incidents' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-lg shadow-[var(--apple-accent)]/5' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
-                >
-                    Histórico de Crises
-                </button>
-                <button 
-                    onClick={() => setActiveTab('scheduled')}
-                    className={`flex-1 md:flex-none px-4 md:px-8 py-3 rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all duration-300 ${activeTab === 'scheduled' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-lg shadow-[var(--apple-accent)]/5' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
-                >
-                    Resumo Semanal
-                </button>
+            {/* Tabs Grid - Fully Responsive and Compact */}
+            <div className="grid grid-cols-2 lg:flex lg:items-center gap-3 mb-10 w-full">
+                {[
+                    { id: 'data', label: 'Performance' },
+                    { id: 'security', label: 'Segurança SSL' },
+                    { id: 'incidents', label: 'Histórico' },
+                    { id: 'scheduled', label: 'Semanal' }
+                ].map((tab) => (
+                    <button 
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={`px-4 py-3.5 rounded-2xl text-[10px] md:text-xs font-black uppercase tracking-[0.1em] md:tracking-[0.15em] transition-all duration-300 w-full lg:w-fit
+                            ${activeTab === tab.id 
+                                ? 'bg-[var(--apple-accent)] text-white shadow-xl shadow-[var(--apple-accent)]/20' 
+                                : 'bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)] hover:bg-[var(--apple-border)] hover:text-[var(--apple-text)] shadow-sm'
+                            }`}
+                    >
+                        {tab.label}
+                    </button>
+                ))}
             </div>
 
             {activeTab === 'data' && (
