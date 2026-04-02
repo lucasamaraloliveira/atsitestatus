@@ -241,9 +241,11 @@ const ReportsView: React.FC<ReportsViewProps> = ({
                 @media print {
                     aside, nav, .sidebar, button, .no-print, header .flex { display: none !important; }
                     main { margin: 0 !important; padding: 0 !important; width: 100% !important; }
-                    .apple-card { border: 1px solid #eee !important; box-shadow: none !important; break-inside: avoid; margin-bottom: 20px; }
+                    .apple-card, .group, .bg-[var(--apple-card-bg)] { border: 1px solid #eee !important; box-shadow: none !important; break-inside: avoid; margin-bottom: 20px; border-radius: 12px !important; }
                     body { background: white !important; padding: 20px !important; }
                     .glass { backdrop-filter: none !important; background: white !important; }
+                    .text-[var(--apple-accent)], .text-red-500 { color: #000 !important; font-weight: bold !important; }
+                    h2, h3, h4 { color: #000 !important; }
                 }
             `}} />
             {/* Header */}
@@ -252,7 +254,7 @@ const ReportsView: React.FC<ReportsViewProps> = ({
                     <h2 className="text-4xl font-extrabold tracking-tight text-[var(--apple-text)]">Relatórios</h2>
                     <p className="text-[var(--apple-text-secondary)] font-medium mt-1">Visão consolidada da sua infraestrutura em tempo real.</p>
                 </div>
-                {activeTab === 'data' && (
+                {(activeTab === 'data' || activeTab === 'incidents') && (
                     <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3 w-full md:w-auto">
                         <button 
                             onClick={() => window.print()} 
