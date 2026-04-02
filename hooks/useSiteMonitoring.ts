@@ -423,6 +423,39 @@ export const useSiteMonitoring = (username: string | null) => {
         }
     }, [notificationEmail, emailNotifyType]);
 
+    const sendWeeklyReportSimulation = useCallback(async () => {
+        if (!notificationEmail) {
+            addToastNotification("E-mail de notificação não configurado.", "alert");
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/send-email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    to: notificationEmail,
+                    siteName: "Resumo Semanal (Simulação)",
+                    url: "Painel Executivo",
+                    status: "online",
+                    message: "Seu relatório de teste chegou. Uptime global: 99.9%, Latência: 45ms.",
+                    latency: 45,
+                    timestamp: new Date().toLocaleString()
+                })
+            });
+
+            if (response.ok) {
+                addToastNotification("Relatório de teste enviado com sucesso!", "success");
+            } else {
+                const data = await response.json();
+                addToastNotification(`Erro no envio: ${data.error || "Tente novamente"}`, "alert");
+            }
+        } catch (error) {
+            console.error("❌ Falha na simulação:", error);
+            addToastNotification("Erro crítico ao simular envio.", "alert");
+        }
+    }, [notificationEmail, addToastNotification]);
+
     const handleCheckStatus = useCallback(async (siteId: string, url: string) => {
         setSites(prev => prev.map(s => s.id === siteId ? { ...s, status: CheckStatus.CHECKING, message: 'Verificando...' } : s));
         try {
@@ -648,6 +681,7 @@ export const useSiteMonitoring = (username: string | null) => {
             if (username) {
                 setDoc(doc(db, 'users', username), { weeklyReportsEnabled: val }, { merge: true });
             }
-        }
+        },
+        sendWeeklyReportSimulation
     };
 };

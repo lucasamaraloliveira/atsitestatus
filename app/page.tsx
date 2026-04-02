@@ -87,7 +87,8 @@ const App: React.FC = () => {
         audioSettings,
         saveAudioSettings,
         weeklyReportsEnabled,
-        setWeeklyReportsEnabled
+        setWeeklyReportsEnabled,
+        sendWeeklyReportSimulation
     } = useSiteMonitoring(currentUser);
 
     // Watchdog de Inatividade
@@ -258,6 +259,7 @@ const App: React.FC = () => {
                         notificationEmail={notificationEmail}
                         weeklyReportsEnabled={weeklyReportsEnabled}
                         setWeeklyReportsEnabled={setWeeklyReportsEnabled}
+                        onSendTestReport={sendWeeklyReportSimulation}
                     />
                 );
             default: return null;

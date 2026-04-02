@@ -29,6 +29,7 @@ interface ReportsViewProps {
     notificationEmail: string;
     weeklyReportsEnabled: boolean;
     setWeeklyReportsEnabled: (val: boolean) => void;
+    onSendTestReport: () => void;
 }
 
 const ReportsView: React.FC<ReportsViewProps> = ({ 
@@ -37,7 +38,8 @@ const ReportsView: React.FC<ReportsViewProps> = ({
     onExportReport, 
     notificationEmail,
     weeklyReportsEnabled,
-    setWeeklyReportsEnabled
+    setWeeklyReportsEnabled,
+    onSendTestReport
 }) => {
     const [activeTab, setActiveTab] = useState<'data' | 'scheduled'>('data');
 
@@ -568,14 +570,7 @@ const ReportsView: React.FC<ReportsViewProps> = ({
                                 </div>
 
                                 <button 
-                                    onClick={() => {
-                                        const btn = document.getElementById('test-report-reports-btn');
-                                        if(btn) {
-                                            btn.innerHTML = 'Enviando...';
-                                            setTimeout(() => btn.innerHTML = '✅ Relatório Enviado!', 1500);
-                                            setTimeout(() => btn.innerHTML = 'Disparar Teste', 4000);
-                                        }
-                                    }}
+                                    onClick={onSendTestReport}
                                     id="test-report-reports-btn"
                                     className="relative z-10 w-full py-4 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:scale-[1.02] active:scale-95 transition-all shadow-xl"
                                 >
