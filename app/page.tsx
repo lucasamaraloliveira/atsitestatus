@@ -85,7 +85,9 @@ const App: React.FC = () => {
         clearAllLogs,
         parentName,
         audioSettings,
-        saveAudioSettings
+        saveAudioSettings,
+        weeklyReportsEnabled,
+        setWeeklyReportsEnabled
     } = useSiteMonitoring(currentUser);
 
     // Watchdog de Inatividade
@@ -253,53 +255,10 @@ const App: React.FC = () => {
                         sites={sites}
                         logs={logs}
                         onExportReport={() => setIsGlobalReportModalOpen(true)}
+                        notificationEmail={notificationEmail}
+                        weeklyReportsEnabled={weeklyReportsEnabled}
+                        setWeeklyReportsEnabled={setWeeklyReportsEnabled}
                     />
-                );
-            case 'activity':
-                const allLogs = Object.values(logs).flat() as LogEntry[];
-                return (
-                    <div className="animate-fade-in pb-24">
-                        <header className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
-                            <div>
-                                <h2 className="text-4xl font-extrabold tracking-tight">Atividade</h2>
-                                <p className="text-[var(--apple-text-secondary)] font-medium">Histórico de eventos em tempo real.</p>
-                            </div>
-                            
-                            <div className="flex items-center gap-4 bg-[var(--apple-input-bg)] p-1.5 pl-5 rounded-3xl border border-[var(--apple-border)]">
-                                <div className="flex flex-col">
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-[var(--apple-text-secondary)]">Tempo Real</span>
-                                    <span className="text-xs font-bold">{isMonitoring ? 'Ativo' : 'Pausado'}</span>
-                                </div>
-                                <button 
-                                    onClick={() => setIsMonitoring(!isMonitoring)}
-                                    className={`w-12 h-7 rounded-full transition-all relative ${isMonitoring ? 'bg-[#34C759]' : 'bg-gray-200 dark:bg-white/10'}`}
-                                >
-                                    <div className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full transition-all shadow-sm ${isMonitoring ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                                </button>
-                                {allLogs.length > 0 && (
-                                    <button onClick={clearAllLogs} className="ml-4 p-2.5 bg-[#FF3B30]/10 text-[#FF3B30] rounded-2xl hover:bg-[#FF3B30]/20 transition-all">
-                                        <Trash2 size={16} />
-                                    </button>
-                                )}
-                            </div>
-                        </header>
-                        <div className="glass apple-card p-0 overflow-hidden border-none shadow-2xl">
-                            <div className="divide-y divide-[var(--apple-border)]">
-                                {allLogs.sort((a, b) => b.timestamp - a.timestamp).slice(0, 50).map((log, idx) => (
-                                    <div key={idx} className="p-5 flex items-center justify-between hover:bg-white/5 transition-colors">
-                                        <div className="flex items-center gap-4">
-                                            <div className={`w-2.5 h-2.5 rounded-full ${log.status === CheckStatus.ONLINE ? 'bg-[#34C759]' : log.status === CheckStatus.CHECKING ? 'bg-[#007AFF]' : log.status === CheckStatus.ERROR ? 'bg-[#FF9500]' : 'bg-[#FF3B30]'}`}></div>
-                                            <div>
-                                                <span className="font-bold text-sm block tracking-tight">{log.status}</span>
-                                                <p className="text-[11px] text-[var(--apple-text-secondary)] font-medium">{log.message}</p>
-                                            </div>
-                                        </div>
-                                        <span className="text-[10px] font-bold opacity-30">{new Date(log.timestamp).toLocaleTimeString()}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
                 );
             default: return null;
         }
@@ -379,7 +338,6 @@ const App: React.FC = () => {
                     { id: 'dashboard', icon: LayoutDashboard, label: 'Painel' },
                     { id: 'reports', icon: BarChart3, label: 'Relatórios' },
                     { id: 'add', icon: PlusCircle, label: 'Novo', action: () => setIsAddSiteModalOpen(true) },
-                    { id: 'activity', icon: Activity, label: 'Atividade' },
                     { id: 'settings', icon: Settings, label: 'Ajustes' }
                 ].filter(item => !(item.id === 'add' && userProfile?.profile === 'viewer')).map((item) => (
                     <button 

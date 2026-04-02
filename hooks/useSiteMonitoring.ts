@@ -59,6 +59,7 @@ export const useSiteMonitoring = (username: string | null) => {
         triggers: ['offline', 'error'],
         selectedSound: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'
     });
+    const [weeklyReportsEnabled, setWeeklyReportsEnabled] = useState(true);
 
     const intervalRef = useRef<number | null>(null);
     const undoTimeoutRef = useRef<number | null>(null);
@@ -143,10 +144,12 @@ export const useSiteMonitoring = (username: string | null) => {
                         if (data.viewMode) setViewMode(data.viewMode);
                         if (data.inactivityTimeout) setInactivityTimeout(data.inactivityTimeout);
                         if (data.audioSettings) setAudioSettings(data.audioSettings);
+                        if (data.weeklyReportsEnabled !== undefined) setWeeklyReportsEnabled(data.weeklyReportsEnabled);
                     } else {
                         // Se for busca do pai (filho lendo do pai), sincroniza emails do alerta
                         if (data.notificationEmail) setNotificationEmail(data.notificationEmail);
                         if (data.emailNotifyType) setEmailNotifyType(data.emailNotifyType);
+                        if (data.weeklyReportsEnabled !== undefined) setWeeklyReportsEnabled(data.weeklyReportsEnabled);
                     }
 
                     if (isParentFetch || data.role !== 'child') {
@@ -638,6 +641,13 @@ export const useSiteMonitoring = (username: string | null) => {
         clearAllLogs: handleClearAllLogs,
         parentName,
         audioSettings,
-        saveAudioSettings: handleSaveAudioSettings
+        saveAudioSettings: handleSaveAudioSettings,
+        weeklyReportsEnabled,
+        setWeeklyReportsEnabled: (val: boolean) => {
+            setWeeklyReportsEnabled(val);
+            if (username) {
+                setDoc(doc(db, 'users', username), { weeklyReportsEnabled: val }, { merge: true });
+            }
+        }
     };
 };

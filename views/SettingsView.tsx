@@ -8,9 +8,14 @@ import {
     Settings as SettingsIcon,
     Shield,
     Bell,
-    CheckCircle2,
-    AlertTriangle,
-    LogOut,
+    ChevronDown,
+    Calendar,
+    TrendingUp,
+    FileText as FileIcon,
+    Clock,
+    LayoutDashboard,
+    Repeat,
+    BarChart,
     Edit2,
     Check,
     X,
@@ -19,7 +24,9 @@ import {
     VolumeX,
     Play,
     Zap,
-    ChevronDown
+    AlertTriangle,
+    CheckCircle2,
+    LogOut
 } from 'lucide-react';
 import AddTeamMemberModal from '@/components/AddTeamMemberModal';
 import { AudioSettings } from '@/types';
@@ -69,7 +76,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
 }) => {
     const [localEmail, setLocalEmail] = useState(notificationEmail);
     const [localType, setLocalType] = useState(emailNotifyType);
-    const [activeTab, setActiveTab] = useState<'preferences' | 'notifications' | 'team'>('preferences');
+    const [activeTab, setActiveTab] = useState<'preferences' | 'team'>('preferences');
     const [editingChildId, setEditingChildId] = useState<string | null>(null);
     const [editName, setEditName] = useState('');
     const [editPass, setEditPass] = useState('');
@@ -112,23 +119,17 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                 <p className="text-[var(--apple-text-secondary)] font-medium mt-1">Gerencie seu ecossistema de monitoramento.</p>
             </header>
 
-            <div className="flex flex-col md:flex-row bg-[var(--apple-input-bg)] p-1.5 rounded-2xl border border-[var(--apple-border)] w-full md:w-fit mb-4 gap-1 md:gap-0 overflow-hidden">
+            <div className="flex bg-[var(--apple-input-bg)] p-1.5 rounded-2xl border border-[var(--apple-border)] w-fit mb-10 gap-1 overflow-hidden">
                 <button 
                     onClick={() => { setActiveTab('preferences'); setEditingChildId(null); }}
-                    className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all text-center ${activeTab === 'preferences' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
+                    className={`px-6 py-2.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'preferences' ? 'bg-[var(--apple-card-bg)] text(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
                 >
                     Preferências
-                </button>
-                <button 
-                    onClick={() => { setActiveTab('notifications'); setEditingChildId(null); }}
-                    className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all text-center ${activeTab === 'notifications' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
-                >
-                    Notificações
                 </button>
                 {userRole === 'admin' && (
                     <button 
                         onClick={() => { setActiveTab('team'); setEditingChildId(null); }}
-                        className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all text-center ${activeTab === 'team' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
+                        className={`px-6 py-2.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'team' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
                     >
                         Equipe
                     </button>
@@ -179,6 +180,41 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                                     />
                                     <p className="text-[9px] text-[var(--apple-text-secondary)] font-bold uppercase tracking-widest text-center">Recomendado: 60s para estabilidade</p>
                                 </div>
+                            </div>
+                        </section>
+
+                        {/* E-mail de Alerta (Migrado das Notificações) */}
+                        <section className="glass apple-card p-6 md:p-10 border-none space-y-8">
+                             <div className="flex items-center gap-4">
+                                <div className="p-3 rounded-2xl bg-white/5 text-[var(--apple-accent)] transition-transform">
+                                    <Mail size={24} strokeWidth={2.5} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-black">E-mail para Alertas</h3>
+                                    <p className="text-sm text-[var(--apple-text-secondary)] font-medium">Defina onde receber avisos críticos imediatos.</p>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col md:flex-row gap-4 items-end max-w-3xl">
+                                <div className="flex-1 space-y-3 w-full">
+                                    <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">Endereço de E-mail</label>
+                                    <div className="relative group">
+                                        <Bell size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] opacity-50" />
+                                        <input 
+                                            type="email" 
+                                            value={localEmail}
+                                            onChange={(e) => setLocalEmail(e.target.value)}
+                                            placeholder="exemplo@dominio.com"
+                                            className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 pl-12 pr-6 text-sm font-bold focus:ring-4 focus:ring-[var(--apple-accent)]/10 transition-all outline-none"
+                                        />
+                                    </div>
+                                </div>
+                                <button 
+                                    onClick={handleSaveEmail}
+                                    className="bg-[var(--apple-text)] text-[var(--apple-bg)] px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-black/10"
+                                >
+                                    Salvar
+                                </button>
                             </div>
                         </section>
 
@@ -290,105 +326,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                     </div>
                 )}
 
-                {activeTab === 'notifications' && (
-                    <section className="glass apple-card p-6 md:p-10 border-none space-y-10 animate-fade-in">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 rounded-2xl bg-[#FF9500]/10 text-[#FF9500]">
-                                <Mail size={24} />
-                            </div>
-                            <div>
-                                <h3 className="text-xl font-bold">Alertas e Notificações</h3>
-                                <p className="text-sm text-[var(--apple-text-secondary)]">Configurações para recebimento de logs via e-mail.</p>
-                            </div>
-                        </div>
-
-                        <div className="max-w-2xl space-y-8">
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">E-mail para Alertas</label>
-                                    <div className="relative group">
-                                        <Bell 
-                                            size={20} 
-                                            className="absolute right-6 top-1/2 -translate-y-1/2 text-[var(--apple-text-secondary)] transition-all duration-300 group-focus-within:opacity-0 group-focus-within:translate-x-4" 
-                                        />
-                                        <input 
-                                            type="email" 
-                                            value={localEmail}
-                                            onChange={(e) => setLocalEmail(e.target.value)}
-                                            placeholder="seu-email@dominio.com"
-                                            className="w-full bg-[var(--apple-input-bg)] border border-[var(--apple-border)] rounded-2xl py-4 pl-6 pr-14 text-sm font-medium focus:ring-4 focus:ring-[var(--apple-accent)]/10 focus:border-[var(--apple-accent)] transition-all outline-none"
-                                        />
-                                    </div>
-                            </div>
-
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">Auto-Logout (Por Inatividade)</label>
-                                <div className="flex flex-wrap gap-2">
-                                    {[
-                                        { val: 300, lbl: '5 Min' },
-                                        { val: 900, lbl: '15 Min' },
-                                        { val: 1800, lbl: '30 Min' },
-                                        { val: 3600, lbl: '1 Hora' },
-                                        { val: -1, lbl: 'Nunca' }
-                                    ].map(opt => (
-                                        <button
-                                            key={opt.val}
-                                            onClick={() => setInactivityTimeout(opt.val)}
-                                            className={`px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${inactivityTimeout === opt.val ? 'bg-[var(--apple-accent)] text-white border-transparent shadow-lg shadow-[var(--apple-accent)]/20' : 'bg-[var(--apple-input-bg)] text-[var(--apple-text-secondary)] border-transparent hover:bg-white/10'}`}
-                                        >
-                                            {opt.lbl}
-                                        </button>
-                                    ))}
-                                </div>
-                                <p className="text-[9px] text-[var(--apple-text-secondary)] font-bold italic ml-1">Tempo de espera antes de encerrar sua sessão automaticamente.</p>
-                            </div>
-
-                            <div className="space-y-3">
-                                <label className="text-[10px] font-black uppercase text-[var(--apple-text-secondary)] tracking-widest ml-1">Severidade dos Alertas</label>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    {[
-                                        { id: 'error', label: 'Só Erros', color: '#FF3B30', desc: 'Alertas críticos' },
-                                        { id: 'success', label: 'Sucessos', color: '#34C759', desc: 'Confirm. de Uptime' },
-                                        { id: 'all', label: 'Todos', color: '#007AFF', desc: 'Log completo' }
-                                    ].map(type => (
-                                        <button
-                                            key={type.id}
-                                            onClick={() => setLocalType(type.id as any)}
-                                            className={`p-5 rounded-2xl text-left transition-all border-2 flex flex-col gap-1 ${localType === type.id ? 'bg-white/10 border-[var(--apple-accent)] shadow-xl' : 'border-transparent bg-[var(--apple-input-bg)] opacity-60 hover:opacity-100'}`}
-                                        >
-                                            <span className="text-xs font-black uppercase tracking-wider" style={{ color: localType === type.id ? type.color : 'inherit' }}>{type.label}</span>
-                                            <span className="text-[9px] font-bold opacity-60">{type.desc}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col gap-4 pt-4">
-                                <button 
-                                    onClick={() => {
-                                        handleSaveEmail();
-                                        const btn = document.getElementById('save-email-btn');
-                                        if(btn) {
-                                            const originalText = btn.innerHTML;
-                                            btn.innerHTML = '✅ Configurações Salvas!';
-                                            btn.style.backgroundColor = '#34C759';
-                                            btn.style.color = 'white';
-                                            setTimeout(() => {
-                                                btn.innerHTML = originalText;
-                                                btn.style.backgroundColor = '';
-                                                btn.style.color = '';
-                                            }, 2000);
-                                        }
-                                    }}
-                                    id="save-email-btn"
-                                    className="w-full sm:w-fit px-12 bg-[var(--apple-text)] text-[var(--apple-bg)] py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-xl shadow-black/10 flex items-center justify-center gap-2"
-                                >
-                                    Salvar Preferências de Alerta
-                                </button>
-                                <p className="text-[9px] text-[var(--apple-text-secondary)] font-bold italic ml-2">As notificações serão enviadas conforme a severidade escolhida.</p>
-                            </div>
-                        </div>
-                    </section>
-                )}
 
                 {activeTab === 'team' && userRole === 'admin' && (
                     <section className="glass apple-card p-6 md:p-10 border-none space-y-10 animate-fade-in">

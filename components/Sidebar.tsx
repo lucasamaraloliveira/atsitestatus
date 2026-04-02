@@ -8,8 +8,7 @@ import {
     LogOut, 
     Moon, 
     Sun,
-    PlusCircle,
-    Activity
+    PlusCircle
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -48,7 +47,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     const menuItems = [
         { id: 'dashboard', label: 'Painel', icon: LayoutDashboard },
         { id: 'reports', label: 'Relatórios', icon: FileText },
-        { id: 'activity', label: 'Atividade', icon: Activity },
     ];
 
     return (
