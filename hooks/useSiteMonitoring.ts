@@ -57,7 +57,7 @@ export const useSiteMonitoring = (username: string | null) => {
     const [audioSettings, setAudioSettings] = useState<AudioSettings>({
         enabled: true,
         triggers: ['offline', 'error'],
-        selectedSound: 'https://actions.google.com/sounds/v1/alarms/beep_short.ogg'
+        selectedSound: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'
     });
 
     const intervalRef = useRef<number | null>(null);

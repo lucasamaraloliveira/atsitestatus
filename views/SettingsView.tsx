@@ -77,10 +77,11 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     const [isSoundSelectorOpen, setIsSoundSelectorOpen] = useState(false);
 
     const soundOptions = [
-        { id: 'https://actions.google.com/sounds/v1/alarms/beep_short.ogg', label: 'Sino Curto (Padrão)' },
-        { id: 'https://actions.google.com/sounds/v1/alarms/mechanical_clock_ringing_upclose.ogg', label: 'Ding Mecânico' },
-        { id: 'https://actions.google.com/sounds/v1/alarms/alarm_clock_ringing_near.ogg', label: 'Alerta Forte' },
-        { id: 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg', label: 'Digital Tech' }
+        { id: 'https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3', label: 'Ping Soft (Padrão)' },
+        { id: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3', label: 'Ding Metálico' },
+        { id: 'https://assets.mixkit.co/active_storage/sfx/2190/2190-preview.mp3', label: 'Alerta de Atenção' },
+        { id: 'https://assets.mixkit.co/active_storage/sfx/951/951-preview.mp3', label: 'Erro Crítico (Urgente)' },
+        { id: 'https://assets.mixkit.co/active_storage/sfx/3005/3005-preview.mp3', label: 'Modern Digital' }
     ];
 
     useEffect(() => {
@@ -107,11 +108,11 @@ const SettingsView: React.FC<SettingsViewProps> = ({
     return (
         <div className="animate-fade-in space-y-10 pb-20">
             <header>
-                <h2 className="text-4xl font-extrabold text-[var(--apple-text)] tracking-tight">Configurações</h2>
+                <h2 className="text-3xl md:text-4xl font-extrabold text-[var(--apple-text)] tracking-tight">Configurações</h2>
                 <p className="text-[var(--apple-text-secondary)] font-medium mt-1">Gerencie seu ecossistema de monitoramento.</p>
             </header>
 
-            <div className="flex flex-col md:flex-row bg-[var(--apple-input-bg)] p-1.5 rounded-2xl border border-[var(--apple-border)] w-full md:w-fit mb-4 gap-1 md:gap-0">
+            <div className="flex flex-col md:flex-row bg-[var(--apple-input-bg)] p-1.5 rounded-2xl border border-[var(--apple-border)] w-full md:w-fit mb-4 gap-1 md:gap-0 overflow-hidden">
                 <button 
                     onClick={() => { setActiveTab('preferences'); setEditingChildId(null); }}
                     className={`flex-1 md:flex-none px-4 md:px-6 py-2.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all text-center ${activeTab === 'preferences' ? 'bg-[var(--apple-card-bg)] text-[var(--apple-accent)] shadow-sm' : 'text-[var(--apple-text-secondary)] hover:text-[var(--apple-text)]'}`}
@@ -137,7 +138,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
             <div className="grid grid-cols-1 gap-8">
                 {activeTab === 'preferences' && (
                     <div className="space-y-8 animate-fade-in">
-                        <section className="glass apple-card p-10 border-none space-y-10 group">
+                        <section className="glass apple-card p-6 md:p-10 border-none space-y-10 group">
                             <div className="flex items-center gap-4">
                                 <div className="p-3 rounded-2xl bg-[var(--apple-accent)]/10 text-[var(--apple-accent)] transition-transform group-hover:scale-110">
                                     <Activity size={24} strokeWidth={2.5} />
@@ -182,8 +183,10 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                         </section>
 
                         {/* Alertas Sonoros Section */}
-                        <section className="glass apple-card p-10 border-none space-y-10 relative group">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--apple-accent)]/5 rounded-full blur-3xl -mr-32 -mt-32 transition-colors group-hover:bg-[var(--apple-accent)]/10 pointer-events-none"></div>
+                        <section className="glass apple-card p-6 md:p-10 border-none space-y-10 relative group">
+                            <div className="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--apple-accent)]/5 rounded-full blur-3xl -mr-32 -mt-32 transition-colors group-hover:bg-[var(--apple-accent)]/10"></div>
+                            </div>
                             
                             <div className="flex items-center justify-between relative z-10">
                                 <div className="flex items-center gap-4">
@@ -249,7 +252,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                                             {isSoundSelectorOpen && (
                                                 <>
                                                     <div className="fixed inset-0 z-[1000]" onClick={() => setIsSoundSelectorOpen(false)}></div>
-                                                    <div className="absolute top-full left-0 right-0 mt-3 glass border border-[var(--apple-border)] rounded-[2rem] p-3 shadow-2xl z-[1010] animate-in fade-in zoom-in duration-300 origin-top overflow-hidden">
+                                                    <div className="absolute bottom-full left-0 right-0 mb-3 glass border border-[var(--apple-border)] rounded-[2rem] p-3 shadow-2xl z-[1010] animate-in fade-in zoom-in duration-300 origin-bottom overflow-hidden">
                                                         <div className="flex flex-col gap-1 max-h-60 overflow-y-auto custom-scrollbar">
                                                             {soundOptions.map((opt) => (
                                                                 <button
@@ -288,7 +291,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                 )}
 
                 {activeTab === 'notifications' && (
-                    <section className="glass apple-card p-10 border-none space-y-10 animate-fade-in">
+                    <section className="glass apple-card p-6 md:p-10 border-none space-y-10 animate-fade-in">
                         <div className="flex items-center gap-4">
                             <div className="p-3 rounded-2xl bg-[#FF9500]/10 text-[#FF9500]">
                                 <Mail size={24} />
@@ -388,7 +391,7 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                 )}
 
                 {activeTab === 'team' && userRole === 'admin' && (
-                    <section className="glass apple-card p-10 border-none space-y-10 animate-fade-in">
+                    <section className="glass apple-card p-6 md:p-10 border-none space-y-10 animate-fade-in">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                 <div className="p-3 rounded-2xl bg-[#5856D6]/10 text-[#5856D6]">
@@ -485,24 +488,6 @@ const SettingsView: React.FC<SettingsViewProps> = ({
                         </div>
                     </section>
                 )}
-                <section className="glass apple-card p-10 border-none space-y-6 animate-fade-in bg-[#FF3B30]/5">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-2xl bg-[#FF3B30]/10 text-[#FF3B30]">
-                            <LogOut size={24} />
-                        </div>
-                        <div>
-                            <h3 className="text-xl font-bold text-[#FF3B30]">Sessão do Usuário</h3>
-                            <p className="text-sm text-[var(--apple-text-secondary)]">Encerre sua conexão com segurança.</p>
-                        </div>
-                    </div>
-                    <button 
-                        onClick={onLogout}
-                        className="flex items-center gap-2 bg-[#FF3B30] text-white py-4 px-8 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-[#FF3B30]/90 transition-all active:scale-95 shadow-xl shadow-[#FF3B30]/20 w-fit"
-                    >
-                        <LogOut size={16} />
-                        Sair do Sistema
-                    </button>
-                </section>
             </div>
             <AddTeamMemberModal 
                 isOpen={isAddMemberModalOpen} 

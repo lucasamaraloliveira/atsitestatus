@@ -336,7 +336,7 @@ const App: React.FC = () => {
                 />
             </div>
 
-            <main className={`flex-1 transition-all duration-300 overflow-y-auto w-full p-6 md:p-12 pb-32 md:pb-12 ${sidebarCollapsed ? 'md:ml-24' : 'md:ml-72'}`}>
+            <main className={`flex-1 transition-all duration-300 overflow-y-auto p-6 md:p-12 pb-32 md:pb-12 ${sidebarCollapsed ? 'md:ml-24' : 'md:ml-72'}`}>
                 {/* Header Mobile Minimalista */}
                 <header className="flex md:hidden items-center justify-between mb-8">
                     <div className="flex items-center gap-2">
