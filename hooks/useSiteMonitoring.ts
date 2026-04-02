@@ -531,6 +531,27 @@ acesse seu painel administrativo.
 
                     const prevStatus = lastProcessedStatusRef.current[siteId] || siteToCheck.status;
 
+                    // Lógica Proativa de Autorresolução: Se o site está ONLINE mas existe um incidente ATIVO, encerra imediatamente.
+                    const activeIncident = activeIncidentsRef.current[siteId];
+                    if (result.status === CheckStatus.ONLINE && activeIncident && effectiveOwnerId) {
+                        const endTime = Date.now();
+                        const durationMs = endTime - activeIncident.startTime;
+                        const minutes = Math.floor(durationMs / 60000);
+                        const seconds = Math.floor((durationMs % 60000) / 1000);
+                        const duration = `${minutes}m ${seconds}s`;
+
+                        const incidentRef = doc(db, 'users', effectiveOwnerId, 'incidents', activeIncident.id);
+                        setDoc(incidentRef, { 
+                            status: 'concluido', 
+                            endTime, 
+                            duration,
+                            rootCause: 'Instabilidade momentânea de conexão ou oscilação no servidor.',
+                            resolution: 'O sistema detectou o restabelecimento automático do serviço sem necessidade de intervenção manual.'
+                        }, { merge: true });
+                        
+                        addToastNotification(`O site ${siteName} está online. Incidente encerrado automaticamente por estabilidade detectada.`, 'success');
+                    }
+
                     if (prevStatus !== result.status) {
                         const isCurrentlyDown = result.status === CheckStatus.OFFLINE || result.status === CheckStatus.ERROR;
                         const wasDown = prevStatus === CheckStatus.OFFLINE || prevStatus === CheckStatus.ERROR;
@@ -541,7 +562,6 @@ acesse seu painel administrativo.
                             sendNotification('Site Offline', { body: siteName });
                             sendEmailNotification(siteName, url, result.status, result.message, result.latency);
 
-                            const activeIncident = activeIncidentsRef.current[siteId];
                             if (!activeIncident && effectiveOwnerId) {
                                 const newIncidentData: Partial<Incident> = {
                                     siteId,
@@ -554,28 +574,12 @@ acesse seu painel administrativo.
                                 addDoc(collection(db, 'users', effectiveOwnerId, 'incidents'), newIncidentData);
                             }
                         } else if (!isCurrentlyDown && wasDown && result.status === CheckStatus.ONLINE) {
-                            const activeIncident = activeIncidentsRef.current[siteId];
-                            if (activeIncident && effectiveOwnerId) {
-                                const endTime = Date.now();
-                                const durationMs = endTime - activeIncident.startTime;
-                                const minutes = Math.floor(durationMs / 60000);
-                                const seconds = Math.floor((durationMs % 60000) / 1000);
-                                const duration = `${minutes}m ${seconds}s`;
-
-                                const incidentRef = doc(db, 'users', effectiveOwnerId, 'incidents', activeIncident.id);
-                                setDoc(incidentRef, { 
-                                    status: 'resolved', 
-                                    endTime, 
-                                    duration 
-                                }, { merge: true });
-                            }
+                            // Já tratado pela lógica proativa acima, mantemos apenas para sinalização sonora/email se necessário
                             if (audioSettings.triggers.includes('online')) playNotificationSound();
                             sendEmailNotification(siteName, url, result.status, result.message, result.latency);
                         }
                         
-                        // Atualizar IMEDIATAMENTE na Ref para evitar duplicidade em verificações rápidas
                         lastProcessedStatusRef.current[siteId] = result.status;
-
                     } else if (result.status === CheckStatus.ONLINE && result.latency && result.latency > HIGH_LATENCY_THRESHOLD) {
                         addToastNotification(`Atenção: Latência alta em ${siteName} (${result.latency}ms).`, 'warning');
                         if (emailNotifyType === 'all') {
