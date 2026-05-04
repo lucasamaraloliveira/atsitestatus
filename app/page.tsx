@@ -191,8 +191,9 @@ const App: React.FC = () => {
             }
             alert("Usuário ou senha incorretos.");
             return false;
-        } catch (error) {
+        } catch (error: any) {
             console.error("Erro ao autenticar:", error);
+            alert("Erro de conexão ou configuração: " + (error.message || "Verifique as variáveis de ambiente."));
             return false;
         }
     };
