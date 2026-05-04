@@ -192,8 +192,11 @@ const App: React.FC = () => {
             alert("Usuário ou senha incorretos.");
             return false;
         } catch (error: any) {
-            console.error("Erro ao autenticar:", error);
-            alert("Erro de conexão ou configuração: " + (error.message || "Verifique as variáveis de ambiente."));
+            console.error("❌ Erro Crítico de Autenticação:", error);
+            const errorMsg = error.code === 'permission-denied' 
+                ? "Permissão negada no Firebase. Verifique as 'Security Rules' no console do Firebase."
+                : (error.message || "Erro desconhecido.");
+            alert("Erro de conexão ou configuração: " + errorMsg);
             return false;
         }
     };
